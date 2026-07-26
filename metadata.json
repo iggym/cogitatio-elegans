@@ -56,6 +56,20 @@
     "slug": "intelligence-is-us-not-me.html"
   },
   {
+    "title": "Agriculture as Both Progress and Capture",
+    "description": "The story we tell about civilization's origins is half true. The other half is written in our bones.",
+    "category": "agriculture",
+    "date": "2026-07-22",
+    "slug": "agriculture-good-bad.html"
+  },
+  {
+    "title": "Forged in Flame",
+    "description": "Fire, Cooking, and the Technological Origin of the Human Body.",
+    "category": "technology",
+    "date": "2026-07-22",
+    "slug": "humans-as-technology.html"
+  },
+  {
     "title": "Silicon and Memory: The Edge Infrastructure Shift",
     "description": "How decentralized client-side applications and edge computing are transforming the topology of modern web architectures.",
     "category": "systems",
