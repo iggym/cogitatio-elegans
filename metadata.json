@@ -16,9 +16,16 @@
   {
     "title": "The Grass Ate You First",
     "description": "You've heard the story where humans tamed wheat and built civilization on top of it. Here's the version evolutionary biology actually tells: the wheat won, and you've been paying rent on that win for twelve thousand years.",
-    "category": "history",
+    "category": "evolution",
     "date": "2026-07-25",
     "slug": "agriculture-domesticated-humans.html"
+  },
+   {
+    "title": "The Thinking That Unthought",
+    "description": "How civilization made us cognitively smaller — and what we can still reclaim.",
+    "category": "history",
+    "date": "2026-07-25",
+    "slug": "we-are-not-thinking.html"
   },
   {
     "title": "Silicon and Memory: The Edge Infrastructure Shift",
