@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Two Governments, One Year</title>
+<meta name="description" content="Pre-modern societies didn't evolve toward one political system. Some ran two — on purpose, season by season.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg: #14140F;
+    --bg-raised: #1C1C15;
+    --ink: #F1EEE1;
+    --ink-dim: #A5A190;
+    --ink-faint: #6E6B5D;
+    --winter: #6F8CA3;
+    --winter-dim: #3E5262;
+    --summer: #8FA06E;
+    --summer-dim: #4A5738;
+    --ember: #C1461B;
+    --ember-bright: #E15A29;
+    --line: #2E2D24;
+    --max: 660px;
+    --radius: 3px;
+  }
+
+  *{ box-sizing: border-box; }
+  html{ scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce){
+    html{ scroll-behavior: auto; }
+    *{ animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
+  }
+
+  body{
+    margin:0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', -apple-system, sans-serif;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a{ color: inherit; }
+  a:focus-visible, button:focus-visible{
+    outline: 2px solid var(--ember-bright);
+    outline-offset: 3px;
+  }
+
+  h1, h2, h3{
+    font-family: 'Spectral', Georgia, serif;
+    font-weight: 500;
+    line-height: 1.15;
+    margin: 0;
+  }
+
+  /* Progress bar */
+  #progress{
+    position: fixed; top:0; left:0; height: 3px; width: 0%;
+    background: linear-gradient(90deg, var(--winter), var(--ember), var(--summer));
+    z-index: 1000;
+    transition: width 80ms linear;
+  }
+
+  /* Topbar */
+  #topbar{
+    position: fixed; top:0; left:0; right:0; z-index: 900;
+    height: 58px;
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 0 20px;
+    background: rgba(20,20,15,0.72);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+  }
+  #topbar .left{ display:flex; align-items:center; gap:14px; min-width:0; }
+  #topbar .home{
+    font-family:'Spectral', serif; font-style: italic; font-size: 0.95rem;
+    text-decoration:none; color: var(--ink); flex-shrink:0;
+  }
+  #crumb{
+    font-family:'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--ink-faint);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  #crumb span{ color: var(--ink-dim); }
+  #readtime{
+    font-family:'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--ink-faint);
+    flex-shrink:0; display:none;
+  }
+  @media (min-width: 640px){ #readtime{ display:inline; } }
+
+  #menuBtn{
+    display:none; background:none; border:1px solid var(--line); color: var(--ink);
+    width:36px; height:36px; border-radius: var(--radius); cursor:pointer;
+    flex-shrink:0;
+  }
+  #menuBtn span{ display:block; width:16px; height:1px; background: var(--ink); margin: 4px auto; }
+
+  /* Layout */
+  .wrap{
+    display:grid;
+    grid-template-columns: 220px 1fr;
+    gap: 40px;
+    max-width: calc(var(--max) + 260px);
+    margin: 0 auto;
+    padding: 96px 20px 60px;
+  }
+
+  #rail{
+    position: sticky; top: 100px; align-self:start;
+    height: fit-content;
+  }
+  #rail .railLabel{
+    font-family:'JetBrains Mono', monospace; font-size: 0.65rem; letter-spacing: 0.08em;
+    color: var(--ink-faint); text-transform: uppercase; margin-bottom: 14px;
+  }
+  #rail ol{ list-style:none; margin:0; padding:0; counter-reset: sec; }
+  #rail li{
+    counter-increment: sec;
+    margin-bottom: 4px;
+  }
+  #rail li a{
+    display:flex; gap:10px; align-items:baseline;
+    text-decoration:none; color: var(--ink-dim);
+    font-size: 0.82rem; padding: 7px 8px; border-radius: var(--radius);
+    transition: color 150ms, background 150ms;
+  }
+  #rail li a::before{
+    content: attr(data-num);
+    font-family:'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--ink-faint);
+    flex-shrink:0;
+  }
+  #rail li a:hover{ color: var(--ink); background: var(--bg-raised); }
+  #rail li a.active{ color: var(--ink); background: var(--bg-raised); }
+  #rail li a.active::before{ color: var(--ember-bright); }
+
+  main{ min-width:0; max-width: var(--max); }
+
+  /* Hero */
+  .hero{ padding-bottom: 20px; border-bottom: 1px solid var(--line); margin-bottom: 44px; }
+  .eyebrow{
+    font-family:'JetBrains Mono', monospace; font-size: 0.72rem; letter-spacing: 0.1em;
+    color: var(--ember-bright); text-transform: uppercase; margin-bottom: 16px;
+  }
+  .hero h1{
+    font-size: clamp(2.1rem, 5vw, 3.1rem);
+    letter-spacing: -0.01em;
+  }
+  .hero .dek{
+    font-size: 1.08rem; color: var(--ink-dim); margin-top: 18px; max-width: 54ch;
+  }
+
+  /* Spectrum widget */
+  .spectrum{
+    margin-top: 32px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--bg-raised);
+    padding: 18px 18px 14px;
+  }
+  .spectrum .poles{
+    display:flex; justify-content:space-between;
+    font-family:'JetBrains Mono', monospace; font-size: 0.68rem;
+    letter-spacing: 0.04em; margin-bottom: 10px;
+  }
+  .spectrum .poles .w{ color: var(--winter); }
+  .spectrum .poles .s{ color: var(--summer); }
+  .spectrum .track{
+    position: relative; height: 10px; border-radius: 6px;
+    background: linear-gradient(90deg, var(--winter-dim), var(--bg-raised) 48%, var(--bg-raised) 52%, var(--summer-dim));
+    border: 1px solid var(--line);
+    overflow: visible;
+  }
+  .spectrum .dot{
+    position:absolute; top: 50%; width: 16px; height:16px; border-radius:50%;
+    background: var(--ember-bright); border: 2px solid var(--bg);
+    box-shadow: 0 0 0 1px var(--ember);
+    transform: translate(-50%, -50%);
+    left: 22%;
+    animation: driftDot 9s ease-in-out infinite;
+  }
+  @keyframes driftDot{
+    0%, 100%{ left: 20%; }
+    50%{ left: 80%; }
+  }
+  @media (prefers-reduced-motion: reduce){ .spectrum .dot{ animation:none; left:50%; } }
+  .spectrum .caption{
+    font-size: 0.74rem; color: var(--ink-faint); margin-top: 10px;
+  }
+
+  /* Chapters */
+  .chapter{ margin-bottom: 56px; scroll-margin-top: 90px; }
+  .chapter h2{
+    font-size: clamp(1.5rem, 3.4vw, 1.9rem);
+    margin-bottom: 20px;
+  }
+  .chapter h2 .num{
+    font-family:'JetBrains Mono', monospace; font-size: 0.95rem; color: var(--ink-faint);
+    margin-right: 10px;
+  }
+  .lede{
+    font-size: 1.12rem; color: var(--ink); margin-bottom: 18px;
+  }
+  .chapter p{ margin: 0 0 18px; color: var(--ink); }
+  .chapter p.dim{ color: var(--ink-dim); }
+
+  .callout{
+    border-left: 2px solid var(--ember);
+    background: var(--bg-raised);
+    padding: 16px 18px;
+    border-radius: 0 var(--radius) var(--radius) 0;
+    margin: 24px 0;
+    font-size: 0.95rem;
+    color: var(--ink-dim);
+  }
+  .callout strong{ color: var(--ink); }
+
+  .snap{
+    font-family:'Spectral', serif; font-style: italic;
+    font-size: clamp(1.3rem, 3.2vw, 1.7rem);
+    line-height: 1.3;
+    text-align: center;
+    color: var(--ink);
+    padding: 34px 10px;
+    margin: 32px 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .pullquote{
+    border-left: 2px solid var(--winter);
+    padding-left: 18px;
+    margin: 24px 0;
+    font-family:'Spectral', serif;
+    font-style: italic;
+    font-size: 1.05rem;
+    color: var(--ink-dim);
+  }
+
+  hr.div{
+    border:none; border-top: 1px solid var(--line);
+    margin: 40px 0; width: 60px;
+  }
+
+  /* Share block */
+  .share{
+    display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+    margin: 24px 0 8px;
+    padding-top: 18px;
+    border-top: 1px dashed var(--line);
+  }
+  .share span{
+    font-family:'JetBrains Mono', monospace; font-size: 0.68rem;
+    color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.06em;
+    margin-right: 4px;
+  }
+  .share a{
+    text-decoration:none; font-size: 0.78rem;
+    border: 1px solid var(--line); padding: 7px 12px; border-radius: var(--radius);
+    color: var(--ink-dim); transition: color 150ms, border-color 150ms;
+  }
+  .share a:hover{ color: var(--ink); border-color: var(--ember); }
+
+  /* Action / CTA */
+  .action{
+    margin-top: 20px;
+    padding: 30px 26px;
+    border-radius: var(--radius);
+    background: linear-gradient(155deg, var(--bg-raised), #201f16 70%);
+    border: 1px solid var(--line);
+  }
+  .action h3{
+    font-size: 1.3rem; color: var(--ember-bright); margin-bottom: 10px;
+  }
+  .action p{ color: var(--ink-dim); margin-bottom: 18px; }
+  .checklist{ list-style:none; margin:0; padding:0; }
+  .checklist li{
+    display:flex; gap:10px; padding: 9px 0; border-top: 1px solid var(--line);
+    font-size: 0.92rem; color: var(--ink);
+  }
+  .checklist li:first-child{ border-top:none; }
+  .checklist li::before{ content:"→"; color: var(--ember-bright); flex-shrink:0; }
+
+  /* Footer */
+  footer{
+    max-width: var(--max);
+    margin: 40px auto 0;
+    padding: 28px 20px 60px;
+    border-top: 1px solid var(--line);
+  }
+  .footRow{
+    display:flex; justify-content: space-between; align-items:center; gap: 16px; flex-wrap: wrap;
+    margin-bottom: 22px;
+  }
+  .footRow a.home{
+    text-decoration:none; font-family:'Spectral', serif; font-style: italic; color: var(--ink);
+  }
+  #toTop{
+    background:none; border: 1px solid var(--line); color: var(--ink-dim);
+    font-family:'JetBrains Mono', monospace; font-size: 0.7rem;
+    padding: 8px 14px; border-radius: var(--radius); cursor:pointer;
+  }
+  #toTop:hover{ color: var(--ink); border-color: var(--ember); }
+  .sources{
+    font-size: 0.78rem; color: var(--ink-faint); line-height: 1.8;
+  }
+  .sources .label{
+    font-family:'JetBrains Mono', monospace; font-size: 0.65rem; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--ink-faint); margin-bottom: 8px; display:block;
+  }
+
+  /* Mobile drawer */
+  #scrim{
+    display:none; position: fixed; inset:0; background: rgba(0,0,0,0.55);
+    z-index: 800; opacity:0; transition: opacity 200ms;
+  }
+  #scrim.show{ display:block; opacity:1; }
+
+  @media (max-width: 880px){
+    .wrap{ grid-template-columns: 1fr; padding-top: 84px; }
+    #menuBtn{ display:block; }
+    #crumb{ display:none; }
+    #rail{
+      position: fixed; top:0; left:0; bottom:0; width: 82vw; max-width: 320px;
+      background: var(--bg); border-right: 1px solid var(--line);
+      padding: 80px 22px 30px; z-index: 950;
+      transform: translateX(-100%); transition: transform 220ms ease;
+      overflow-y:auto;
+    }
+    #rail.open{ transform: translateX(0); }
+  }
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+<div id="scrim"></div>
+
+<header id="topbar">
+  <div class="left">
+    <button id="menuBtn" aria-label="Open navigation" aria-expanded="false"><span></span><span></span><span></span></button>
+    <a class="home" href="https://iggym.github.io/cogitatio-elegans/">Cogitatio Elegans</a>
+    <nav id="crumb" aria-label="Breadcrumb">Home <span>/</span> Anthropology <span>/</span> Seasonal Politics</nav>
+  </div>
+  <span id="readtime">6 min read</span>
+</header>
+
+<div class="wrap">
+  <nav id="rail" aria-label="Article sections">
+    <div class="railLabel">In this piece</div>
+    <ol>
+      <li><a href="#s1" data-num="01">Before First Light</a></li>
+      <li><a href="#s2" data-num="02">The Bold Reframe</a></li>
+      <li><a href="#s3" data-num="03">Two Governments, One Year</a></li>
+      <li><a href="#s4" data-num="04">What This Isn't</a></li>
+      <li><a href="#s5" data-num="05">Your Own Two Seasons</a></li>
+      <li><a href="#s6" data-num="06">One Thing, Today</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <article>
+      <header class="hero">
+        <div class="eyebrow">Political Anthropology</div>
+        <h1>Two Governments, One Year</h1>
+        <p class="dek">We tell the story of human politics as a straight line: bands, then chiefs, then kings, then ballots. But some of the first political scientists on Earth ran two systems at once — and switched between them on a schedule.</p>
+
+        <div class="spectrum" role="img" aria-label="A spectrum from winter authority to summer consensus, showing that both were part of one working system">
+          <div class="poles">
+            <span class="w">WINTER · CHAIN OF COMMAND</span>
+            <span class="s">SUMMER · OPEN COUNCIL</span>
+          </div>
+          <div class="track"><div class="dot"></div></div>
+          <div class="caption">Not a progression. A pendulum — the same people, the same year, both ends on purpose.</div>
+        </div>
+      </header>
+
+      <section class="chapter" id="s1">
+        <h2><span class="num">01</span>Before First Light</h2>
+        <p class="lede">The camp wakes before the sun does. Nobody needs to be told twice.</p>
+        <p>A man walks the lodges giving orders in a voice nobody argues with. Scouts move out first, then the drivers, then the families with the hides and the knives. Every position is assigned. Anyone who breaks formation, chases early, or spooks the herd before the signal isn't just scolded — among several Plains societies, the policing societies charged with keeping order during the communal hunt had real, sanctioned force: they could confiscate property, destroy a lodge, or even kill the dogs of a person who ruined the drive.</p>
+        <p>For the length of the winter buffalo hunt, this camp is not a democracy. It is closer to a small, temporary military state, and everyone in it agreed to that, because a scattered herd means a hungry season.</p>
+      </section>
+
+      <section class="chapter" id="s2">
+        <h2><span class="num">02</span>The Bold Reframe</h2>
+        <p>Here's the standard story, the one most of us absorbed without ever being taught it directly: human political life evolved in one direction. Small egalitarian bands gave way to agriculture, agriculture gave way to chiefs and then states, and states — eventually, haltingly — gave way to modern democracy. Freedom is the finish line we're still running toward.</p>
+        <p>That story treats early societies as <strong>not yet arrived</strong> — proto-democracies waiting for the technology and the enlightenment to catch up.</p>
+        <div class="callout"><strong>The reframe:</strong> some pre-modern societies weren't waiting for anything. They had already built, used, and dismantled more than one political system — within a single year — because they understood something we've mostly forgotten: a system of government is a tool you pick up for a job, not an identity you grow into.</div>
+
+        <div class="share">
+          <span>Pass it on</span>
+          <a href="#" class="shareX" target="_blank" rel="noopener">Post to X</a>
+          <a href="#" class="shareLI" target="_blank" rel="noopener">Share on LinkedIn</a>
+        </div>
+      </section>
+
+      <section class="chapter" id="s3">
+        <h2><span class="num">03</span>Two Governments, One Year</h2>
+        <p>Look at the seasonal rhythm of Great Plains nations and it splits cleanly in two. Winter — the communal bison hunt — called for speed, coordination, and obedience, so authority consolidated into police societies with the power to enforce it. Summer — when bands reunited for large gatherings — called for something else entirely: consensus, debate, and shared standing among many voices, and the winter enforcement structures simply dissolved. No coup. No civil war. No crisis of legitimacy. Just a seasonal changeover, understood by everyone as temporary and functional from the start.</p>
+
+        <p>Pacific Northwest communities show a related pattern in their own vocabulary: concentrated, almost formal authority during resource-critical periods — coordinating salmon runs, managing communal harvests — loosening into flatter, more consensus-driven arrangements once that pressure eased.</p>
+
+        <div class="pullquote">The hierarchy wasn't a stage they were passing through. It was a setting they turned on and off.</div>
+
+        <div class="snap">They weren't climbing a ladder toward democracy. They were switching tools in the same toolbox.</div>
+
+        <p>This is the hidden connection the linear story hides: authoritarian and consensus-based governance weren't rival endpoints of history, competing to be the "real" destination. In these societies, they were <em>compatible parts of one working system</em>, deployed on a schedule as deliberate as the hunt itself.</p>
+      </section>
+
+      <section class="chapter" id="s4">
+        <h2><span class="num">04</span>What This Isn't</h2>
+        <p class="dim">This isn't a claim that every pre-modern society ran this way, or that seasonal switching was universal across all Indigenous North American nations — political organization varied enormously by region, resource base, and era, and the ethnographic record is uneven. It's also fair to ask whether "self-conscious architecture" overstates what may have started as pragmatic adaptation to hunting logistics.</p>
+        <p>But the switching itself is the hard evidence against the pragmatic-accident reading. An arrangement that appears only under pressure and vanishes the moment the pressure lifts, without conflict, without renegotiation, and without anyone treating the change as remarkable, isn't an accident nobody noticed. It's a tool nobody had to think twice about picking up.</p>
+      </section>
+
+      <section class="chapter" id="s5">
+        <h2><span class="num">05</span>Your Own Two Seasons</h2>
+        <p>You already do a version of this, even if no one's named it for you. The team that runs open-floor brainstorms on Tuesday and locks into a strict chain of command during a launch-week fire drill isn't being inconsistent. It's running the same seasonal logic: consensus when the goal is finding the right idea, hierarchy when the goal is executing one fast, under pressure, with no room for a debate that costs you the herd.</p>
+        <p>The agency here is small and concrete. It's not "embrace flexible leadership" as a poster on a wall. It's: before the next high-stakes push, someone in the room says out loud, <em>"we're switching to winter rules until this is done,"</em> and everyone knows exactly what that means and when it ends — because it was named, not defaulted into.</p>
+      </section>
+
+      <section class="chapter" id="s6">
+        <h2><span class="num">06</span>One Thing, Today</h2>
+        <div class="action">
+          <h3>Name your season</h3>
+          <p>Pick one recurring meeting, project, or team you're part of. In the next 24 hours, decide out loud which mode it's actually in right now — and whether that's the mode it should be in.</p>
+          <ul class="checklist">
+            <li>Say which mode you're defaulting to: consensus or command — most groups never name it, they just drift.</li>
+            <li>Ask if the current mode fits the actual stakes this week, not the group's habitual style.</li>
+            <li>If it doesn't fit, say so and set an end date for the switch — a season, not a permanent shift.</li>
+          </ul>
+        </div>
+      </section>
+
+    </article>
+  </main>
+</div>
+
+<footer>
+  <div class="footRow">
+    <a class="home" href="https://iggym.github.io/cogitatio-elegans/">← Cogitatio Elegans</a>
+    <button id="toTop">Back to top</button>
+  </div>
+  <div class="sources">
+    <span class="label">Grounded in</span>
+    Ethnohistorical accounts of Great Plains communal bison-hunt policing societies and their seasonal dissolution into consensus-based summer gatherings; comparative patterns of resource-period authority and off-season flattening described among Pacific Northwest Indigenous communities. Presented here as illustrative examples, not an exhaustive survey.
+  </div>
+</footer>
+
+<script>
+(function(){
+  // Scroll progress
+  var progress = document.getElementById('progress');
+  function updateProgress(){
+    var h = document.documentElement;
+    var scrollTop = h.scrollTop || document.body.scrollTop;
+    var height = h.scrollHeight - h.clientHeight;
+    var pct = height > 0 ? (scrollTop / height) * 100 : 0;
+    progress.style.width = pct + '%';
+  }
+  document.addEventListener('scroll', updateProgress, { passive: true });
+  updateProgress();
+
+  // Reading time
+  var wordCount = document.querySelector('main').innerText.trim().split(/\s+/).length;
+  var minutes = Math.max(1, Math.round(wordCount / 220));
+  document.getElementById('readtime').textContent = minutes + ' min read';
+
+  // Scrollspy
+  var links = Array.prototype.slice.call(document.querySelectorAll('#rail a'));
+  var sections = links.map(function(a){ return document.querySelector(a.getAttribute('href')); });
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      var idx = sections.indexOf(entry.target);
+      if (idx === -1) return;
+      if (entry.isIntersecting){
+        links.forEach(function(l){ l.classList.remove('active'); });
+        links[idx].classList.add('active');
+      }
+    });
+  }, { root: null, rootMargin: '-15% 0px -70% 0px', threshold: 0 });
+  sections.forEach(function(s){ if (s) io.observe(s); });
+
+  // Mobile drawer
+  var menuBtn = document.getElementById('menuBtn');
+  var rail = document.getElementById('rail');
+  var scrim = document.getElementById('scrim');
+  function openDrawer(){
+    rail.classList.add('open');
+    scrim.classList.add('show');
+    menuBtn.setAttribute('aria-expanded', 'true');
+  }
+  function closeDrawer(){
+    rail.classList.remove('open');
+    scrim.classList.remove('show');
+    menuBtn.setAttribute('aria-expanded', 'false');
+  }
+  menuBtn.addEventListener('click', function(){
+    rail.classList.contains('open') ? closeDrawer() : openDrawer();
+  });
+  scrim.addEventListener('click', closeDrawer);
+  links.forEach(function(l){ l.addEventListener('click', function(){
+    if (window.innerWidth <= 880) closeDrawer();
+  }); });
+
+  // Back to top
+  document.getElementById('toTop').addEventListener('click', function(){
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  // Social share prefill from the Bold Reframe callout
+  var reframeEl = document.querySelector('#s2 .callout');
+  var reframeText = reframeEl ? reframeEl.innerText.replace(/^The reframe:\s*/i, '').trim() : document.title;
+  var pageUrl = window.location.href;
+  var shareX = document.querySelector('.shareX');
+  var shareLI = document.querySelector('.shareLI');
+  if (shareX){
+    shareX.href = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(reframeText) + '&url=' + encodeURIComponent(pageUrl);
+  }
+  if (shareLI){
+    shareLI.href = 'https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(pageUrl);
+  }
+})();
+</script>
+
+</body>
+</html>
