@@ -104,6 +104,20 @@
     "category": "science",
     "date": "2026-07-07",
     "slug": "abstractions-making-reality.html"
+  } ,
+  {
+    "title": "The Thermodynamic Trap.",
+    "description": "Civilization as an Entropy Accelerator — and what it means for every choice you make tomorrow morning.",
+    "category": "science",
+    "date": "2026-07-08",
+    "slug": "civilization-entropy-accelerator.html"
+  } ,
+  {
+    "title": "The Treadmill Trap.",
+    "description": "We like to think we’re climbing a ladder of progress. But what if we’re just sprinting on a treadmill, running faster and faster just to avoid falling off?.",
+    "category": "science",
+    "date": "2026-07-10",
+    "slug": "treadmill-trap.html"
   } 
 ]
 
