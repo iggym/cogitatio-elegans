@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>The Inversion Point — From Cloud Topology to Memory Topology</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+/* ── Custom Properties ── */
+:root{
+  --bg:#0e0e0c;--bg2:#1a1917;--fg:#e6ddd0;--muted:#7d7568;
+  --accent:#d4943a;--accent-glow:rgba(212,148,58,.12);
+  --teal:#4a9e8e;--teal-glow:rgba(74,158,142,.10);
+  --card:#1c1b18;--border:#2e2b27;--max:660px;
+  --font-d:'DM Serif Display',serif;
+  --font-b:'Crimson Pro',Georgia,serif;
+  --topbar-h:56px;
+}
+@media(prefers-color-scheme:light){
+  :root{--bg:#f5f0e8;--bg2:#ece6da;--fg:#1a1814;--muted:#7a7368;
+    --accent:#b37a20;--accent-glow:rgba(179,122,32,.10);
+    --teal:#2d7a6e;--teal-glow:rgba(45,122,110,.08);
+    --card:#e8e0d2;--border:#d0c8b8;}
+}
+
+/* ── Reset & Base ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--font-b);background:var(--bg);color:var(--fg);
+  line-height:1.75;font-size:18px;overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:var(--accent);text-decoration:none;transition:color .2s}
+a:hover{color:var(--fg)}
+a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:2px}
+::selection{background:var(--accent);color:var(--bg)}
+
+/* ── Noise Overlay ── */
+body::after{
+  content:'';position:fixed;inset:0;opacity:.022;pointer-events:none;z-index:10000;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size:200px 200px;
+}
+
+/* ── Ambient Blobs ── */
+.blob{position:fixed;border-radius:50%;filter:blur(120px);pointer-events:none;z-index:-1}
+.blob-1{width:500px;height:500px;top:-10%;left:-10%;background:var(--teal-glow);opacity:.6;animation:drift1 25s ease-in-out infinite}
+.blob-2{width:400px;height:400px;bottom:10%;right:-8%;background:var(--accent-glow);opacity:.5;animation:drift2 30s ease-in-out infinite}
+@keyframes drift1{0%,100%{transform:translate(0,0)}50%{transform:translate(60px,40px)}}
+@keyframes drift2{0%,100%{transform:translate(0,0)}50%{transform:translate(-50px,-30px)}}
+
+/* ── Progress Bar ── */
+#progress{
+  position:fixed;top:0;left:0;height:3px;z-index:10001;
+  background:linear-gradient(90deg,var(--teal),var(--accent));
+  width:0;transition:width .1s linear;
+}
+
+/* ── Topbar ── */
+#topbar{
+  position:fixed;top:0;left:0;right:0;height:var(--topbar-h);z-index:9000;
+  background:rgba(14,14,12,.72);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 20px;gap:12px;
+}
+.topbar-home{color:var(--fg);font-family:var(--font-d);font-size:1rem;white-space:nowrap}
+.topbar-home:hover{color:var(--accent)}
+.topbar-sep{color:var(--muted);font-size:.7rem;margin:0 2px}
+.topbar-breadcrumb{color:var(--muted);font-size:.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar-meta{margin-left:auto;color:var(--muted);font-size:.78rem;white-space:nowrap;display:flex;align-items:center;gap:6px}
+.topbar-meta i{font-size:.65rem}
+#hamburger{
+  display:none;background:none;border:none;color:var(--fg);font-size:1.2rem;cursor:pointer;padding:4px 6px;
+}
+
+/* ── Layout ── */
+.wrap{
+  display:grid;grid-template-columns:220px 1fr;
+  max-width:calc(var(--max) + 260px);margin:0 auto;
+  min-height:calc(100vh - var(--topbar-h));padding-top:var(--topbar-h);
+}
+
+/* ── Sidebar Rail ── */
+#rail{
+  position:sticky;top:calc(var(--topbar-h) + 32px);align-self:start;
+  padding:32px 0 32px 24px;height:fit-content;
+}
+#rail ul{list-style:none}
+#rail li{
+  margin-bottom:6px;position:relative;padding-left:28px;
+  font-size:.85rem;line-height:1.5;
+}
+#rail li::before{
+  content:attr(data-num);position:absolute;left:0;top:0;
+  font-family:var(--font-d);font-size:.75rem;color:var(--muted);
+  width:20px;text-align:right;
+}
+#rail a{color:var(--muted);transition:color .25s,padding-left .25s}
+#rail a.active{color:var(--accent);padding-left:4px;font-weight:600}
+#rail a:hover{color:var(--fg)}
+
+/* ── Main Content ── */
+main{min-width:0;padding:0 24px 60px 40px}
+article{max-width:var(--max);margin:0 auto}
+
+/* ── Hero ── */
+.hero{padding:72px 0 40px;position:relative}
+.hero-title{
+  font-family:var(--font-d);font-size:clamp(2.1rem,5vw,3.1rem);
+  line-height:1.15;color:var(--fg);margin-bottom:12px;
+}
+.hero-sub{
+  font-size:1.05rem;color:var(--muted);font-weight:300;
+  max-width:480px;line-height:1.6;margin-bottom:36px;
+}
+.hero-glow{
+  position:absolute;top:-40px;left:-60px;width:300px;height:300px;
+  background:radial-gradient(circle,var(--accent-glow) 0%,transparent 70%);
+  pointer-events:none;z-index:-1;
+}
+
+/* ── Spectrum Widget ── */
+.spectrum{margin:0 0 40px;position:relative}
+.spectrum-labels{display:flex;justify-content:space-between;margin-bottom:8px}
+.spectrum-labels span{font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;font-weight:600}
+.spectrum-label-left{color:var(--teal)}
+.spectrum-label-right{color:var(--accent)}
+.spectrum-track{
+  height:6px;border-radius:3px;position:relative;overflow:hidden;
+  background:linear-gradient(90deg,var(--teal),var(--muted) 48%,var(--accent));
+}
+.spectrum-marker{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(45deg);
+  width:14px;height:14px;background:var(--fg);border-radius:2px;
+  box-shadow:0 0 12px var(--accent-glow);z-index:2;
+}
+.spectrum-marker-label{
+  position:absolute;top:22px;left:50%;transform:translateX(-50%);
+  font-size:.68rem;text-transform:uppercase;letter-spacing:.12em;
+  color:var(--accent);white-space:nowrap;font-weight:600;
+}
+.spectrum-sub{display:flex;justify-content:space-between;margin-top:22px}
+.spectrum-sub span{font-size:.68rem;color:var(--muted);font-style:italic}
+
+/* ── Topology Canvas ── */
+.topology-canvas{width:100%;height:160px;border-radius:8px;display:block;margin-bottom:32px}
+
+/* ── Chapter Sections ── */
+.chapter{scroll-margin-top:calc(var(--topbar-h) + 24px);padding-top:48px}
+.chapter:first-of-type{padding-top:0}
+.chapter-head{
+  font-family:var(--font-d);font-size:clamp(1.4rem,3vw,1.8rem);
+  color:var(--fg);margin-bottom:20px;position:relative;
+}
+.chapter-head::after{
+  content:'';display:block;width:40px;height:2px;background:var(--accent);margin-top:10px;
+}
+
+/* ── Typography ── */
+.lede{font-size:1.1rem;line-height:1.7;color:var(--fg);font-weight:300;margin-bottom:24px}
+p{margin-bottom:1.3em;color:var(--fg);font-weight:400}
+p strong{color:var(--accent);font-weight:600}
+h3{font-family:var(--font-d);font-size:1.15rem;margin:1.8em 0 .6em;color:var(--fg)}
+
+/* ── Callout ── */
+.callout{
+  border-left:3px solid var(--accent);background:var(--accent-glow);
+  padding:1.1em 1.4em;margin:2em 0;border-radius:0 6px 6px 0;
+  font-size:.95rem;line-height:1.65;
+}
+.callout.teal{border-color:var(--teal);background:var(--teal-glow)}
+
+/* ── Pullquote ── */
+.pullquote{
+  font-family:var(--font-d);font-size:clamp(1.2rem,2.8vw,1.6rem);
+  text-align:center;margin:2.5em auto;padding:1.4em 0;
+  border-top:2px solid var(--border);border-bottom:2px solid var(--border);
+  max-width:92%;line-height:1.45;color:var(--fg);
+}
+
+/* ── Perspective Snap ── */
+.perspective-snap{
+  font-family:var(--font-d);font-size:clamp(1.4rem,4vw,2rem);
+  text-align:center;margin:3em auto;padding:2em 1em;
+  color:var(--accent);line-height:1.35;position:relative;
+  max-width:94%;
+}
+.perspective-snap::before,.perspective-snap::after{
+  content:'';position:absolute;left:50%;transform:translateX(-50%);
+  width:50px;height:2px;background:var(--accent);
+}
+.perspective-snap::before{top:0}
+.perspective-snap::after{bottom:0}
+
+/* ── Dimensions Table ── */
+.dimensions{margin:2em 0;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.dim-row{display:grid;grid-template-columns:1fr 36px 1fr;border-bottom:1px solid var(--border);align-items:center}
+.dim-row:last-child{border-bottom:none}
+.dim-label{font-family:var(--font-d);font-size:.85rem;padding:10px 14px;background:var(--bg2);color:var(--muted)}
+.dim-old{font-size:.85rem;padding:10px 14px;color:var(--teal);text-align:center}
+.dim-arrow{text-align:center;color:var(--muted);font-size:.8rem}
+.dim-new{font-size:.85rem;padding:10px 14px;color:var(--accent);text-align:center;font-weight:600}
+
+/* ── Share Block ── */
+.share-block{margin:2em 0;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.share-label{font-size:.75rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:600}
+.share-btn{
+  display:inline-flex;align-items:center;gap:6px;padding:8px 16px;
+  border-radius:6px;font-size:.82rem;font-weight:600;cursor:pointer;
+  border:1px solid var(--border);background:var(--bg2);color:var(--fg);
+  transition:background .2s,border-color .2s;
+}
+.share-btn:hover{background:var(--card);border-color:var(--accent)}
+.share-btn i{font-size:.9rem}
+.share-btn.twitter i{color:#1da1f2}
+.share-btn.linkedin i{color:#0a66c2}
+
+/* ── Action / CTA Block ── */
+.action{
+  margin:3em 0 0;padding:2em 1.8em;border-radius:12px;position:relative;overflow:hidden;
+  background:linear-gradient(135deg,var(--bg2) 0%,rgba(212,148,58,.06) 100%);
+  border:1px solid var(--border);
+}
+.action::before{
+  content:'';position:absolute;top:-50%;right:-30%;width:300px;height:300px;
+  background:radial-gradient(circle,var(--accent-glow),transparent 70%);pointer-events:none;
+}
+.action-head{font-family:var(--font-d);font-size:1.3rem;margin-bottom:8px;position:relative}
+.action-sub{font-size:.88rem;color:var(--muted);margin-bottom:1.2em;position:relative}
+.checklist{list-style:none;position:relative}
+.checklist li{
+  padding:8px 0 8px 30px;position:relative;cursor:pointer;
+  font-size:.92rem;transition:color .2s;
+}
+.checklist li::before{
+  content:'';position:absolute;left:0;top:10px;width:16px;height:16px;
+  border:2px solid var(--muted);border-radius:3px;transition:background .2s,border-color .2s;
+}
+.checklist li.checked{color:var(--muted);text-decoration:line-through}
+.checklist li.checked::before{background:var(--accent);border-color:var(--accent)}
+.checklist li.checked::after{
+  content:'';position:absolute;left:4px;top:12px;width:6px;height:3px;
+  border-left:2px solid var(--bg);border-bottom:2px solid var(--bg);
+  transform:rotate(-45deg);
+}
+
+/* ── Footer ── */
+footer{
+  max-width:calc(var(--max) + 260px);margin:0 auto;
+  padding:40px 24px 30px;border-top:1px solid var(--border);
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;
+}
+.footer-home{font-family:var(--font-d);font-size:.9rem;color:var(--muted)}
+.footer-home:hover{color:var(--accent)}
+.footer-refs{font-size:.72rem;color:var(--muted);line-height:1.6;max-width:480px;flex:1 1 300px}
+.footer-refs span{display:block;margin-bottom:2px}
+#back-top{
+  background:none;border:1px solid var(--border);color:var(--muted);
+  padding:8px 14px;border-radius:6px;font-size:.78rem;cursor:pointer;
+  transition:color .2s,border-color .2s;display:flex;align-items:center;gap:6px;
+}
+#back-top:hover{color:var(--accent);border-color:var(--accent)}
+
+/* ── Scrim (mobile overlay) ── */
+#scrim{
+  position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:999;
+  opacity:0;pointer-events:none;transition:opacity .3s;
+}
+#scrim.open{opacity:1;pointer-events:auto}
+
+/* ── Mobile ── */
+@media(max-width:880px){
+  #hamburger{display:block}
+  .wrap{grid-template-columns:1fr;max-width:100%}
+  #rail{
+    position:fixed;top:0;left:0;width:82vw;max-width:320px;height:100vh;
+    background:var(--bg2);z-index:1000;padding:80px 24px 32px;
+    transform:translateX(-100%);transition:transform .3s ease;
+    border-right:1px solid var(--border);overflow-y:auto;
+  }
+  #rail.open{transform:translateX(0)}
+  main{padding:0 20px 40px}
+  .hero{padding:48px 0 28px}
+  .topology-canvas{height:120px}
+  .dim-row{grid-template-columns:1fr;gap:0}
+  .dim-arrow{display:none}
+  .dim-old,.dim-new{text-align:left;padding:6px 14px}
+  .dim-label{padding:8px 14px}
+  footer{max-width:100%;padding:30px 20px 24px}
+}
+
+/* ── Reduced Motion ── */
+@media(prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  html{scroll-behavior:auto}
+  .blob{display:none}
+}
+
+/* ── Scroll Reveal ── */
+.chapter{opacity:0;transform:translateY(18px);transition:opacity .6s ease,transform .6s ease}
+.chapter.visible{opacity:1;transform:translateY(0)}
+@media(prefers-reduced-motion:reduce){
+  .chapter{opacity:1;transform:none}
+}
+</style>
+</head>
+<body>
+
+<!-- Progress Bar -->
+<div id="progress" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+
+<!-- Ambient Blobs -->
+<div class="blob blob-1" aria-hidden="true"></div>
+<div class="blob blob-2" aria-hidden="true"></div>
+
+<!-- Scrim -->
+<div id="scrim" aria-hidden="true"></div>
+
+<!-- Topbar -->
+<header id="topbar">
+  <button id="hamburger" aria-label="Open navigation"><i class="fas fa-bars"></i></button>
+  <a class="topbar-home" href="https://iggym.github.io/cogitatio-elegans/">Home</a>
+  <span class="topbar-sep" aria-hidden="true">/</span>
+  <span class="topbar-breadcrumb">The Inversion Point</span>
+  <span class="topbar-meta"><i class="far fa-clock"></i> 6 min read</span>
+</header>
+
+<!-- Layout -->
+<div class="wrap">
+  <!-- Sidebar Rail -->
+  <nav id="rail" aria-label="Article sections">
+    <ul>
+      <li data-num="01"><a href="#s1">Close To Home</a></li>
+      <li data-num="02"><a href="#s2">Tail Wags Dog</a></li>
+      <li data-num="03"><a href="#s3">Connect The Dots</a></li>
+      <li data-num="04"><a href="#s4">Silver Lining</a></li>
+      <li data-num="05"><a href="#s5">Take The Reins</a></li>
+      <li data-num="06"><a href="#s6">First Things First</a></li>
+    </ul>
+  </nav>
+
+  <!-- Main Content -->
+  <main>
+    <article>
+
+      <!-- Hero -->
+      <header class="hero">
+        <div class="hero-glow" aria-hidden="true"></div>
+        <h1 class="hero-title">The Inversion Point</h1>
+        <p class="hero-sub">From Cloud Topology to Memory Topology — how decentralized client-side infrastructure is dissolving the boundary between "user" and "server."</p>
+
+        <!-- Spectrum Widget -->
+        <div class="spectrum" aria-label="Conceptual shift spectrum from Cloud Topology to Memory Topology">
+          <div class="spectrum-labels">
+            <span class="spectrum-label-left">Cloud Topology</span>
+            <span class="spectrum-label-right">Memory Topology</span>
+          </div>
+          <div class="spectrum-track">
+            <div class="spectrum-marker" aria-hidden="true"></div>
+            <span class="spectrum-marker-label">Inversion Point</span>
+          </div>
+          <div class="spectrum-sub">
+            <span>Centralized origin</span>
+            <span>Distributed origin</span>
+          </div>
+        </div>
+
+        <!-- Topology Canvas -->
+        <canvas class="topology-canvas" id="topoCanvas" aria-hidden="true"></canvas>
+
+        <p class="lede">We still imagine the web as a centralized organism with peripheral limbs. The cloud is the brain; edge computing is just a faster nervous system; client devices are "thin clients" — viewports that borrow intelligence from elsewhere. That model is collapsing. The architecture is inverting.</p>
+      </header>
+
+      <!-- Section 1: Close To Home -->
+      <section class="chapter" id="s1">
+        <h2 class="chapter-head">Close To Home</h2>
+        <p>You're in a basement apartment in Berlin. The Wi-Fi drops — again. You brace for the freeze: the spinning wheel, the unsaved draft, the tiny panic of work held hostage by a router three rooms away.</p>
+        <p>But this time, nothing freezes. Your document saves. Your playlist continues. Your code compiles. The app on your screen doesn't ask permission from a data center in Ireland. It just <em>works</em>.</p>
+        <p>You don't celebrate. You don't even notice. And that silence — the absence of a loading bar — is the sound of an architecture flipping inside out.</p>
+        <div class="callout teal">We've spent two decades optimizing the distance between user and server. We never asked what happens when the distance becomes zero — not because the server moved closer, but because the user's device <em>became</em> the infrastructure.</div>
+      </section>
+
+      <!-- Section 2: Tail Wags Dog -->
+      <section class="chapter" id="s2">
+        <h2 class="chapter-head">Tail Wags Dog</h2>
+        <p id="bold-reframe">The client is no longer an endpoint <em>of</em> the network. It is becoming the <em>origin</em> of the network.</p>
+        <p>For twenty years, we've treated decentralization as an optimization problem: "How do we get data closer to the user?" Edge computing, CDNs, regional caches — all variations on the same theme. The cloud is the brain; the edge is a faster nervous system; your phone is a fingertip that touches the world.</p>
+        <p>But what if the fingertip is growing its own brain?</p>
+        <p>With decentralized applications and edge-native computation, silicon and local memory are no longer supporting actors. They are the infrastructure itself. The question stops being "How do we bring the cloud closer?" and becomes something far more unsettling: <strong>What happens when the user's device is no longer a consumer of topology, but a generator of it?</strong></p>
+        <p>In this frame, the "edge" is not the boundary of the cloud. It is the center of gravity. The cloud does not shrink; it transforms into a synchronization and archival layer for a mesh that is already computing, remembering, and deciding on local silicon.</p>
+
+        <!-- Share Block -->
+        <div class="share-block">
+          <span class="share-label">Share this reframe</span>
+          <a class="share-btn twitter" id="shareX" href="#" target="_blank" rel="noopener" aria-label="Share on X">
+            <i class="fab fa-x-twitter"></i> Post
+          </a>
+          <a class="share-btn linkedin" id="shareLi" href="#" target="_blank" rel="noopener" aria-label="Share on LinkedIn">
+            <i class="fab fa-linkedin-in"></i> Share
+          </a>
+        </div>
+      </section>
+
+      <!-- Section 3: Connect The Dots -->
+      <section class="chapter" id="s3">
+        <h2 class="chapter-head">Connect The Dots</h2>
+        <p>Three shifts, hidden in plain sight, rewiring the architecture from underneath us:</p>
+
+        <h3>Unit of Scale</h3>
+        <p>We used to measure the web in data centers and regions. Now the unit of scale is the device in your pocket. Apple's Neural Engine processes 15.8 trillion operations per second on silicon that fits in your jeans. WebAssembly runs at near-native speed inside a browser tab. SQLite databases live inside progressive web apps. These aren't toys. They're the building blocks of a new topology.</p>
+
+        <h3>Flow of Intelligence</h3>
+        <p>Intelligence used to flow downward: from cloud to edge to client. Now it flows laterally, across a mesh of sovereign nodes. The cloud doesn't disappear — it changes jobs. From origin to backup. From brain to hippocampus: filing memories away, not thinking in real time.</p>
+
+        <h3>Identity of the Client</h3>
+        <p>The "client" was always defined by what it lacked: no storage, no compute, no memory of its own. That definition is collapsing. When a browser can run a local language model, when a phone can resolve a CRDT conflict without phoning home, the client is no longer a terminal. It's a node. It produces topology. It doesn't just consume it.</p>
+
+        <!-- Dimensions Table -->
+        <div class="dimensions" role="table" aria-label="Architecture shift comparison">
+          <div class="dim-row" role="row">
+            <div class="dim-label" role="columnheader">Unit of Scale</div>
+            <div class="dim-arrow" aria-hidden="true"><i class="fas fa-arrow-right"></i></div>
+            <div class="dim-old" role="cell">Data center / Region</div>
+            <div class="dim-new" role="cell">Client silicon / Local memory</div>
+          </div>
+          <div class="dim-row" role="row">
+            <div class="dim-label" role="columnheader">Flow of Intelligence</div>
+            <div class="dim-arrow" aria-hidden="true"><i class="fas fa-arrow-right"></i></div>
+            <div class="dim-old" role="cell">Down from center</div>
+            <div class="dim-new" role="cell">Lateral across mesh</div>
+          </div>
+          <div class="dim-row" role="row">
+            <div class="dim-label" role="columnheader">Identity of "Client"</div>
+            <div class="dim-arrow" aria-hidden="true"><i class="fas fa-arrow-right"></i></div>
+            <div class="dim-old" role="cell">Terminal / Consumer</div>
+            <div class="dim-new" role="cell">Infrastructure node / Producer</div>
+          </div>
+        </div>
+
+        <!-- Perspective Snap -->
+        <blockquote class="perspective-snap">
+          The topology of the web stops being mapped by server locations and starts being mapped by memory states distributed across billions of sovereign nodes.
+        </blockquote>
+      </section>
+
+      <!-- Section 4: Silver Lining -->
+      <section class="chapter" id="s4">
+        <h2 class="chapter-head">Silver Lining</h2>
+        <p>Let's be honest about what this doesn't mean.</p>
+        <p>It doesn't mean the cloud evaporates. Amazon isn't going out of business. The massive compute required for training foundational models, the archival storage for petabytes of data, the coordination of global state — these still need centralized infrastructure. The cloud doesn't shrink; it changes jobs. From origin to synchronization layer. From brain to hippocampus — filing memories away, not thinking in real time.</p>
+        <p>It also doesn't mean every device is ready. A Raspberry Pi is not a data center. Battery life is finite. Storage is limited. The gap between "my phone can run a small model" and "my phone can replace a GPU cluster" is measured in orders of magnitude.</p>
+        <div class="callout">But the trajectory is unmistakable. CRDTs — conflict-free replicated data types — let distributed nodes agree on state without a central arbiter. WebAssembly brings near-native performance to the browser. Local-first software frameworks like Electric SQL and Jazz are turning "sync when you can" from a hack into an architecture. The Apple Neural Engine is proof that consumer silicon can shoulder real computational weight.</div>
+        <p>The inversion point isn't a destination. It's the moment the center of gravity shifts — and you realize it already shifted while you were optimizing the old map.</p>
+      </section>
+
+      <!-- Section 5: Take The Reins -->
+      <section class="chapter" id="s5">
+        <h2 class="chapter-head">Take The Reins</h2>
+        <p>This shift isn't something happening <em>to</em> you. It's something you can participate in — starting now.</p>
+        <p>If you build software, you have a choice every time you reach for a server round-trip. Ask: does this computation need to happen elsewhere? Or could it resolve here, on the device that's already in the user's hands? The tools exist: local-first databases like Electric SQL and Jazz, on-device ML runtimes like TensorFlow Lite and ONNX Runtime, peer-to-peer sync protocols like Automerge and Yjs.</p>
+        <p>If you're a product designer, you can stop designing for the "connected" state and start designing for the "sovereign" state. What does your app feel like when the network is optional instead of mandatory? What happens to your UX when the user's data is theirs — always available, always fast, always private?</p>
+        <p>If you're a user, you can notice. The next time an app works offline, don't just be grateful. Recognize it as a signal of a new architecture. The next time an app forces you to wait for a server, feel the friction. That friction is the old world.</p>
+        <div class="callout teal">The cloud does not shrink; it transforms into a synchronization and archival layer for a mesh that is already computing, remembering, and deciding on local silicon. Your job is to build for the mesh — not the mainframe.</div>
+      </section>
+
+      <!-- Section 6: First Things First (CTA) -->
+      <section class="chapter" id="s6">
+        <h2 class="chapter-head">First Things First</h2>
+        <p>Open your current project. Find one data flow that assumes a server round-trip — a fetch, a save, a permission check. Sketch what it would look like if that data lived and resolved locally first, syncing only when the network allowed.</p>
+        <p>You don't need to build it. You just need to see it. That sketch is the first line of the new map.</p>
+
+        <div class="action">
+          <h3 class="action-head">Your 24-Hour Shift</h3>
+          <p class="action-sub">One project. One data flow. One new mental model.</p>
+          <ul class="checklist" role="list">
+            <li role="listitem" tabindex="0">Identify one server-dependent data flow in your current project</li>
+            <li role="listitem" tabindex="0">Sketch the local-first version on paper or a whiteboard</li>
+            <li role="listitem" tabindex="0">Note what data syncs and when — and what never needs to</li>
+            <li role="listitem" tabindex="0">Compare the two architectures: latency, privacy, resilience</li>
+          </ul>
+        </div>
+      </section>
+
+    </article>
+  </main>
+</div>
+
+<!-- Footer -->
+<footer>
+  <a class="footer-home" href="https://iggym.github.io/cogitatio-elegans/">Home</a>
+  <div class="footer-refs">
+    <span>References: Apple Neural Engine (15.8 TOPS, A17 Pro); CRDTs via Automerge & Yjs;</span>
+    <span>WebAssembly (W3C Rec); Electric SQL & Jazz (local-first frameworks);</span>
+    <span>TensorFlow Lite & ONNX Runtime (on-device ML); SQLite in the browser (WA-sqlite).</span>
+  </div>
+  <button id="back-top" aria-label="Back to top"><i class="fas fa-arrow-up"></i> Top</button>
+</footer>
+
+<script>
+/* ── Progress Bar ── */
+const progressBar = document.getElementById('progress');
+function updateProgress() {
+  const scrollTop = window.scrollY;
+  const docHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+  const pct = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+  progressBar.style.width = pct + '%';
+  progressBar.setAttribute('aria-valuenow', Math.round(pct));
+}
+window.addEventListener('scroll', updateProgress, { passive: true });
+
+/* ── Scrollspy ── */
+const chapters = document.querySelectorAll('.chapter');
+const railLinks = document.querySelectorAll('#rail a');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const id = entry.target.id;
+      railLinks.forEach(link => {
+        link.classList.toggle('active', link.getAttribute('href') === '#' + id);
+      });
+    }
+  });
+}, { rootMargin: '-15% 0px -70% 0px' });
+chapters.forEach(ch => observer.observe(ch));
+
+/* ── Scroll Reveal ── */
+const revealObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+      revealObserver.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.08 });
+chapters.forEach(ch => revealObserver.observe(ch));
+
+/* ── Mobile Menu ── */
+const hamburger = document.getElementById('hamburger');
+const rail = document.getElementById('rail');
+const scrim = document.getElementById('scrim');
+
+function openDrawer() {
+  rail.classList.add('open');
+  scrim.classList.add('open');
+  hamburger.setAttribute('aria-expanded', 'true');
+}
+function closeDrawer() {
+  rail.classList.remove('open');
+  scrim.classList.remove('open');
+  hamburger.setAttribute('aria-expanded', 'false');
+}
+
+hamburger.addEventListener('click', () => {
+  rail.classList.contains('open') ? closeDrawer() : openDrawer();
+});
+scrim.addEventListener('click', closeDrawer);
+
+/* Close drawer on rail link click (mobile) */
+railLinks.forEach(link => {
+  link.addEventListener('click', () => {
+    if (window.innerWidth <= 880) closeDrawer();
+  });
+});
+
+/* ── Dynamic Social Share ── */
+const reframeEl = document.getElementById('bold-reframe');
+const shareXBtn = document.getElementById('shareX');
+const shareLiBtn = document.getElementById('shareLi');
+
+function setupShare() {
+  const text = reframeEl ? reframeEl.textContent.trim() : '';
+  const url = window.location.href;
+  const encodedText = encodeURIComponent(text);
+  const encodedUrl = encodeURIComponent(url);
+
+  shareXBtn.href = 'https://twitter.com/intent/tweet?text=' + encodedText + '&url=' + encodedUrl;
+  shareLiBtn.href = 'https://www.linkedin.com/sharing/share-offsite/?url=' + encodedUrl;
+}
+setupShare();
+
+/* ── Checklist Interactivity ── */
+document.querySelectorAll('.checklist li').forEach(li => {
+  li.addEventListener('click', () => li.classList.toggle('checked'));
+  li.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      li.classList.toggle('checked');
+    }
+  });
+});
+
+/* ── Back to Top ── */
+document.getElementById('back-top').addEventListener('click', () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+/* ── Topology Canvas Visualization ── */
+(function() {
+  const canvas = document.getElementById('topoCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  let W, H, nodes = [], connections = [], time = 0, raf;
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function resize() {
+    const rect = canvas.getBoundingClientRect();
+    W = rect.width;
+    H = rect.height;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function init() {
+    resize();
+    nodes = [];
+    connections = [];
+
+    /* Cloud topology (left side) — hub nodes */
+    const h1 = { x: W * 0.12, y: H * 0.5, r: 9, type: 'hub' };
+    const h2 = { x: W * 0.26, y: H * 0.38, r: 7, type: 'hub' };
+    nodes.push(h1, h2);
+
+    /* Client nodes around hubs */
+    [h1, h2].forEach((hub, hi) => {
+      const count = hi === 0 ? 7 : 5;
+      for (let i = 0; i < count; i++) {
+        const angle = (i / count) * Math.PI * 2 + hi * 0.5;
+        const dist = 22 + (i % 3) * 8;
+        const n = {
+          x: hub.x + Math.cos(angle) * dist,
+          y: hub.y + Math.sin(angle) * dist,
+          r: 2.5, type: 'client', hubIdx: hi
+        };
+        nodes.push(n);
+        connections.push({ from: hub, to: n, type: 'star' });
+      }
+    });
+
+    /* Mesh topology (right side) — peer nodes */
+    const peers = [];
+    for (let i = 0; i < 16; i++) {
+      const px = W * 0.58 + (i % 4) * (W * 0.1) + (Math.sin(i * 1.7) * 12);
+      const py = H * 0.12 + Math.floor(i / 4) * (H * 0.22) + (Math.cos(i * 2.3) * 8);
+      const n = { x: px, y: py, r: 3.5 + (i % 3), type: 'peer' };
+      nodes.push(n);
+      peers.push(n);
+    }
+
+    /* Mesh connections */
+    for (let i = 0; i < peers.length; i++) {
+      for (let j = i + 1; j < peers.length; j++) {
+        const dx = peers[i].x - peers[j].x;
+        const dy = peers[i].y - peers[j].y;
+        if (Math.sqrt(dx * dx + dy * dy) < W * 0.14) {
+          connections.push({ from: peers[i], to: peers[j], type: 'mesh' });
+        }
+      }
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+
+    /* Background gradient */
+    const grad = ctx.createLinearGradient(0, 0, W, 0);
+    grad.addColorStop(0, 'rgba(74,158,142,0.06)');
+    grad.addColorStop(0.45, 'rgba(14,14,12,0.4)');
+    grad.addColorStop(0.55, 'rgba(14,14,12,0.4)');
+    grad.addColorStop(1, 'rgba(212,148,58,0.06)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+
+    /* Divider line */
+    ctx.save();
+    ctx.setLineDash([3, 4]);
+    ctx.beginPath();
+    ctx.moveTo(W * 0.47, 8);
+    ctx.lineTo(W * 0.47, H - 8);
+    ctx.strokeStyle = 'rgba(230,221,208,0.12)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.restore();
+
+    /* Connections */
+    connections.forEach(c => {
+      const pulse = reducedMotion ? 1 : (Math.sin(time * 0.015 + c.from.x * 0.01) * 0.15 + 0.85);
+      ctx.beginPath();
+      ctx.moveTo(c.from.x, c.from.y);
+      ctx.lineTo(c.to.x, c.to.y);
+      ctx.strokeStyle = c.type === 'mesh'
+        ? 'rgba(212,148,58,' + (0.12 * pulse) + ')'
+        : 'rgba(74,158,142,' + (0.18 * pulse) + ')';
+      ctx.lineWidth = 0.6;
+      ctx.stroke();
+    });
+
+    /* Nodes */
+    nodes.forEach(n => {
+      const pulse = reducedMotion ? 1 : (Math.sin(time * 0.025 + n.x * 0.02 + n.y * 0.01) * 0.2 + 0.8);
+      const r = Math.max(1, n.r * pulse);
+
+      /* Glow */
+      if (n.type === 'hub' || n.type === 'peer') {
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, r + 6, 0, Math.PI * 2);
+        ctx.fillStyle = n.type === 'hub'
+          ? 'rgba(74,158,142,0.06)'
+          : 'rgba(212,148,58,0.06)';
+        ctx.fill();
+      }
+
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+      if (n.type === 'hub') {
+        ctx.fillStyle = 'rgba(74,158,142,0.85)';
+      } else if (n.type === 'peer') {
+        ctx.fillStyle = 'rgba(212,148,58,0.7)';
+      } else {
+        ctx.fillStyle = 'rgba(74,158,142,0.35)';
+      }
+      ctx.fill();
+    });
+
+    /* Labels */
+    ctx.font = '600 ' + Math.max(9, W * 0.018) + 'px "Crimson Pro", serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(74,158,142,0.5)';
+    ctx.fillText('CLOUD ORIGIN', W * 0.18, H - 10);
+    ctx.fillStyle = 'rgba(212,148,58,0.5)';
+    ctx.fillText('MEMORY ORIGIN', W * 0.78, H - 10);
+
+    time++;
+    if (!reducedMotion) {
+      raf = requestAnimationFrame(draw);
+    }
+  }
+
+  init();
+  if (reducedMotion) {
+    draw();
+  } else {
+    draw();
+  }
+
+  /* Resize handler */
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      cancelAnimationFrame(raf);
+      init();
+      draw();
+    }, 200);
+  });
+})();
+</script>
+</body>
+</html>
