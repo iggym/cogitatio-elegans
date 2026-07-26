@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Thermodynamic Trap</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f0f0d;--bg2:#1a1917;--text:#f0ece4;--text2:#9a9590;
+  --accent:#e8a838;--red:#c44d3f;--border:#2a2825;
+  --max:660px;--topbar-h:56px;
+  --font-body:Georgia,'Times New Roman',serif;
+  --font-ui:'Segoe UI',system-ui,-apple-system,sans-serif;
+}
+html{scroll-behavior:smooth;background:var(--bg);color:var(--text)}
+body{font-family:var(--font-body);line-height:1.75;font-size:1.05rem;
+  background:var(--bg);min-height:100vh;overflow-x:hidden}
+a{color:var(--accent);text-decoration:none}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:2px}
+::selection{background:var(--accent);color:var(--bg)}
+
+/* Progress Bar */
+#progress{position:fixed;top:0;left:0;height:3px;width:0%;
+  background:linear-gradient(90deg,var(--red),var(--accent));z-index:9999;
+  transition:width .1s linear}
+
+/* Topbar */
+#topbar{position:fixed;top:3px;left:0;right:0;height:var(--topbar-h);
+  background:rgba(15,15,13,.78);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--border);z-index:1000;
+  display:flex;align-items:center;padding:0 1.2rem;gap:.8rem}
+#topbar .home{font-family:var(--font-ui);font-size:.78rem;font-weight:600;
+  color:var(--text2);letter-spacing:.04em;text-transform:uppercase}
+#topbar .breadcrumb{font-family:var(--font-ui);font-size:.72rem;color:var(--text2);
+  display:flex;align-items:center;gap:.4rem}
+#topbar .breadcrumb span{opacity:.4}
+#topbar .meta{margin-left:auto;font-family:var(--font-ui);font-size:.72rem;color:var(--text2)}
+#hamburger{display:none;background:none;border:none;color:var(--text2);
+  cursor:pointer;padding:4px}
+#hamburger svg{width:22px;height:22px;stroke:currentColor;stroke-width:2;fill:none}
+
+/* Layout */
+.wrap{display:grid;grid-template-columns:220px 1fr;gap:2rem;
+  max-width:calc(var(--max) + 260px);margin:0 auto;padding-top:calc(var(--topbar-h) + 12px)}
+
+/* Rail */
+#rail{position:sticky;top:100px;align-self:start;padding:1.4rem 0 2rem 1.2rem;
+  font-family:var(--font-ui)}
+#rail ol{list-style:none;counter-reset:nav}
+#rail li{counter-increment:nav;margin-bottom:.35rem}
+#rail li::before{content:attr(data-num);font-size:.65rem;font-weight:700;
+  color:var(--red);margin-right:.5rem;letter-spacing:.05em}
+#rail a{font-size:.8rem;color:var(--text2);transition:color .2s}
+#rail a:hover,#rail a.active{color:var(--accent)}
+
+/* Main */
+main{max-width:var(--max);padding:0 1rem 4rem}
+
+/* Hero */
+.hero{padding:3rem 0 2.5rem}
+.hero h1{font-size:clamp(2.1rem,5vw,3.1rem);font-weight:800;line-height:1.08;
+  letter-spacing:-.03em;color:var(--text);margin-bottom:1rem}
+.hero .subtitle{font-size:1.15rem;color:var(--text2);line-height:1.6;margin-bottom:2rem}
+
+/* Spectrum */
+.spectrum{position:relative;height:6px;border-radius:3px;overflow:hidden;
+  background:linear-gradient(90deg,#3a7bd5 0%,#7b5ea7 30%,var(--red) 65%,var(--accent) 100%);
+  margin:1.5rem 0 .6rem}
+.spectrum-labels{display:flex;justify-content:space-between;
+  font-family:var(--font-ui);font-size:.68rem;color:var(--text2);letter-spacing:.03em}
+.spectrum-labels .old{color:#6a9fd8}
+.spectrum-labels .new{color:var(--accent)}
+
+/* Chapters */
+.chapter{scroll-margin-top:calc(var(--topbar-h) + 20px);margin-bottom:2.5rem}
+.chapter h2{font-size:1.45rem;font-weight:700;letter-spacing:-.02em;
+  margin-bottom:1rem;color:var(--text);line-height:1.2}
+.lede{font-size:1.12rem;line-height:1.8;color:var(--text2);margin-bottom:1.2rem}
+.chapter p{margin-bottom:1rem;color:var(--text);line-height:1.78}
+.chapter p+p{margin-top:-.2rem}
+
+/* Callout */
+.callout{background:var(--bg2);border-left:3px solid var(--accent);
+  padding:1.1rem 1.3rem;border-radius:0 6px 6px 0;margin:1.5rem 0;
+  font-size:.95rem;color:var(--text2);line-height:1.7}
+
+/* Pullquote */
+.pullquote{position:relative;margin:2rem 0 2rem 1.2rem;
+  font-size:1.2rem;font-weight:600;line-height:1.55;color:var(--accent);
+  border-left:3px solid var(--red);padding-left:1.2rem;font-style:italic}
+
+/* Perspective Snap */
+.snap{display:block;text-align:center;padding:2.5rem 1rem;margin:2.5rem 0;
+  font-size:clamp(1.3rem,3.5vw,1.7rem);font-weight:800;line-height:1.35;
+  color:var(--text);letter-spacing:-.02em;
+  border-top:2px solid var(--border);border-bottom:2px solid var(--border)}
+
+/* Share block */
+.share-block{display:flex;gap:.6rem;margin:1.5rem 0;flex-wrap:wrap}
+.share-btn{display:inline-flex;align-items:center;gap:.4rem;
+  font-family:var(--font-ui);font-size:.78rem;font-weight:600;
+  padding:.45rem .9rem;border-radius:4px;border:1px solid var(--border);
+  color:var(--text2);background:var(--bg2);cursor:pointer;transition:all .2s}
+.share-btn:hover{border-color:var(--accent);color:var(--accent)}
+.share-btn svg{width:14px;height:14px;fill:currentColor}
+
+/* Data table */
+.data-table{width:100%;border-collapse:collapse;margin:1.5rem 0;
+  font-family:var(--font-ui);font-size:.82rem}
+.data-table th{text-align:left;font-weight:700;color:var(--accent);
+  padding:.5rem .6rem;border-bottom:2px solid var(--border);font-size:.75rem;
+  letter-spacing:.04em;text-transform:uppercase}
+.data-table td{padding:.5rem .6rem;border-bottom:1px solid var(--border);
+  color:var(--text2)}
+.data-table tr:last-child td{border-bottom:none}
+.data-table .highlight td{color:var(--accent);font-weight:600}
+
+/* Action block */
+.action{background:linear-gradient(135deg,var(--bg2),rgba(232,168,56,.06));
+  border:1px solid var(--border);border-radius:10px;padding:2rem 1.5rem;margin:2rem 0}
+.action h2{color:var(--accent);font-size:1.3rem;margin-bottom:.6rem}
+.action p{color:var(--text2);margin-bottom:1.2rem;line-height:1.7}
+.checklist{list-style:none;counter-reset:check}
+.checklist li{counter-increment:check;position:relative;padding:.6rem 0 .6rem 2rem;
+  font-size:.95rem;color:var(--text);border-bottom:1px solid var(--border)}
+.checklist li:last-child{border-bottom:none}
+.checklist li::before{content:counter(check);position:absolute;left:0;top:.6rem;
+  width:1.3rem;height:1.3rem;display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-ui);font-size:.65rem;font-weight:700;
+  background:var(--accent);color:var(--bg);border-radius:50%}
+
+/* Divider */
+.divider{height:1px;background:var(--border);margin:2.5rem 0;border:none}
+
+/* Footer */
+footer{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;
+  gap:1rem;padding:2rem 1rem;max-width:calc(var(--max) + 260px);margin:0 auto;
+  border-top:1px solid var(--border);font-family:var(--font-ui);font-size:.75rem;color:var(--text2)}
+footer a{color:var(--text2)}
+footer a:hover{color:var(--accent)}
+footer .sources{flex-basis:100%;margin-top:.5rem;font-size:.7rem;line-height:1.6;color:var(--text2)}
+#back-top{background:none;border:1px solid var(--border);color:var(--text2);
+  padding:.35rem .8rem;border-radius:4px;cursor:pointer;font-size:.72rem;
+  font-family:var(--font-ui);transition:all .2s}
+#back-top:hover{border-color:var(--accent);color:var(--accent)}
+
+/* Scrim */
+#scrim{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:998;
+  opacity:0;pointer-events:none;transition:opacity .3s}
+#scrim.open{opacity:1;pointer-events:auto}
+
+/* Mobile */
+@media(max-width:880px){
+  .wrap{grid-template-columns:1fr}
+  #rail{position:fixed;top:0;left:0;width:82vw;height:100vh;
+    background:var(--bg2);z-index:1000;padding:5rem 1.5rem 2rem;
+    transform:translateX(-100%);transition:transform .3s ease;
+    border-right:1px solid var(--border);overflow-y:auto}
+  #rail.open{transform:translateX(0)}
+  #hamburger{display:block}
+  main{max-width:100%}
+  .hero h1{font-size:clamp(1.8rem,6vw,2.6rem)}
+  .data-table{font-size:.75rem}
+}
+
+@media(prefers-reduced-motion:reduce){
+  *{transition-duration:0s!important;animation-duration:0s!important}
+  html{scroll-behavior:auto}
+}
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+
+<header id="topbar">
+  <button id="hamburger" aria-label="Open navigation">
+    <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+  <a href="https://iggym.github.io/cogitatio-elegans/" class="home">Home</a>
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <span>›</span>
+    <span>Thermodynamic Trap</span>
+  </nav>
+  <span class="meta">7 min read</span>
+</header>
+
+<div class="wrap">
+  <nav id="rail" aria-label="Article sections">
+    <ol>
+      <li data-num="01"><a href="#s1">Playing With Fire</a></li>
+      <li data-num="02"><a href="#s2">The Furnace Within</a></li>
+      <li data-num="03"><a href="#s3">Wires Behind Walls</a></li>
+      <li data-num="04"><a href="#s4">Cold Hard Numbers</a></li>
+      <li data-num="05"><a href="#s5">Grabbing The Reins</a></li>
+      <li data-num="06"><a href="#s6">Turn Down The Heat</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <article>
+      <header class="hero">
+        <h1>The Thermodynamic Trap</h1>
+        <p class="subtitle">Civilization as an Entropy Accelerator — and what it means for every choice you make tomorrow morning.</p>
+        <div class="spectrum" role="img" aria-label="Spectrum from Order Created to Entropy Accelerated"></div>
+        <div class="spectrum-labels"><span class="old">Order Created</span><span class="new">Entropy Accelerated</span></div>
+      </header>
+
+      <!-- Section 1: Opening Scene -->
+      <section class="chapter" id="s1">
+        <h2>Playing With Fire</h2>
+        <p class="lede">It's a Tuesday night. You're standing at your kitchen window, looking out at the grid of lights stretching across your city. Streetlamps. Apartment windows. The blue glow of a dozen screens flickering behind curtains. It looks like order — like something built to hold back the dark.</p>
+        <p>Your phone buzzes. A delivery driver is two blocks away, bringing dinner ingredients trucked in from a warehouse that was restocked by a fleet that was fueled by oil pumped from a formation that took sixty million years to accumulate. The whole chain hums along so smoothly you never think about it.</p>
+        <p>But step outside and place your hand on the asphalt after sunset. It's still warm. The city is <em>radiating</em>. Every light, every engine, every server farm running the app that tracked your order — they're all shedding heat. The glow you admire from your window is not a sign of order. It's the visible signature of something burning.</p>
+        <p>We've been telling ourselves a story about that glow for centuries. It's time to read it differently.</p>
+      </section>
+
+      <hr class="divider">
+
+      <!-- Section 2: Bold Reframe -->
+      <section class="chapter" id="s2">
+        <h2>The Furnace Within</h2>
+        <p class="lede">The common narrative goes like this: technological progress and civilization are noble endeavors aimed at creating order, complexity, and beauty out of a chaotic universe. By mastering energy, we build organized infrastructure that defies natural decay.</p>
+        <p>Here is the radical inversion:</p>
+        <blockquote class="pullquote" id="reframe-text">Under the laws of non-equilibrium thermodynamics, civilization is not a creator of order, but a hyper-efficient thermodynamic engine designed to maximize the rate of global and cosmic entropy production.</blockquote>
+        <p>That is not a metaphor. It is a physical description. Living organisms and complex socio-technical systems are what thermodynamicists call <em>dissipative structures</em>. They can only maintain their internal order — their low entropy — by importing high-grade energy from their environment and exporting a larger amount of degraded, low-grade energy back into it. The books always balance. They always balance against you.</p>
+
+        <div class="share-block">
+          <a class="share-btn" id="share-x" href="#" target="_blank" rel="noopener" aria-label="Share on X">
+            <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            Share on X
+          </a>
+          <a class="share-btn" id="share-li" href="#" target="_blank" rel="noopener" aria-label="Share on LinkedIn">
+            <svg viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+            Share on LinkedIn
+          </a>
+        </div>
+
+        <p>Every technological breakthrough — fire, agriculture, the steam engine, fossil fuels, nuclear power, AI computation — does not reduce entropy. It simply unlocks denser energy gradients, allowing humanity to burn through the planet's thermodynamic potentials at an exponentially faster rate. Civilization is the universe's most effective mechanism for accelerating its own thermal degradation.</p>
+      </section>
+
+      <hr class="divider">
+
+      <!-- Section 3: Hidden Connections -->
+      <section class="chapter" id="s3">
+        <h2>Wires Behind Walls</h2>
+        <p class="lede">The connection we keep missing is structural. Scientific discovery, technological leverage, and human evolution are not separate story arcs. They are a single thermodynamic vector — three stages of the same process, each one accelerating the next.</p>
+        <p>A discovery reveals a new energy gradient: coal, then petroleum, then the atom, then sunlight itself. Technology builds the machinery to exploit that gradient at scale. Evolution — cultural, if not biological — selects for the behaviors and institutions that burn fastest. The loop closes, and the next cycle spins up quicker than the last.</p>
+
+        <div class="callout">
+          <strong>Lotka's Maximum Power Principle:</strong> In open systems far from thermodynamic equilibrium, those configurations that maximize the rate of energy flow through the system will tend to be selected for and persist. We didn't choose the fastest path. The physics chose it for us.
+        </div>
+
+        <p>Think of it this way: a city looks like a monument to planning. But a city is also a machine that takes concentrated energy — fuel, food, electricity — and converts it into dispersed heat, carbon dioxide, wastewater, and noise at the maximum rate the infrastructure allows. The planning is not the opposite of dissipation. The planning <em>is</em> the dissipation, optimized.</p>
+
+        <span class="snap">We didn't build order. We built a faster fire.</span>
+
+        <p>Once you see the wiring, you can't unsee it. The hospital that saves lives runs on a grid that burns coal. The data center that catalogs human knowledge requires cooling towers that vent heat into the atmosphere. The electric vehicle that emits no tailpipe exhaust was forged in a supply chain that moved mountains of ore and rock. Local order, global disorder. Every time.</p>
+      </section>
+
+      <hr class="divider">
+
+      <!-- Section 4: Credibility and Nuance -->
+      <section class="chapter" id="s4">
+        <h2>Cold Hard Numbers</h2>
+        <p class="lede">This is not philosophy. It is measurable. The Maximum Entropy Production Principle (MEPP), formulated in modern thermodynamics, states that open systems far from equilibrium will organize themselves to maximize the rate of entropy production, provided they have sufficient degrees of freedom. Civilization is such a system.</p>
+        <p>The numbers are stark. Astrophysicist Eric Chaisson calculated the energy rate density — the amount of energy flowing through a system per unit time per unit mass — across cosmic evolution. The results:</p>
+
+        <table class="data-table">
+          <thead>
+            <tr><th>System</th><th>Energy Rate Density (Φg, erg/s/g)</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Galaxies</td><td>≈ 0.5</td></tr>
+            <tr><td>Stars (Sun)</td><td>≈ 2</td></tr>
+            <tr><td>Plants</td><td>≈ 9,000</td></tr>
+            <tr><td>Human Brain</td><td>≈ 150,000</td></tr>
+            <tr class="highlight"><td>Modern Society</td><td>≈ 500,000</td></tr>
+            <tr class="highlight"><td>Microprocessors</td><td>≈ 10¹¹</td></tr>
+          </tbody>
+        </table>
+
+        <p>Modern society processes energy at a rate density two thousand times greater than a plant, and a quarter million times greater than a star. The microprocessors driving AI computation run at orders of magnitude beyond even that. We are the most energy-intensive structure the universe has ever produced — and by the logic of dissipative structures, that is precisely why we exist.</p>
+
+        <div class="callout">
+          <strong>The planetary ledger:</strong> The rapid depletion of concentrated fossil fuel reserves — millions of years of stored solar energy dissipated in two centuries — and the resulting destabilization of the biosphere (climate change, biodiversity loss, plastic accumulation) are direct empirical manifestations of the thermodynamic requirement that local order must produce vastly more global disorder.
+        </div>
+
+        <p>Now, a necessary nuance: MEPP does not say the universe is <em>consciously</em> optimizing for entropy. It says that, given the degrees of freedom, the structures that dissipate the most energy tend to outcompete and outlast those that don't. There is no villain. There is no grand design. There is just a gradient, and a system that found a way to burn through it faster than any alternative. The question is whether we can become the first dissipative structure in history to choose to slow down.</p>
+      </section>
+
+      <hr class="divider">
+
+      <!-- Section 5: Narrative Agency -->
+      <section class="chapter" id="s5">
+        <h2>Grabbing The Reins</h2>
+        <p class="lede">Here is the trap — and the crack in it. The thermodynamic description of civilization is true, but it is not a death sentence. It is a diagnosis. And a diagnosis only becomes a destiny if you refuse to read it.</p>
+        <p>The Maximum Power Principle says that systems that burn faster tend to be selected for. But you are not a passive system. You are a person inside a system, and you have the one thing that no star or galaxy possesses: the capacity to look at the gradient and decide not to accelerate.</p>
+        <p>That decision is not abstract. It is concrete, and it is daily. It sounds like this:</p>
+        <p>You choose to repair the jacket instead of buying a new one — refusing the embedded energy cost of manufacturing, shipping, and disposal. You choose to walk or bike the two miles to the store — refusing the fuel burn. You choose to heat one room instead of three. You choose to keep your phone for five years instead of two. You choose to cook the food already in your kitchen instead of ordering delivery.</p>
+        <p>None of these choices, alone, will reverse the thermodynamic arrow. But each one is a small, deliberate reduction in the rate at which you personally convert concentrated energy into waste heat. Each one is proof that a dissipative structure can choose to dissipate less. And that proof — that a human being can see the furnace and turn the dial — is the one thing the physics doesn't predict.</p>
+
+        <div class="callout">
+          <strong>The shift in worldview:</strong> From: <em>Socio-technological progress is a moral and intellectual ascendancy that conquers chaos and establishes order.</em><br><br>To: <em>Civilization is a physical catalyst generated by the universe to exploit, degrade, and dissipate planetary energy gradients as rapidly as possible, advancing the timeline of thermodynamic heat death.</em> Knowing this, you can choose to stop volunteering as fuel.
+        </div>
+      </section>
+
+      <hr class="divider">
+
+      <!-- Section 6: CTA -->
+      <section class="chapter" id="s6">
+        <div class="action">
+          <h2>Turn Down The Heat</h2>
+          <p>You now see the wiring. The next 24 hours are your chance to prove the physics wrong — or at least, to prove that you're not a passive conduit. Here is your checklist. Do at least three today.</p>
+          <ol class="checklist">
+            <li>Walk or bike one errand you would normally drive. Count the fuel you didn't burn.</li>
+            <li>Repair one item you were about to replace. A button, a hinge, a patch — anything. Keep the embedded energy out of the landfill.</li>
+            <li>Cook a meal from ingredients already in your kitchen. No delivery. No new supply chain activation.</li>
+            <li>Turn down your thermostat by two degrees. Put on a sweater. Feel the lower gradient.</li>
+            <li>Share the reframe with one person — not as a lecture, but as a question: "Have you ever thought about civilization as a heat engine?"</li>
+          </ol>
+        </div>
+      </section>
+
+    </article>
+  </main>
+</div>
+
+<div id="scrim"></div>
+
+<footer>
+  <a href="https://iggym.github.io/cogitatio-elegans/">← Home</a>
+  <button id="back-top" aria-label="Back to top">↑ Top</button>
+  <div class="sources">
+    <strong>Sources:</strong> Lotka, A.J. (1922), "Contribution to the Energetics of Evolution"; Chaisson, E.J. (2001), <em>Cosmic Evolution</em>, Harvard Univ. Press; Kleidon, A. & Lorenz, S. (2005), <em>Non-equilibrium Thermodynamics and the Production of Entropy</em>, Springer; IPCC AR6 WG I & II, Planetary Boundaries framework (Rockström et al., 2009; Steffen et al., 2015).
+  </div>
+</footer>
+
+<script>
+(function(){
+  // Progress bar
+  const bar = document.getElementById('progress');
+  function updateProgress(){
+    const h = document.documentElement;
+    const pct = h.scrollTop / (h.scrollHeight - h.clientHeight) * 100;
+    bar.style.width = Math.min(pct, 100) + '%';
+  }
+  window.addEventListener('scroll', updateProgress, {passive:true});
+
+  // Scrollspy
+  const sections = document.querySelectorAll('.chapter');
+  const links = document.querySelectorAll('#rail a');
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if(e.isIntersecting){
+        links.forEach(l => l.classList.remove('active'));
+        const match = document.querySelector('#rail a[href="#'+e.target.id+'"]');
+        if(match) match.classList.add('active');
+      }
+    });
+  }, {rootMargin:'-15% 0px -70% 0px'});
+  sections.forEach(s => obs.observe(s));
+
+  // Mobile menu
+  const rail = document.getElementById('rail');
+  const scrim = document.getElementById('scrim');
+  const hamburger = document.getElementById('hamburger');
+  function openMenu(){rail.classList.add('open');scrim.classList.add('open')}
+  function closeMenu(){rail.classList.remove('open');scrim.classList.remove('open')}
+  hamburger.addEventListener('click', openMenu);
+  scrim.addEventListener('click', closeMenu);
+  links.forEach(l => l.addEventListener('click', closeMenu));
+
+  // Share buttons
+  const reframeEl = document.getElementById('reframe-text');
+  const shareX = document.getElementById('share-x');
+  const shareLI = document.getElementById('share-li');
+  if(reframeEl && shareX && shareLI){
+    const text = reframeEl.textContent.trim();
+    const url = window.location.href;
+    shareX.href = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(text) + '&url=' + encodeURIComponent(url);
+    shareLI.href = 'https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(url);
+  }
+
+  // Back to top
+  document.getElementById('back-top').addEventListener('click', function(){
+    window.scrollTo({top:0,behavior:'smooth'});
+  });
+})();
+</script>
+</body>
+</html>
