@@ -42,6 +42,20 @@
     "slug": "singularity-as-transition.html"
   },
   {
+    "title": "Before the Snap",
+    "description": "The Technological Singularity isn't waiting in the future. It's a pattern that has already reshaped existence six times — and we are its next substrate, not its author.",
+    "category": "singularity",
+    "date": "2026-07-22",
+    "slug": "singularity-happens.html"
+  },
+  {
+    "title": "Strings, Not Solos",
+    "description": "Intelligence isn't locked inside individual skulls. It's distributed, pooled, accumulated. It lives between us.",
+    "category": "intelligence",
+    "date": "2026-07-22",
+    "slug": "intelligence-is-us-not-me.html"
+  },
+  {
     "title": "Silicon and Memory: The Edge Infrastructure Shift",
     "description": "How decentralized client-side applications and edge computing are transforming the topology of modern web architectures.",
     "category": "systems",
