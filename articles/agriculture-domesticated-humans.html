@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Grass Ate You First</title>
+<style>
+  :root{
+    --soil: #17130f;
+    --soil-2: #1f1a14;
+    --grain: #d4a24c;
+    --grain-dim: #8a6a34;
+    --parchment: #ece4d3;
+    --bone: #a89b89;
+    --silicon: #7c8b9c;
+    --rust: #b0503b;
+    --max: 640px;
+    --radius: 3px;
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    *{animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important; scroll-behavior:auto !important;}
+  }
+
+  body{
+    margin:0;
+    background:var(--soil);
+    color:var(--parchment);
+    font-family: Charter, "Iowan Old Style", Georgia, "Times New Roman", serif;
+    line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  a{color:var(--grain);}
+  a:focus-visible, button:focus-visible{
+    outline: 2px solid var(--grain);
+    outline-offset: 3px;
+  }
+
+  ::selection{background:var(--grain-dim); color:var(--soil);}
+
+  /* Progress bar */
+  #progress{
+    position:fixed; top:0; left:0; height:3px; width:0%;
+    background: linear-gradient(90deg, var(--rust), var(--grain));
+    z-index:1100;
+    transition: width 80ms linear;
+  }
+
+  /* Topbar */
+  #topbar{
+    position:fixed; top:0; left:0; right:0; z-index:1000;
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 14px 20px;
+    background: rgba(23,19,15,0.72);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid rgba(212,162,76,0.15);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.78rem;
+  }
+  #topbar .left{display:flex; align-items:center; gap:14px; min-width:0;}
+  #topbar .home-link{
+    color:var(--parchment); text-decoration:none; font-weight:600;
+    letter-spacing:0.02em; white-space:nowrap;
+  }
+  #topbar .home-link:hover{color:var(--grain);}
+  #topbar .crumb{color:var(--bone); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  #topbar .crumb::before{content:"/"; margin:0 8px; color:var(--grain-dim);}
+  #topbar .meta{color:var(--bone); white-space:nowrap;}
+  #hamburger{
+    display:none; background:none; border:1px solid var(--grain-dim);
+    color:var(--parchment); width:34px; height:34px; border-radius:var(--radius);
+    cursor:pointer; font-size:1rem; line-height:1;
+  }
+
+  /* Layout */
+  .wrap{
+    display:grid;
+    grid-template-columns: 220px 1fr;
+    max-width: calc(var(--max) + 260px);
+    margin: 0 auto;
+    padding: 96px 20px 40px;
+    gap: 40px;
+  }
+
+  #rail{
+    position:sticky; top:100px; align-self:start;
+    max-height: calc(100vh - 130px);
+    overflow-y:auto;
+  }
+  #rail ol{list-style:none; margin:0; padding:0; counter-reset: sec;}
+  #rail li{counter-increment: sec; margin-bottom:2px;}
+  #rail li::before{
+    content: attr(data-num);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: var(--grain-dim);
+    font-size:0.7rem;
+    margin-right:8px;
+  }
+  #rail a{
+    display:block; padding:7px 8px; border-radius:var(--radius);
+    color:var(--bone); text-decoration:none; font-size:0.86rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    border-left: 2px solid transparent;
+  }
+  #rail a:hover{color:var(--parchment);}
+  #rail a.active{
+    color:var(--grain); border-left-color:var(--grain);
+    background: rgba(212,162,76,0.06);
+  }
+
+  main{min-width:0; max-width:var(--max);}
+
+  /* Hero */
+  .hero{padding-bottom:36px; border-bottom:1px solid rgba(212,162,76,0.15);}
+  .hero .eyebrow{
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    color:var(--rust); font-size:0.78rem; letter-spacing:0.08em;
+    text-transform:uppercase; margin-bottom:14px;
+  }
+  h1{
+    font-size:clamp(2.1rem, 5vw, 3.1rem);
+    line-height:1.05; margin:0 0 18px; letter-spacing:-0.01em;
+    font-weight:600;
+  }
+  .hero .dek{
+    font-size:1.15rem; color:var(--bone); max-width:56ch; margin:0 0 28px;
+  }
+
+  /* Spectrum widget */
+  .spectrum{margin: 28px 0 8px;}
+  .spectrum .track{
+    height:8px; border-radius:8px;
+    background: linear-gradient(90deg, var(--silicon) 0%, var(--grain-dim) 45%, var(--rust) 100%);
+    position:relative;
+  }
+  .spectrum .labels{
+    display:flex; justify-content:space-between; margin-top:10px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size:0.72rem; color:var(--bone);
+  }
+  .spectrum .labels span:first-child{color:var(--silicon);}
+  .spectrum .labels span:last-child{color:var(--rust); text-align:right;}
+
+  /* Chapters */
+  section.chapter{
+    padding: 56px 0;
+    scroll-margin-top: 90px;
+    border-bottom: 1px solid rgba(212,162,76,0.08);
+  }
+  section.chapter:last-of-type{border-bottom:none;}
+  section.chapter h2{
+    font-size: clamp(1.5rem, 3.5vw, 2rem);
+    margin: 0 0 22px;
+    font-weight:600;
+    letter-spacing:-0.01em;
+  }
+  .lede{
+    font-size:1.15rem; color:var(--parchment); font-style:italic;
+    border-left:2px solid var(--grain-dim); padding-left:18px;
+    margin: 0 0 24px; color:var(--bone);
+  }
+  p{margin:0 0 20px; font-size:1.04rem;}
+
+  .callout{
+    background: var(--soil-2);
+    border:1px solid rgba(212,162,76,0.18);
+    border-radius: var(--radius);
+    padding: 20px 22px;
+    margin: 28px 0;
+    font-size:0.98rem;
+  }
+  .callout .label{
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size:0.7rem; text-transform:uppercase; letter-spacing:0.08em;
+    color:var(--rust); margin-bottom:8px; display:block;
+  }
+
+  .pullquote{
+    font-family: Charter, Georgia, serif;
+    font-style:italic;
+    font-size:1.3rem;
+    color:var(--grain);
+    border-left:3px solid var(--rust);
+    padding: 4px 0 4px 22px;
+    margin: 32px 0;
+  }
+
+  .snap{
+    font-family: Charter, Georgia, serif;
+    font-weight:600;
+    font-size:clamp(1.4rem, 3.4vw, 1.9rem);
+    text-align:center;
+    color:var(--parchment);
+    margin: 44px auto;
+    max-width: 22ch;
+    line-height:1.3;
+  }
+
+  .divider{
+    width:40px; height:1px; background:var(--grain-dim);
+    margin: 40px auto;
+  }
+
+  /* CTA block */
+  .action{
+    background: linear-gradient(155deg, var(--soil-2), var(--soil));
+    border: 1px solid var(--grain-dim);
+    border-radius: 6px;
+    padding: 32px 26px;
+    margin-top: 20px;
+  }
+  .action h3{
+    font-size:1.4rem; margin:0 0 8px;
+  }
+  .action p{color:var(--bone);}
+  .checklist{list-style:none; margin:20px 0 0; padding:0;}
+  .checklist li{
+    display:flex; gap:10px; align-items:flex-start;
+    padding:10px 0; border-top:1px solid rgba(212,162,76,0.1);
+    font-size:0.98rem;
+  }
+  .checklist li:first-child{border-top:none;}
+  .checklist li::before{content:"→"; color:var(--rust); font-weight:700; flex-shrink:0;}
+
+  footer{
+    max-width: calc(var(--max) + 260px);
+    margin: 0 auto; padding: 40px 20px 80px 260px;
+    border-top:1px solid rgba(212,162,76,0.12);
+    display:flex; flex-wrap:wrap; justify-content:space-between; gap:20px;
+    font-size:0.85rem; color:var(--bone);
+  }
+  footer .sources{max-width:60ch;}
+  footer .sources h4{
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em;
+    color:var(--grain-dim); margin:0 0 10px;
+  }
+  footer .sources ol{margin:0; padding-left:18px;}
+  footer .sources li{margin-bottom:6px;}
+  footer .foot-links{display:flex; flex-direction:column; gap:10px; align-items:flex-end;}
+  #back-top{
+    background:none; border:1px solid var(--grain-dim); color:var(--parchment);
+    padding:8px 14px; border-radius:var(--radius); cursor:pointer;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:0.78rem;
+  }
+  #back-top:hover{border-color:var(--grain); color:var(--grain);}
+
+  /* Mobile drawer */
+  #scrim{
+    position:fixed; inset:0; background:rgba(0,0,0,0.55);
+    opacity:0; pointer-events:none; transition:opacity 180ms ease;
+    z-index:900;
+  }
+  #scrim.open{opacity:1; pointer-events:auto;}
+
+  @media (max-width: 880px){
+    .wrap{grid-template-columns: 1fr; padding-top:84px;}
+    #hamburger{display:block;}
+    #topbar .crumb{display:none;}
+    #rail{
+      position:fixed; top:0; left:0; bottom:0; width:82vw; max-width:320px;
+      background:var(--soil-2); z-index:950;
+      padding: 90px 20px 20px;
+      transform: translateX(-100%);
+      transition: transform 220ms ease;
+      max-height:none;
+      border-right:1px solid var(--grain-dim);
+    }
+    #rail.open{transform:translateX(0);}
+    footer{padding-left:20px; flex-direction:column;}
+    footer .foot-links{align-items:flex-start;}
+  }
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+
+<header id="topbar">
+  <div class="left">
+    <a class="home-link" href="https://iggym.github.io/cogitatio-elegans/">cogitatio elegans</a>
+    <span class="crumb">the grass ate you first</span>
+  </div>
+  <div style="display:flex; align-items:center; gap:14px;">
+    <span class="meta">7 min read</span>
+    <button id="hamburger" aria-label="Open navigation" aria-expanded="false">☰</button>
+  </div>
+</header>
+
+<div id="scrim"></div>
+
+<div class="wrap">
+  <nav id="rail" aria-label="Section navigation">
+    <ol>
+      <li data-num="01"><a href="#s1">Bent Over Grain</a></li>
+      <li data-num="02"><a href="#s2">Who's Farming Whom</a></li>
+      <li data-num="03"><a href="#s3">The Machine Wants A Body</a></li>
+      <li data-num="04"><a href="#s4">What The Bones Say</a></li>
+      <li data-num="05"><a href="#s5">Pick Your Weeds</a></li>
+      <li data-num="06"><a href="#s6">One Weed, Pulled</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <article>
+      <header class="hero">
+        <div class="eyebrow">Perspective Shift</div>
+        <h1>The Grass Ate You First</h1>
+        <p class="dek">You've heard the story where humans tamed wheat and built civilization on top of it. Here's the version evolutionary biology actually tells: the wheat won, and you've been paying rent on that win for twelve thousand years.</p>
+
+        <div class="spectrum">
+          <div class="track"></div>
+          <div class="labels">
+            <span>Old model: you're the farmer</span>
+            <span>New model: you're the field</span>
+          </div>
+        </div>
+      </header>
+
+      <section class="chapter" id="s1">
+        <h2>Bent Over Grain</h2>
+        <p class="lede">Dawn, ten thousand years ago, somewhere in the Levant. A woman kneels over a quern stone, grinding einkorn into flour, the way she did yesterday and will tomorrow.</p>
+        <p>Her spine is already curving from it. Her molars are wearing flat from grit in the flour. She's shorter than her grandmother was, and her grandmother was a hunter-gatherer who stood taller, ate a wider diet, and worked fewer hours a week. Nobody put a gun to this woman's head. She, and thousands like her across separate river valleys, chose this life, generation by generation, one small trade-off at a time. Reliable calories over risky abundance. A roof over a range. And each of those small, reasonable choices added up to something none of them chose at all: a life spent in service of a grass.</p>
+        <p>Swap the quern stone for a laptop and the einkorn for a dashboard, and a few billion of us are still kneeling at 11pm, refreshing something that isn't ours, keeping a different kind of system fed.</p>
+      </section>
+
+      <section class="chapter" id="s2">
+        <h2>Who's Farming Whom</h2>
+        <p>Here's the bold part, and it isn't a metaphor: measured by the only currency evolution actually accepts — copies made, territory held — wheat, maize, and rice are among the most successful organisms that have ever existed, and human beings are the mechanism they used to get there.</p>
+        <p>Evolutionary fitness has nothing to do with comfort, dignity, or a good life. It has one metric: did you replicate, and how far did you spread. Before agriculture, wild wheat lived in scattered patches across the hill country of the Fertile Crescent — a minor grass among thousands, going nowhere.</p>
+        <div class="callout">
+          <span class="label">Reference point</span>
+          Wild einkorn's pre-agricultural range was a narrow band of hillsides in the Middle East. Today its domesticated descendant, <em>Triticum aestivum</em>, covers over 220 million hectares of the planet — an area larger than Western Europe — and every hectare of it is planted, watered, weeded, and harvested entirely by human labor.
+        </div>
+        <p>No other grass on Earth got that deal. It didn't get it by being useful to itself. It got it by being useful to us — or, more precisely, by making itself impossible for us to walk away from once we'd started.</p>
+      </section>
+
+      <section class="chapter" id="s3">
+        <h2>The Machine Wants A Body</h2>
+        <p>Once you can see the inversion in wheat, you start seeing the same shape everywhere. Not humans directing systems for human benefit — humans as the somatic layer a larger system uses to keep itself alive.</p>
+        <p>Peter Haff, a geologist, gave this idea a name: the Technosphere. Not "technology" in the sense of gadgets, but the whole planetary apparatus of roads, grids, servers, shipping lanes, and code — a system with its own mass, its own metabolism, and its own requirements, which happen to run through human bodies the same way wheat's requirements ran through a Natufian woman's spine.</p>
+        <div class="pullquote">The Technosphere doesn't need you to be happy. It needs you to be compliant enough to keep charging your phone.</div>
+        <p class="snap">You did not tame the wheat. The wheat taught you how to kneel.</p>
+        <p>Look at what an individual actually has to do to remain a functioning node in modern life: carry a device that must be fed electricity daily, respond to its notifications on a schedule the device sets, maintain digital infrastructure that generates no personal nourishment at all. We call this "staying connected." A Natufian farmer would have recognized the shape of it instantly. She called it planting season.</p>
+      </section>
+
+      <div class="divider"></div>
+
+      <section class="chapter" id="s4">
+        <h2>What The Bones Say</h2>
+        <p>This isn't a poetic flourish — it shows up in skeletons. When researchers compare the remains of late hunter-gatherers to the early farmers who followed them in the same regions, the pattern is consistent and stark.</p>
+        <div class="callout">
+          <span class="label">Paleopathology</span>
+          Early agricultural populations show a measurable drop in average stature, along with dental enamel defects that indicate repeated childhood malnutrition, anemia from iron-poor grain-heavy diets, and joint damage consistent with years of repetitive grinding labor. Permanent settlement beside domesticated animals also opened the door to zoonotic disease — measles, tuberculosis, and smallpox all trace some of their spread to this shift.
+        </div>
+        <p>None of this means agriculture was a mistake, or that the people who lived it were foolish. Each individual choice — plant this field, stay near the water, don't risk the long migration this year — was locally rational. Complexity and nuance matter here: farming also enabled population growth, permanent settlements, and eventually the density that makes cities, writing, and medicine possible. The point isn't that domestication was bad. The point is that "who benefited" and "who chose it" turn out to be two different questions, and we've been answering only the second one for ten thousand years.</p>
+        <p>The Technosphere's numbers make the modern version concrete too: by mass, the built infrastructure of human civilization — concrete, steel, plastic, silicon, asphalt — now outweighs the planet's entire living biosphere. That system doesn't run on sunlight and rain the way a wheat field does. It runs on us: our attention, our labor, our willingness to show up and keep it fed.</p>
+      </section>
+
+      <section class="chapter" id="s5">
+        <h2>Pick Your Weeds</h2>
+        <p>The useful thing about seeing the inversion clearly is that it hands agency back to you, precisely because it's no longer disguised as fate. A field only produces a monoculture if someone keeps pulling the competing plants. The wheat can't pull its own weeds. You can stop.</p>
+        <p>This doesn't mean grand renunciation — throwing the phone in a lake, moving to a cabin. It means noticing which of your daily maintenance rituals are actually serving you, and which are just weeding someone else's field. A few concrete examples of what "pulling a weed" looks like in practice:</p>
+        <ul style="padding-left:20px; margin-bottom:20px;">
+          <li style="margin-bottom:10px;">Turning off one class of notification that exists purely to bring you back, not to inform you of anything time-sensitive.</li>
+          <li style="margin-bottom:10px;">Naming, out loud, one piece of "maintenance work" you do for a digital system — an inbox, a feed, a dashboard — that has never once maintained you back.</li>
+          <li style="margin-bottom:10px;">Choosing one hour this week to do something that produces nothing trackable: a walk with no step count, a conversation with no thread to answer later.</li>
+        </ul>
+        <p>None of these choices are dramatic. That's the point. The Natufian farmer's whole predicament was built from small, reasonable choices, repeated. So is the way out.</p>
+      </section>
+
+      <section class="chapter" id="s6">
+        <h2>One Weed, Pulled</h2>
+        <div class="action">
+          <h3>Do this in the next 24 hours</h3>
+          <p>Open your phone's screen time or notification settings. Find the single app that pings you the most for the least actual benefit to your life. Turn off its notifications entirely — not "reduce," off. You're not quitting the field. You're just refusing to let one particular grass decide when you kneel.</p>
+          <ul class="checklist">
+            <li>Open Settings → Notifications on your phone.</li>
+            <li>Sort by frequency, or just recall the app that interrupts you most.</li>
+            <li>Turn its notifications off completely, right now, before you close this tab.</li>
+          </ul>
+        </div>
+      </section>
+
+    </article>
+  </main>
+</div>
+
+<footer>
+  <div class="sources">
+    <h4>Sources &amp; Reference Points</h4>
+    <ol>
+      <li>Paleopathological comparisons of Natufian hunter-gatherer and early Levantine farming populations — stature decline, dental enamel hypoplasia, porotic hyperostosis (iron-deficiency anemia), and joint degeneration linked to repetitive grain-processing labor.</li>
+      <li>Geographic range expansion of domesticated wheat (<em>Triticum aestivum</em>) from a localized Middle Eastern niche to a global cultivated area exceeding 220 million hectares.</li>
+      <li>Peter Haff's Technosphere theory — the built technological system as an autonomous, planetary-scale entity with a mass exceeding that of the biosphere, imposing behavioral constraints on its human maintainers.</li>
+    </ol>
+  </div>
+  <div class="foot-links">
+    <a class="home-link" href="https://iggym.github.io/cogitatio-elegans/">← back to cogitatio elegans</a>
+    <button id="back-top">↑ Back to top</button>
+  </div>
+</footer>
+
+<script>
+(function(){
+  // Scroll progress
+  var progress = document.getElementById('progress');
+  function updateProgress(){
+    var h = document.documentElement;
+    var scrollTop = h.scrollTop || document.body.scrollTop;
+    var scrollHeight = (h.scrollHeight || document.body.scrollHeight) - h.clientHeight;
+    var pct = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+    progress.style.width = pct + '%';
+  }
+  document.addEventListener('scroll', updateProgress, {passive:true});
+  updateProgress();
+
+  // Scrollspy
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll('#rail a'));
+  var sections = Array.prototype.slice.call(document.querySelectorAll('section.chapter'));
+  if ('IntersectionObserver' in window){
+    var observer = new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        var id = entry.target.getAttribute('id');
+        var link = railLinks.find(function(a){ return a.getAttribute('href') === '#' + id; });
+        if (!link) return;
+        if (entry.isIntersecting){
+          railLinks.forEach(function(a){ a.classList.remove('active'); });
+          link.classList.add('active');
+        }
+      });
+    }, { root: null, rootMargin: '-15% 0px -70% 0px', threshold: 0 });
+    sections.forEach(function(s){ observer.observe(s); });
+  }
+
+  // Mobile drawer
+  var hamburger = document.getElementById('hamburger');
+  var rail = document.getElementById('rail');
+  var scrim = document.getElementById('scrim');
+  function openDrawer(){
+    rail.classList.add('open');
+    scrim.classList.add('open');
+    hamburger.setAttribute('aria-expanded', 'true');
+  }
+  function closeDrawer(){
+    rail.classList.remove('open');
+    scrim.classList.remove('open');
+    hamburger.setAttribute('aria-expanded', 'false');
+  }
+  hamburger.addEventListener('click', function(){
+    rail.classList.contains('open') ? closeDrawer() : openDrawer();
+  });
+  scrim.addEventListener('click', closeDrawer);
+  railLinks.forEach(function(a){
+    a.addEventListener('click', function(){ closeDrawer(); });
+  });
+
+  // Back to top
+  document.getElementById('back-top').addEventListener('click', function(){
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+})();
+</script>
+
+</body>
+</html>
