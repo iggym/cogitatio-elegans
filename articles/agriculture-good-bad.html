@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agriculture as Both Progress and Capture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F8F5F1;--bg-deep:#EFECE6;--text:#1C1917;--text-muted:#57534E;
+  --text-faint:#78716C;--accent:#06C755;--accent-dark:#05A347;
+  --border:#8C8278;--border-light:#D6D3D1;--card:#FFFFFF;--highlight:#EFECE6;
+  --max:660px;--font-serif:'Playfair Display',Georgia,serif;
+  --font-sans:'Inter',system-ui,-apple-system,sans-serif;
+  --topbar-h:56px;--green:#06C755;--amber:#D97706;--red:#DC2626;
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --bg:#1C1917;--bg-deep:#0C0A09;--text:#F8F5F1;--text-muted:#A8A29E;
+    --text-faint:#78716C;--accent:#06C755;--accent-dark:#05A347;
+    --border:#57534E;--border-light:#44403C;--card:#292524;--highlight:#292524;
+  }
+}
+html{scroll-behavior:smooth}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{
+  font-family:var(--font-sans);background:var(--bg);color:var(--text);
+  line-height:1.625;font-size:1.125rem;-webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+/* Progress Bar */
+#progress{
+  position:fixed;top:0;left:0;height:3px;width:0;
+  background:linear-gradient(90deg,var(--green),var(--amber),var(--red));
+  z-index:9999;transition:width .15s linear;
+}
+@media(prefers-reduced-motion:reduce){#progress{transition:none}}
+/* Topbar */
+#topbar{
+  position:fixed;top:0;left:0;right:0;height:var(--topbar-h);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  background:rgba(248,245,241,.78);border-bottom:1px solid var(--border-light);
+  z-index:900;display:flex;align-items:center;padding:0 1.25rem;gap:.75rem;
+}
+@media(prefers-color-scheme:dark){#topbar{background:rgba(28,25,23,.82)}}
+#topbar .home{
+  font-family:var(--font-serif);font-weight:600;font-size:.95rem;
+  color:var(--text);text-decoration:none;white-space:nowrap;
+}
+#topbar .home:hover{color:var(--accent)}
+#topbar .sep{color:var(--text-faint);font-size:.8rem;user-select:none}
+#topbar .breadcrumb{
+  font-size:.82rem;color:var(--text-muted);white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;min-width:0;
+}
+#topbar .meta{
+  margin-left:auto;font-size:.75rem;color:var(--text-faint);
+  white-space:nowrap;flex-shrink:0;
+}
+#menu-btn{
+  display:none;background:none;border:none;color:var(--text);
+  cursor:pointer;padding:4px;flex-shrink:0;
+}
+#menu-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+/* Layout */
+.wrap{
+  display:grid;grid-template-columns:220px 1fr;
+  max-width:calc(var(--max) + 260px);margin:0 auto;
+  min-height:100vh;
+}
+#rail{
+  position:sticky;top:100px;height:fit-content;
+  padding:2rem 1.25rem 2rem 1.5rem;
+}
+#rail ol{list-style:none;counter-reset:rail}
+#rail li{
+  counter-increment:rail;margin-bottom:.5rem;
+  display:flex;align-items:baseline;gap:.5rem;
+}
+#rail li::before{
+  content:attr(data-num);font-size:.7rem;font-weight:600;
+  color:var(--text-faint);min-width:1.2rem;text-align:right;
+  font-variant-numeric:tabular-nums;
+}
+#rail a{
+  font-size:.85rem;color:var(--text-muted);text-decoration:none;
+  transition:color .2s,transform .2s;display:inline-block;
+  line-height:1.35;
+}
+#rail a:hover{color:var(--text);transform:translateX(3px)}
+#rail a.active{color:var(--text);font-weight:500}
+#rail a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+/* Main */
+main{
+  max-width:var(--max);padding:calc(var(--topbar-h) + 2rem) 1.5rem 4rem;
+  border-left:1px solid var(--border-light);
+}
+@media(prefers-color-scheme:dark){main{border-left-color:var(--border)}}
+/* Hero */
+.hero{margin-bottom:3rem}
+.hero h1{
+  font-family:var(--font-serif);font-weight:500;
+  font-size:clamp(2.1rem,5vw,3.1rem);line-height:1.12;
+  letter-spacing:-.02em;margin-bottom:1.25rem;
+}
+.hero .subtitle{
+  font-size:1.05rem;color:var(--text-muted);line-height:1.6;
+  max-width:540px;
+}
+/* Spectrum */
+.spectrum{margin:2rem 0 0}
+.spectrum-row{display:flex;align-items:center;gap:.75rem}
+.spectrum-tag{font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+.spectrum-tag.left{color:var(--green)}
+.spectrum-tag.right{color:var(--amber)}
+.spectrum-bar{flex:1;height:7px;border-radius:4px;background:linear-gradient(90deg,var(--green),var(--amber) 55%,var(--red));position:relative}
+.spectrum-bar::after{
+  content:'';position:absolute;top:-3px;left:50%;width:3px;height:13px;
+  background:var(--text);border-radius:2px;transform:translateX(-50%);
+}
+.spectrum-labels{
+  display:flex;justify-content:space-between;margin-top:.5rem;
+  font-size:.72rem;color:var(--text-faint);line-height:1.3;
+}
+/* Chapters */
+.chapter{
+  scroll-margin-top:calc(var(--topbar-h) + 1.5rem);
+  margin-bottom:3.5rem;
+}
+.chapter h2{
+  font-family:var(--font-serif);font-weight:500;font-size:1.5rem;
+  line-height:1.25;margin-bottom:1.25rem;letter-spacing:-.01em;
+}
+.lede{font-size:1.1rem;line-height:1.7;color:var(--text-muted);margin-bottom:1.25rem}
+.chapter p{margin-bottom:1.1rem;line-height:1.7}
+.chapter p:last-child{margin-bottom:0}
+/* Callout */
+.callout{
+  background:var(--highlight);border-left:3px solid var(--accent);
+  padding:1rem 1.25rem;border-radius:0 8px 8px 0;
+  margin:1.5rem 0;font-size:.95rem;line-height:1.65;
+}
+/* Pullquote */
+.pullquote{
+  border-top:2px solid var(--text);border-bottom:2px solid var(--text);
+  padding:1.5rem 0;margin:2.5rem 0;text-align:center;
+}
+.pullquote p{
+  font-family:var(--font-serif);font-size:clamp(1.25rem,3vw,1.75rem);
+  font-weight:400;font-style:italic;line-height:1.35;
+  color:var(--text);max-width:520px;margin:0 auto;
+}
+/* Snap */
+.snap{
+  margin:2.75rem 0;padding:2.5rem 1.5rem;text-align:center;
+  background:var(--bg-deep);border-radius:12px;
+}
+.snap p{
+  font-family:var(--font-serif);font-size:clamp(1.4rem,3.5vw,2.1rem);
+  font-weight:500;line-height:1.25;letter-spacing:-.015em;
+  max-width:480px;margin:0 auto;
+}
+/* Share */
+.share-block{
+  margin:2rem 0;padding:1.25rem;border:1px solid var(--border-light);
+  border-radius:10px;background:var(--highlight);
+}
+.share-block .share-label{
+  font-size:.72rem;font-weight:600;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--text-faint);margin-bottom:.75rem;
+}
+.share-btns{display:flex;gap:.6rem;flex-wrap:wrap}
+.share-btn{
+  display:inline-flex;align-items:center;gap:.4rem;
+  padding:.45rem .9rem;border-radius:6px;font-size:.8rem;
+  font-weight:500;text-decoration:none;cursor:pointer;
+  border:1px solid var(--border-light);background:var(--card);
+  color:var(--text);transition:background .2s,transform .15s;
+}
+.share-btn:hover{background:var(--bg-deep);transform:translateY(-1px)}
+.share-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.share-btn svg{width:14px;height:14px;fill:currentColor}
+/* Divider */
+.divider{
+  border:none;border-top:1px solid var(--border-light);
+  margin:2.5rem 0;
+}
+/* Action */
+.action{
+  margin:3rem 0;padding:2rem 1.75rem;border-radius:14px;
+  background:linear-gradient(135deg,var(--bg-deep) 0%,var(--highlight) 100%);
+  border:1px solid var(--border-light);
+}
+@media(prefers-color-scheme:dark){
+  .action{background:linear-gradient(135deg,#292524 0%,#1C1917 100%);border-color:var(--border)}
+}
+.action h2{color:var(--text);margin-bottom:.75rem}
+.action .action-sub{
+  font-size:.9rem;color:var(--text-muted);line-height:1.6;margin-bottom:1.25rem;
+}
+.checklist{list-style:none}
+.checklist li{
+  display:flex;align-items:flex-start;gap:.6rem;
+  padding:.55rem 0;font-size:.95rem;line-height:1.5;
+  border-bottom:1px solid var(--border-light);
+}
+.checklist li:last-child{border-bottom:none}
+.checklist li::before{
+  content:'';flex-shrink:0;width:18px;height:18px;margin-top:2px;
+  border:2px solid var(--accent);border-radius:4px;
+}
+.checklist li strong{color:var(--text)}
+.checklist li span{color:var(--text-muted)}
+/* Footer */
+footer{
+  max-width:calc(var(--max) + 260px);margin:0 auto;
+  padding:2rem 1.5rem;border-top:1px solid var(--border-light);
+  display:flex;flex-wrap:wrap;align-items:center;gap:1rem;
+  font-size:.8rem;color:var(--text-faint);
+}
+footer .foot-home{
+  font-family:var(--font-serif);font-weight:500;
+  color:var(--text-muted);text-decoration:none;
+}
+footer .foot-home:hover{color:var(--accent)}
+footer .foot-home:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+footer .citations{
+  flex:1;min-width:200px;line-height:1.55;
+}
+footer .citations strong{color:var(--text-muted);font-weight:500}
+#top-btn{
+  margin-left:auto;background:none;border:1px solid var(--border-light);
+  color:var(--text-muted);padding:.4rem .75rem;border-radius:6px;
+  cursor:pointer;font-size:.78rem;font-family:var(--font-sans);
+  transition:background .2s,color .2s;
+}
+#top-btn:hover{background:var(--highlight);color:var(--text)}
+#top-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* Scrim */
+#scrim{
+  position:fixed;inset:0;background:rgba(0,0,0,.35);
+  z-index:950;opacity:0;pointer-events:none;
+  transition:opacity .3s;
+}
+#scrim.open{opacity:1;pointer-events:auto}
+@media(prefers-reduced-motion:reduce){#scrim{transition:none}}
+/* Mobile */
+@media(max-width:880px){
+  .wrap{grid-template-columns:1fr}
+  #rail{
+    position:fixed;top:0;left:0;bottom:0;width:82vw;
+    background:var(--bg);z-index:1000;padding:calc(var(--topbar-h) + 1.5rem) 1.5rem 2rem;
+    transform:translateX(-100%);transition:transform .3s ease;
+    border-right:1px solid var(--border-light);overflow-y:auto;
+  }
+  #rail.open{transform:translateX(0)}
+  @media(prefers-reduced-motion:reduce){#rail{transition:none}}
+  #menu-btn{display:block}
+  main{border-left:none;max-width:100%;padding-left:1.25rem;padding-right:1.25rem}
+}
+@media(max-width:480px){
+  .hero h1{font-size:1.85rem}
+  .spectrum-labels{flex-direction:column;gap:.25rem}
+  .action{padding:1.5rem 1.25rem}
+}
+/* Focus */
+a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+/* Reduced motion */
+@media(prefers-reduced-motion:reduce){
+  *{transition-duration:0s !important;animation-duration:0s !important}
+  html{scroll-behavior:auto}
+}
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+
+<header id="topbar">
+  <a class="home" href="https://iggym.github.io/cogitatio-elegans/">Home</a>
+  <span class="sep">›</span>
+  <span class="breadcrumb">Agriculture as Both Progress and Capture</span>
+  <span class="meta">6 min read</span>
+  <button id="menu-btn" aria-label="Open navigation">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+</header>
+
+<div id="scrim"></div>
+
+<div class="wrap">
+  <nav id="rail" aria-label="Article sections">
+    <ol>
+      <li data-num="01"><a href="#s1">First Harvest, Last Freedom</a></li>
+      <li data-num="02"><a href="#s2">The Progress Trap</a></li>
+      <li data-num="03"><a href="#s3">Same Trap, Different Bait</a></li>
+      <li data-num="04"><a href="#s4">Bones and Burdens</a></li>
+      <li data-num="05"><a href="#s5">Choose Your Yoke</a></li>
+      <li data-num="06"><a href="#s6">Step Off the Field</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <article>
+      <header class="hero">
+        <h1>Agriculture as Both Progress and Capture</h1>
+        <p class="subtitle">The story we tell about civilization's origins is half true. The other half is written in our bones.</p>
+        <div class="spectrum">
+          <div class="spectrum-row">
+            <span class="spectrum-tag left">Progress</span>
+            <div class="spectrum-bar"></div>
+            <span class="spectrum-tag right">Capture</span>
+          </div>
+          <div class="spectrum-labels">
+            <span>Surplus · Cities · Writing · Specialization</span>
+            <span>Disease · Hierarchy · Labor · Patriarchy</span>
+          </div>
+        </div>
+      </header>
+
+      <section class="chapter" id="s1">
+        <h2>First Harvest, Last Freedom</h2>
+        <p class="lede">Imagine a woman in the Fertile Crescent, nine thousand years ago. She bends over a field of einkorn wheat, her hands cracked from threshing, her spine curved from months of grinding grain.</p>
+        <p>Her daughter plays in the dirt beside her — shorter than she should be, teeth already pitted with enamel defects. Three generations back, her ancestors wandered this same river valley freely. They ate dozens of wild plants, moved when the seasons told them to, and worked fewer hours than she does now. They were taller. Their teeth were sound. Their bones carried fewer signs of chronic disease.</p>
+        <p>Now she stays. She has to. The grain stores won't move themselves. The irrigation channels need constant repair. The fields must be defended from neighbors who want them. She is bound to the soil in a way her grandmother never was — bound by a promise she never made.</p>
+        <p>This is the story we don't tell about agriculture.</p>
+      </section>
+
+      <section class="chapter" id="s2">
+        <h2>The Progress Trap</h2>
+        <p class="lede">Agriculture was not humanity's great leap forward. It was a trap — one that increased collective power while reducing individual autonomy and health.</p>
+        <p id="reframe-text">The surplus fed cities, states, writing, and specialization. But it also brought disease, hierarchy, labor intensification, patriarchy, warfare, and ecological constraint. Civilization did not simply improve human life. It traded one kind of freedom for another kind of power.</p>
+        <p>We tell the story of agriculture as a liberation narrative: humans escaping the drudgery of foraging, securing their food supply, building the foundations of everything we now call civilization. But the evidence tells a messier story. The shift to farming was not a single event but a slow contraction — a narrowing of diet, a deepening of labor, a loss of mobility that became, over generations, impossible to reverse.</p>
+        <p>Once a population depends on grain stores, it cannot go back. The surplus demands protection. Protection demands hierarchy. Hierarchy demands labor. And labor demands more surplus. The cycle is self-reinforcing — and once entered, nearly impossible to abandon, even when it produces new suffering.</p>
+        <div class="share-block">
+          <div class="share-label">Share this reframe</div>
+          <div class="share-btns">
+            <a class="share-btn" id="share-x" href="#" target="_blank" rel="noopener" aria-label="Share on X">
+              <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+              Post on X
+            </a>
+            <a class="share-btn" id="share-li" href="#" target="_blank" rel="noopener" aria-label="Share on LinkedIn">
+              <svg viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+              Share on LinkedIn
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <section class="chapter" id="s3">
+        <h2>Same Trap, Different Bait</h2>
+        <p class="lede">The pattern didn't stop with farming. It repeats whenever a technology increases scale and productivity while creating new dependencies.</p>
+        <p>Industrialization drew people from farms into factories with the same logic: more output, more coordination, more collective power — and less individual control over the terms of work. The factory worker, like the farmer before her, could not simply walk away. The system required her presence, and the system provided just enough to make leaving unthinkable.</p>
+        <p>Digital platforms follow the same arc. They connect us to billions, give us tools of unprecedented reach, and then shape what we see, what we say, and what we can afford to leave. The app that was optional becomes the infrastructure you can't live without.</p>
+        <div class="snap">
+          <p>The measure of progress is not what it gives you — it's what it lets you refuse.</p>
+        </div>
+        <p>The farm didn't just change what we ate. It changed what we could refuse. And every subsequent revolution has narrowed that same doorway a little further.</p>
+        <div class="callout">
+          <strong>Historical mirror:</strong> Industrialization and digital platforms show the same tradeoffs as agriculture — increased scale and productivity alongside new forms of dependency. The pattern is structural, not accidental.
+        </div>
+      </section>
+
+      <section class="chapter" id="s4">
+        <h2>Bones and Burdens</h2>
+        <p class="lede">The bioarchaeological record is unambiguous. The shift to agriculture left marks on human skeletons that we can still read today.</p>
+        <p>Early agricultural populations show reduced stature compared to their hunter-gatherer predecessors. Dental caries increased dramatically with carbohydrate-rich grain diets. Enamel hypoplasia — lines etched in teeth by periods of malnutrition or disease — became more common. Skeletal markers of chronic infection rose. Average lifespan did not increase with farming; in many early agricultural societies, it declined.</p>
+        <p>Agriculture changed more than diet. It changed disease exposure, fertility patterns, and selection pressures. The crowded, sedentary conditions of early farming villages created new pathways for pathogens. Irrigation spread waterborne parasites. Stored grain attracted pests and the diseases they carry.</p>
+        <hr class="divider">
+        <p>This is not to romanticize foraging life, which had its own harshness and uncertainty. Nor is it to deny what agriculture eventually enabled: population growth, technological innovation, medicine, and the vast infrastructure of knowledge that makes modern life possible. The tradeoff was real, and over centuries, some of its costs were mitigated — by sanitation, by antibiotics, by political systems that (imperfectly) distribute surplus.</p>
+        <p>But the terms of the tradeoff matter. And the assumption that technological progress automatically improves human well-being is not supported by the evidence. It is a story we tell ourselves — one that the bones contradict.</p>
+        <blockquote class="pullquote">
+          <p>Some "advances" may function like traps: once adopted, they become difficult to abandon even if they produce new suffering.</p>
+        </blockquote>
+      </section>
+
+      <section class="chapter" id="s5">
+        <h2>Choose Your Yoke</h2>
+        <p class="lede">The point is not to reject technology. It is to recognize when a technology has become a trap — and to preserve the option of exit.</p>
+        <p>That starts with small, concrete acts of self-sufficiency. Grow something — even a window-box herb. Cook something from whole ingredients. Build or repair something with your hands. Maintain a skill that doesn't require a platform, a subscription, or a corporate intermediary. Walk somewhere you'd normally drive.</p>
+        <p>These are not symbolic gestures. They are rehearsals for autonomy. Each one strengthens a capacity that the trap is designed to atrophy. Each one is a reminder that the infrastructure you depend on is not the same as the infrastructure you need.</p>
+        <div class="callout">
+          <strong>Evolutionary insight:</strong> Agriculture changed selection pressures — not just what we ate, but what we could become. The same is true of every technology we adopt. The question is not whether it changes us, but whether we choose the terms.
+        </div>
+        <p>The agricultural revolution was not a choice that anyone voted on. But how you live inside its legacy — that is still, in small ways, up to you.</p>
+      </section>
+
+      <section class="chapter" id="s6">
+        <div class="action">
+          <h2>Step Off the Field</h2>
+          <p class="action-sub">Within the next 24 hours, do one thing that reconnects you to direct, unmediated transformation. No platform. No shortcut. Just you and the raw material.</p>
+          <ul class="checklist">
+            <li><strong>Cook one meal</strong> <span>from whole, unprocessed ingredients — no apps, no delivery</span></li>
+            <li><strong>Grow something</strong> <span>— a window-box herb, a sprouted seed, anything alive</span></li>
+            <li><strong>Repair something</strong> <span>with your hands instead of replacing it</span></li>
+            <li><strong>Walk somewhere</strong> <span>you'd normally drive or order a ride to</span></li>
+          </ul>
+        </div>
+        <p style="margin-top:1.5rem">It won't overthrow agriculture. It won't reverse ten thousand years of intensification. But it will remind your body what it means to transform something yourself — to take a raw material and make it yours, without a platform, without a supply chain, without permission.</p>
+        <p>That feeling is older than the farm. And it's still yours.</p>
+      </section>
+    </article>
+  </main>
+</div>
+
+<footer>
+  <a class="foot-home" href="https://iggym.github.io/cogitatio-elegans/">Home</a>
+  <div class="citations">
+    <strong>Sources &amp; References</strong><br>
+    Bioarchaeology of early agricultural populations: stature, dental caries, enamel hypoplasia, skeletal infection markers.<br>
+    Evolutionary consequences of agriculture: diet change, disease exposure, fertility patterns, selection pressures.<br>
+    Technological energy capture: farming, irrigation, storage, calendars, plows.<br>
+    Historical parallels: industrialization and digital platforms as analogous tradeoffs of scale vs. dependency.
+  </div>
+  <button id="top-btn" aria-label="Back to top">↑ Top</button>
+</footer>
+
+<script>
+(function(){
+  /* Progress bar */
+  const bar = document.getElementById('progress');
+  function updateProgress(){
+    const h = document.documentElement.scrollHeight - window.innerHeight;
+    const pct = h > 0 ? (window.scrollY / h) * 100 : 0;
+    bar.style.width = pct + '%';
+  }
+  window.addEventListener('scroll', updateProgress, {passive:true});
+  updateProgress();
+
+  /* Scrollspy */
+  const sections = document.querySelectorAll('.chapter');
+  const railLinks = document.querySelectorAll('#rail a');
+  const observer = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if(entry.isIntersecting){
+        const id = entry.target.id;
+        railLinks.forEach(function(a){
+          a.classList.toggle('active', a.getAttribute('href') === '#' + id);
+        });
+      }
+    });
+  },{rootMargin:'-15% 0px -70% 0px'});
+  sections.forEach(function(s){observer.observe(s)});
+
+  /* Mobile menu */
+  const rail = document.getElementById('rail');
+  const scrim = document.getElementById('scrim');
+  const menuBtn = document.getElementById('menu-btn');
+  function openMenu(){rail.classList.add('open');scrim.classList.add('open');menuBtn.setAttribute('aria-expanded','true')}
+  function closeMenu(){rail.classList.remove('open');scrim.classList.remove('open');menuBtn.setAttribute('aria-expanded','false')}
+  menuBtn.addEventListener('click',function(){rail.classList.contains('open')?closeMenu():openMenu()});
+  scrim.addEventListener('click',closeMenu);
+  railLinks.forEach(function(a){a.addEventListener('click',closeMenu)});
+
+  /* Share buttons */
+  const reframeEl = document.getElementById('reframe-text');
+  const shareX = document.getElementById('share-x');
+  const shareLi = document.getElementById('share-li');
+  if(reframeEl && shareX && shareLi){
+    const text = reframeEl.textContent.trim();
+    const url = window.location.href;
+    shareX.href = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(text) + '&url=' + encodeURIComponent(url);
+    shareLi.href = 'https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(url);
+  }
+
+  /* Back to top */
+  document.getElementById('top-btn').addEventListener('click',function(){
+    window.scrollTo({top:0,behavior:'smooth'});
+  });
+  /* Respect reduced motion for back-to-top */
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+    document.getElementById('top-btn').addEventListener('click',function(e){
+      e.stopImmediatePropagation();
+      window.scrollTo(0,0);
+    });
+  }
+})();
+</script>
+</body>
+</html>
