@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your Brain's Waking Dream</title>
+<style>
+  :root {
+    --bg: #121212;
+    --bg-alt: #1e1e1e;
+    --fg: #e0e0e0;
+    --fg-dim: #a0a0a0;
+    --accent: #ff6b6b;
+    --accent-2: #feca57;
+    --border: #333333;
+    --max: 660px;
+    --topbar-h: 60px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: Georgia, 'Times New Roman', serif;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Progress Bar */
+  #progress {
+    position: fixed;
+    top: 0; left: 0;
+    height: 4px;
+    width: 0%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    z-index: 1001;
+    transition: width 0.1s ease-out;
+  }
+
+  /* Sticky Topbar */
+  #topbar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: var(--topbar-h);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    background: rgba(18, 18, 18, 0.75);
+    border-bottom: 1px solid var(--border);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    padding: 0 1.5rem;
+    justify-content: space-between;
+  }
+
+  .topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .home-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-family: system-ui, -apple-system, sans-serif;
+    font-weight: bold;
+    font-size: 1.1rem;
+  }
+
+  .breadcrumb {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 0.85rem;
+    color: var(--fg-dim);
+  }
+
+  .meta-time {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 0.8rem;
+    color: var(--fg-dim);
+    background: rgba(255,255,255,0.05);
+    padding: 0.2rem 0.6rem;
+    border-radius: 10px;
+  }
+
+  .hamburger {
+    display: none;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--fg);
+    padding: 0.4rem 0.6rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    line-height: 1;
+  }
+
+  /* Layout Grid */
+  .wrap {
+    max-width: calc(var(--max) + 260px);
+    margin: 0 auto;
+    padding-top: var(--topbar-h);
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 2rem;
+  }
+
+  /* Navigation Rail */
+  #rail {
+    position: sticky;
+    top: 100px;
+    height: fit-content;
+    padding: 2rem 0;
+  }
+
+  #rail ul {
+    list-style: none;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+
+  #rail li {
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: baseline;
+  }
+
+  #rail li::before {
+    content: attr(data-num);
+    color: var(--accent);
+    font-size: 0.8rem;
+    margin-right: 0.5rem;
+    font-weight: bold;
+  }
+
+  #rail a {
+    color: var(--fg-dim);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.2s;
+  }
+
+  #rail a:hover, #rail a.active {
+    color: var(--fg);
+  }
+
+  /* Main Content */
+  main {
+    max-width: var(--max);
+    padding: 2rem 1rem 4rem 1rem;
+    margin: 0 auto;
+  }
+
+  .chapter {
+    scroll-margin-top: 80px;
+    margin-bottom: 4rem;
+  }
+
+  h1 {
+    font-family: Georgia, serif;
+    font-size: clamp(2.1rem, 5vw, 3.1rem);
+    line-height: 1.15;
+    margin-bottom: 1.5rem;
+    color: var(--fg);
+  }
+
+  h2 {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 1.4rem;
+    color: var(--accent-2);
+    margin-bottom: 1.2rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .lede {
+    font-size: 1.2rem;
+    color: var(--fg);
+    margin-bottom: 1.5rem;
+    font-style: italic;
+    border-left: 3px solid var(--accent);
+    padding-left: 1rem;
+  }
+
+  p {
+    margin-bottom: 1.5rem;
+  }
+
+  /* Spectrum Widget */
+  .spectrum-container {
+    margin: 2rem 0;
+  }
+  .spectrum-labels {
+    display: flex;
+    justify-content: space-between;
+    font-family: system-ui, sans-serif;
+    font-size: 0.8rem;
+    color: var(--fg-dim);
+    margin-bottom: 0.5rem;
+  }
+  .spectrum {
+    height: 8px;
+    width: 100%;
+    background: linear-gradient(90deg, #4a90e2 0%, #9b59b6 50%, #ff6b6b 100%);
+    border-radius: 4px;
+    position: relative;
+  }
+  .spectrum::after {
+    content: '⚡';
+    position: absolute;
+    right: 5%;
+    top: -10px;
+    color: var(--accent);
+    font-size: 1.2rem;
+  }
+
+  /* Callout & Pullquote */
+  .callout {
+    background: var(--bg-alt);
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    margin: 2rem 0;
+  }
+
+  .pullquote {
+    border-left: 4px solid var(--accent-2);
+    padding: 1rem 1.5rem;
+    margin: 2rem 0;
+    font-style: italic;
+    color: var(--fg);
+  }
+
+  /* Perspective Snap */
+  .snap-container {
+    text-align: center;
+    margin: 3rem 0;
+    padding: 2rem 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .snap {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: clamp(1.3rem, 3.5vw, 1.8rem);
+    font-weight: bold;
+    line-height: 1.3;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+  }
+
+  /* Share Block */
+  .share-block {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(254, 202, 87, 0.1));
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+  }
+  .share-text {
+    font-family: system-ui, sans-serif;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+    color: var(--fg-dim);
+  }
+  .share-buttons {
+    display: flex;
+    gap: 0.8rem;
+  }
+  .btn-share {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    text-decoration: none;
+    font-family: system-ui, sans-serif;
+    font-size: 0.85rem;
+    font-weight: bold;
+    transition: opacity 0.2s;
+  }
+  .btn-x { background: #000; color: #fff; }
+  .btn-in { background: #0077b5; color: #fff; }
+  .btn-share:hover { opacity: 0.85; }
+
+  /* Action Block */
+  .action {
+    background: linear-gradient(135deg, var(--bg-alt), #2a2a2a);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-top: 2rem;
+    border: 1px solid var(--border);
+  }
+  .action h3 {
+    font-family: system-ui, sans-serif;
+    color: var(--accent-2);
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+  }
+  .checklist {
+    list-style: none;
+    margin-top: 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+  }
+  .checklist li {
+    background: rgba(255,255,255,0.05);
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-family: system-ui, sans-serif;
+    font-size: 0.85rem;
+    color: var(--fg-dim);
+    border: 1px solid var(--border);
+  }
+
+  /* Footer */
+  footer {
+    border-top: 1px solid var(--border);
+    margin-top: 4rem;
+    padding-top: 2rem;
+    font-family: system-ui, sans-serif;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  .footer-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .refs {
+    font-size: 0.8rem;
+    color: var(--fg-dim);
+    line-height: 1.5;
+  }
+  .btn-top {
+    background: none;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    align-self: flex-start;
+  }
+
+  #scrim {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.7);
+    z-index: 999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+
+  /* Accessibility */
+  a:focus-visible, button:focus-visible {
+    outline: 2px solid var(--accent-2);
+    outline-offset: 3px;
+  }
+
+  /* Responsive */
+  @media (max-width: 880px) {
+    .wrap {
+      grid-template-columns: 1fr;
+    }
+    .hamburger {
+      display: block;
+    }
+    .breadcrumb, .meta-time {
+      display: none;
+    }
+    #rail {
+      position: fixed;
+      top: 0; left: 0;
+      width: 82vw;
+      height: 100vh;
+      background: var(--bg-alt);
+      padding: 6rem 2rem 2rem 2rem;
+      z-index: 1000;
+      transform: translateX(-100%);
+      transition: transform 0.3s ease;
+      overflow-y: auto;
+    }
+    #rail.open {
+      transform: translateX(0);
+    }
+    #scrim.active {
+      display: block;
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
+
+  /* Motion Preferences */
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+
+<header id="topbar">
+  <div class="topbar-left">
+    <button class="hamburger" id="menuToggle" aria-label="Open navigation">☰</button>
+    <a href="https://iggym.github.io/cogitatio-elegans/" class="home-link">Home</a>
+    <span class="breadcrumb">/ Cognition / Perception</span>
+  </div>
+  <span class="meta-time">5 min read</span>
+</header>
+
+<div id="scrim"></div>
+
+<div class="wrap">
+  <nav id="rail" aria-label="Article sections">
+    <ul>
+      <li data-num="01"><a href="#s1">Shadows in the Woods</a></li>
+      <li data-num="02"><a href="#s2">Controlled Hallucinations at Helm</a></li>
+      <li data-num="03"><a href="#s3">Echoes in the Machine</a></li>
+      <li data-num="04"><a href="#s4">Tuned for the Track</a></li>
+      <li data-num="05"><a href="#s5">Steering the Ship</a></li>
+      <li data-num="06"><a href="#s6">Change the Channel</a></li>
+    </ul>
+  </nav>
+
+  <main>
+    <article>
+      <header>
+        <h1>Your Brain's Waking Dream</h1>
+        <div class="spectrum-container">
+          <div class="spectrum-labels">
+            <span>Passive Perception</span>
+            <span>Active Prediction</span>
+          </div>
+          <div class="spectrum" role="img" aria-label="Spectrum from passive perception to active prediction"></div>
+        </div>
+      </header>
+
+      <section class="chapter" id="s1">
+        <p class="lede">You’re walking through the woods at dusk. The light is failing. Suddenly, you see a twisted snake coiled on the trail. Your heart pounds. You freeze. But as you take a hesitant step closer, the snake remains perfectly still. It is just a curved stick.</p>
+        <p>In a fraction of a second, your brain constructed a snake from sparse visual data. It projected a model of danger onto the world, triggered a full-body response, and only used the actual sensory input—the stick—to correct its error after the fact. You didn't see reality. You hallucinated a possibility, and then corrected it.</p>
+      </section>
+
+      <section class="chapter" id="s2">
+        <h2>Controlled Hallucinations at Helm</h2>
+        <p>We assume our eyes work like cameras, passively recording a transparent window onto the world. Neuroscience suggests the exact opposite. The brain is locked in a dark, silent vault. It does not passively perceive reality. It actively predicts, models, edits, and hallucinates the world, using sensory input mainly to correct its own internal models.</p>
+        <blockquote class="pullquote" id="reframe-text">You do not see reality. You experience a controlled hallucination, actively generated by your brain, using sensory input merely to correct its own guesses.</blockquote>
+        
+        <div class="share-block">
+          <p class="share-text">If this shifted your perspective, share the reframe:</p>
+          <div class="share-buttons">
+            <a href="#" class="btn-share btn-x" id="shareX" aria-label="Share on X">Share on X</a>
+            <a href="#" class="btn-share btn-in" id="shareIn" aria-label="Share on LinkedIn">Share on LinkedIn</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="chapter" id="s3">
+        <h2>Echoes in the Machine</h2>
+        <p>Once you grasp this, the boundaries between your mind and the outside world blur. Evolution did not tune your perception for abstract truth; it tuned it for survival. A false positive (seeing a stick as a snake) costs a little adrenaline. A false negative (seeing a snake as a stick) costs your life. Your reality is a survival hack.</p>
+        <p>This explains why technology and culture function the way they do. Virtual reality and AI work precisely because they exploit our predictive cognition, feeding it just enough data to construct a seamless world. Mass media, propaganda, and ideologies function as collective prediction models, feeding us priors that shape what we eventually "see" out there.</p>
+        
+        <div class="snap-container">
+          <p class="snap">Reality is less like a photograph you take, and more like a dream you are constantly steering.</p>
+        </div>
+      </section>
+
+      <section class="chapter" id="s4">
+        <h2>Tuned for the Track</h2>
+        <p>This sounds destabilizing, but it carries a crucial nuance. You are not completely untethered. The physical world still pushes back. Sensory data acts as an anchor, constantly yanking the brain's hallucinations back into alignment with the environment. When your prediction matches the incoming data, you feel a sense of effortless, transparent perception. When they clash, you feel surprise, and the model updates.</p>
+        <p>Psychology and cognitive science show that attention, expectation, and prior beliefs literally shape the signals traveling up from the eyes. You see what you expect to see, until the world refuses to let you.</p>
+      </section>
+
+      <section class="chapter" id="s5">
+        <h2>Steering the Ship</h2>
+        <p>If perception is a prediction, it means you have agency over the lens. You are not a passive victim of a controlled hallucination; you are its editor. The inputs you choose to consume, the environments you frequent, and the expectations you hold all become the blueprints for tomorrow's reality.</p>
+        <p>If you consume endless outrage, your brain updates its prior to expect a hostile world, and begins hallucinating threats in innocuous comments. If you intentionally seek out new environments, quiet spaces, or diverse viewpoints, you feed the prediction engine errors, forcing it to expand its model.</p>
+        <div class="callout">
+          You can curate your priors. Changing what you consume changes what you perceive.
+        </div>
+      </section>
+
+      <section class="chapter" id="s6">
+        <h2>Change the Channel</h2>
+        <div class="action">
+          <h3>Take Action Within 24 Hours</h3>
+          <p>Your brain is building a model of the world right now. Feed it an error on purpose to force an update. Within the next 24 hours, intentionally consume a piece of media, a perspective, or an environment that completely contradicts your current worldview. Do not argue with it. Just let your prediction engine process the surprise.</p>
+          <ul class="checklist">
+            <li>Read opposing view</li>
+            <li>Walk new route</li>
+            <li>Silent 10 mins</li>
+            <li>Question an assumption</li>
+            <li>Observe without judging</li>
+          </ul>
+        </div>
+      </section>
+
+      <footer>
+        <div class="footer-top">
+          <a href="https://iggym.github.io/cogitatio-elegans/" class="home-link">Home</a>
+          <button class="btn-top" id="backTop">Back to Top</button>
+        </div>
+        <div class="refs">
+          <strong>Reference Materials:</strong><br>
+          Core idea: The brain may not passively perceive reality. It actively predicts, models, edits, and hallucinates the world, using sensory input mainly to correct itself.<br>
+          Paradigm challenge: Reality as humans experience it may be less like a photograph and more like a controlled hallucination tuned for action.<br>
+          Cross-dimensional connections: Evolutionary (survival over truth), Technological (VR/AI exploitation), Scientific (neuroscience of expectation), Historical mirror (ideologies shaping collective prediction models).
+        </div>
+      </footer>
+    </article>
+  </main>
+</div>
+
+<script>
+  // Scroll Progress
+  const progress = document.getElementById('progress');
+  window.addEventListener('scroll', () => {
+    const scrollTop = window.scrollY || document.documentElement.scrollTop;
+    const scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+    const percent = (scrollTop / scrollHeight) * 100;
+    progress.style.width = percent + '%';
+  });
+
+  // Scrollspy Navigation
+  const sections = document.querySelectorAll('section.chapter');
+  const navLinks = document.querySelectorAll('#rail a');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.getAttribute('id');
+        navLinks.forEach(link => {
+          link.classList.toggle('active', link.getAttribute('href') === '#' + id);
+        });
+      }
+    });
+  }, { rootMargin: '-15% 0px -70% 0px' });
+
+  sections.forEach(sec => observer.observe(sec));
+
+  // Mobile Menu & Scrim Handling
+  const menuToggle = document.getElementById('menuToggle');
+  const rail = document.getElementById('rail');
+  const scrim = document.getElementById('scrim');
+
+  function toggleMenu(open) {
+    if (open) {
+      rail.classList.add('open');
+      scrim.classList.add('active');
+    } else {
+      rail.classList.remove('open');
+      scrim.classList.remove('active');
+    }
+  }
+
+  menuToggle.addEventListener('click', () => {
+    const isOpen = rail.classList.contains('open');
+    toggleMenu(!isOpen);
+  });
+
+  scrim.addEventListener('click', () => toggleMenu(false));
+  
+  navLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      if (window.innerWidth <= 880) {
+        toggleMenu(false);
+      }
+    });
+  });
+
+  // Dynamic Social Share Prefill
+  const reframeText = document.getElementById('reframe-text').innerText;
+  const currentURL = window.location.href;
+  const shareText = encodeURIComponent(reframeText + " ");
+  const encodedURL = encodeURIComponent(currentURL);
+
+  document.getElementById('shareX').href = `https://twitter.com/intent/tweet?text=${shareText}&url=${encodedURL}`;
+  document.getElementById('shareIn').href = `https://www.linkedin.com/sharing/share-offsite/?url=${encodedURL}`;
+
+  // Back to top
+  document.getElementById('backTop').addEventListener('click', () => {
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      window.scrollTo({ top: 0 });
+    }
+  });
+</script>
+
+</body>
+</html>
