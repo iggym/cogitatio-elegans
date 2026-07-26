@@ -7,6 +7,20 @@
     "slug": "tech-tools.html"
   },
   {
+    "title": "Scarcity Changed Address",
+    "description": "The machines are about to out-perform you at almost everything. Here's the one line of work they can't take — and why it's already rearranging who gets paid for what.",
+    "category": "history",
+    "date": "2026-07-25",
+    "slug": "scarce-you.html"
+  },
+  {
+    "title": "The Grass Ate You First",
+    "description": "You've heard the story where humans tamed wheat and built civilization on top of it. Here's the version evolutionary biology actually tells: the wheat won, and you've been paying rent on that win for twelve thousand years.",
+    "category": "history",
+    "date": "2026-07-25",
+    "slug": "agriculture-domesticated-humans.html"
+  },
+  {
     "title": "Silicon and Memory: The Edge Infrastructure Shift",
     "description": "How decentralized client-side applications and edge computing are transforming the topology of modern web architectures.",
     "category": "systems",
@@ -19,14 +33,6 @@
     "category": "history",
     "date": "2026-05-14",
     "slug": "history-as-code.html"
-  },
-  {
-    "title": "Scarcity Changed Address",
-    "description": "The machines are about to out-perform you at almost everything. Here's the one line of work they can't take — and why it's already rearranging who gets paid for what.",
-    "category": "history",
-    "date": "2026-07-25",
-    "slug": "scarce-you.html"
-  }
-  
+  } 
 ]
 
