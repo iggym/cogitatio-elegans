@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Before the Snap — The Singularity as Phase Transition</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0c0b0a;--bg-el:#161514;--bg-card:#1c1b19;
+  --fg:#e8e4de;--fg-muted:#7a7570;--fg-dim:#4a4540;
+  --accent:#d4943a;--accent-bright:#f0b050;--accent-dim:#8a6020;
+  --border:#2a2725;--border-light:#3a3530;
+  --max:660px;
+  --font-body:'Crimson Pro',Georgia,serif;
+  --font-display:'Space Grotesk',system-ui,sans-serif;
+  --topbar-h:56px;
+}
+html{scroll-behavior:smooth;background:var(--bg);color:var(--fg)}
+body{font-family:var(--font-body);font-size:18px;line-height:1.75;background:var(--bg);min-height:100vh;overflow-x:hidden}
+a{color:var(--accent);text-decoration:none;transition:color .2s}
+a:hover{color:var(--accent-bright)}
+a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:3px}
+img{max-width:100%;display:block}
+
+/* ── Progress Bar ── */
+#progress{position:fixed;top:0;left:0;height:3px;width:0%;z-index:9999;
+  background:linear-gradient(90deg,var(--accent-dim),var(--accent),var(--accent-bright));
+  transition:width .1s linear}
+
+/* ── Topbar ── */
+#topbar{position:fixed;top:0;left:0;right:0;height:var(--topbar-h);z-index:900;
+  background:rgba(12,11,10,.72);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:12px}
+#topbar .home-link{font-family:var(--font-display);font-weight:600;font-size:.8rem;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--fg-muted);white-space:nowrap}
+#topbar .home-link:hover{color:var(--accent)}
+#topbar .breadcrumb{font-family:var(--font-display);font-size:.75rem;color:var(--fg-dim);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#topbar .breadcrumb span{margin:0 6px;color:var(--fg-dim)}
+#topbar .meta{margin-left:auto;font-family:var(--font-display);font-size:.7rem;
+  color:var(--fg-dim);white-space:nowrap;letter-spacing:.03em}
+#hamburger{display:none;background:none;border:none;color:var(--fg);cursor:pointer;
+  padding:6px;margin-left:8px;flex-shrink:0}
+#hamburger svg{width:22px;height:22px;stroke:currentColor;stroke-width:2;fill:none}
+
+/* ── Scrim ── */
+#scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:950;
+  opacity:0;pointer-events:none;transition:opacity .3s}
+#scrim.open{opacity:1;pointer-events:auto}
+
+/* ── Grid Layout ── */
+.wrap{display:grid;grid-template-columns:220px 1fr;max-width:calc(var(--max) + 260px);
+  margin:0 auto;min-height:100vh}
+@media(max-width:880px){
+  .wrap{grid-template-columns:1fr;max-width:100%}
+  #hamburger{display:block}
+}
+
+/* ── Rail / Sidebar ── */
+#rail{position:sticky;top:100px;height:fit-content;padding:80px 0 40px 24px;
+  border-right:1px solid var(--border);overflow-y:auto;max-height:calc(100vh - 100px)}
+#rail h2{font-family:var(--font-display);font-size:.65rem;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--fg-dim);margin-bottom:16px;padding-left:0}
+#rail ol{list-style:none;counter-reset:section-counter}
+#rail li{counter-increment:section-counter;margin-bottom:2px}
+#rail li::before{content:attr(data-num);font-family:var(--font-display);font-size:.65rem;
+  color:var(--fg-dim);margin-right:8px;display:inline-block;min-width:16px;text-align:right}
+#rail a{font-family:var(--font-display);font-size:.8rem;color:var(--fg-muted);
+  display:inline;padding:6px 8px;border-radius:4px;transition:color .2s,background .2s}
+#rail a:hover{color:var(--fg);background:var(--bg-el)}
+#rail a.active{color:var(--accent-bright);background:rgba(212,148,58,.08)}
+
+@media(max-width:880px){
+  #rail{position:fixed;top:0;left:0;width:82vw;max-width:320px;height:100vh;
+    z-index:1000;background:var(--bg-el);border-right:1px solid var(--border);
+    padding:80px 24px 40px;transform:translateX(-100%);transition:transform .3s ease;
+    max-height:100vh}
+  #rail.open{transform:translateX(0)}
+  #rail h2{margin-top:8px}
+}
+
+/* ── Main Content ── */
+main{min-width:0;padding:0 24px}
+article{max-width:var(--max);margin:0 auto;padding-top:calc(var(--topbar-h) + 20px)}
+
+/* ── Hero ── */
+.hero{padding:60px 0 40px}
+.hero h1{font-family:var(--font-display);font-size:clamp(2.1rem,5vw,3.1rem);
+  font-weight:700;line-height:1.15;letter-spacing:-.02em;color:var(--fg);margin-bottom:16px}
+.hero .subtitle{font-family:var(--font-body);font-size:1.2rem;font-weight:300;
+  color:var(--fg-muted);line-height:1.6;margin-bottom:40px;font-style:italic}
+
+/* ── Spectrum Widget ── */
+.spectrum{position:relative;padding:24px 0 48px;margin-bottom:20px}
+.spectrum-label{font-family:var(--font-display);font-size:.6rem;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--fg-dim);margin-bottom:12px}
+.spectrum-bar{position:relative;height:6px;border-radius:3px;
+  background:linear-gradient(90deg,#2a6b5a,#3a8a6a,#7aaa5a,#c4a040,#d4943a,#f0b050);
+  overflow:visible}
+.spectrum-markers{position:relative;height:100%;margin-top:0}
+.spectrum-markers .marker{position:absolute;top:-5px;transform:translateX(-50%)}
+.spectrum-markers .dot{width:16px;height:16px;border-radius:50%;border:2px solid var(--bg);
+  background:var(--accent);display:block;position:relative;z-index:2;transition:transform .2s}
+.spectrum-markers .marker:last-child .dot{background:var(--accent-bright);
+  box-shadow:0 0 12px var(--accent-bright),0 0 24px rgba(240,176,80,.3)}
+.spectrum-markers .marker:hover .dot{transform:scale(1.3)}
+.spectrum-markers .mlabel{position:absolute;top:22px;left:50%;transform:translateX(-50%);
+  font-family:var(--font-display);font-size:.6rem;color:var(--fg-muted);white-space:nowrap;
+  text-align:center;line-height:1.3}
+.spectrum-markers .mlabel .date{display:block;color:var(--fg-dim);font-size:.55rem;margin-top:1px}
+
+/* ── Chapter Sections ── */
+.chapter{scroll-margin-top:80px;padding:32px 0 24px}
+.chapter h2{font-family:var(--font-display);font-size:clamp(1.3rem,3vw,1.7rem);
+  font-weight:600;line-height:1.25;color:var(--fg);margin-bottom:20px;letter-spacing:-.01em}
+.chapter p{margin-bottom:20px;color:var(--fg)}
+.chapter p:last-child{margin-bottom:0}
+
+/* ── Lede ── */
+.lede{font-size:1.1rem;font-weight:400;line-height:1.8;color:var(--fg);margin-bottom:24px}
+
+/* ── Callout ── */
+.callout{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;
+  padding:20px 24px;margin:24px 0;font-size:.95rem;line-height:1.7}
+.callout h3{font-family:var(--font-display);font-size:.8rem;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--accent);margin-bottom:10px}
+.callout ul{list-style:none;padding:0}
+.callout li{padding:6px 0;border-bottom:1px solid var(--border);color:var(--fg);
+  display:flex;gap:12px;align-items:baseline}
+.callout li:last-child{border-bottom:none}
+.callout li .era{font-family:var(--font-display);font-size:.7rem;color:var(--fg-dim);
+  min-width:90px;flex-shrink:0}
+
+/* ── Pullquote ── */
+.pullquote{border-left:3px solid var(--accent);padding:16px 0 16px 24px;margin:28px 0;
+  font-size:1.15rem;font-style:italic;color:var(--fg-muted);line-height:1.65}
+
+/* ── Perspective Snap ── */
+.perspective-snap{text-align:center;padding:48px 16px;margin:40px 0;position:relative}
+.perspective-snap::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:60px;height:2px;background:var(--accent)}
+.perspective-snap p{font-family:var(--font-display);font-size:clamp(1.4rem,3.5vw,2rem);
+  font-weight:600;line-height:1.35;color:var(--accent-bright);max-width:500px;margin:0 auto}
+
+/* ── Share Block ── */
+.share-block{display:flex;align-items:center;gap:12px;margin-top:28px;padding-top:20px;
+  border-top:1px solid var(--border)}
+.share-block .share-label{font-family:var(--font-display);font-size:.7rem;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--fg-dim)}
+.share-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;
+  border-radius:6px;border:1px solid var(--border);background:var(--bg-card);
+  color:var(--fg-muted);font-family:var(--font-display);font-size:.75rem;
+  cursor:pointer;transition:all .2s;text-decoration:none}
+.share-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(212,148,58,.06)}
+.share-btn svg{width:14px;height:14px;fill:currentColor}
+
+/* ── CTA Block ── */
+.action{background:linear-gradient(135deg,var(--bg-card),rgba(212,148,58,.06));
+  border:1px solid var(--border);border-radius:12px;padding:32px 28px;margin:36px 0 16px}
+.action h2{font-family:var(--font-display);font-size:clamp(1.2rem,2.5vw,1.5rem);
+  font-weight:600;color:var(--fg);margin-bottom:8px}
+.action .action-sub{font-family:var(--font-display);font-size:.8rem;color:var(--accent);
+  margin-bottom:20px;letter-spacing:.03em}
+.action p{margin-bottom:20px;font-size:.95rem;line-height:1.7}
+.checklist{list-style:none;padding:0;margin:16px 0}
+.checklist li{display:flex;align-items:flex-start;gap:10px;padding:8px 0;
+  font-family:var(--font-display);font-size:.85rem;color:var(--fg);line-height:1.5}
+.checklist li::before{content:'';display:inline-block;width:18px;height:18px;flex-shrink:0;
+  margin-top:2px;border:1.5px solid var(--accent);border-radius:4px;cursor:pointer;
+  transition:background .2s}
+.checklist li.checked::before{background:var(--accent);border-color:var(--accent);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%230c0b0a' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:center;background-size:11px}
+
+/* ── Footer ── */
+footer{padding:40px 0 48px;border-top:1px solid var(--border);margin-top:40px}
+.footer-inner{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:24px}
+.footer-col{flex:1;min-width:180px}
+.footer-col h4{font-family:var(--font-display);font-size:.65rem;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--fg-dim);margin-bottom:10px}
+.footer-col p,.footer-col li{font-size:.8rem;color:var(--fg-muted);line-height:1.6}
+.footer-col ul{list-style:none;padding:0}
+.footer-col li{margin-bottom:4px}
+.footer-col a{color:var(--fg-muted)}
+.footer-col a:hover{color:var(--accent)}
+.back-to-top{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-display);
+  font-size:.75rem;color:var(--fg-dim);cursor:pointer;background:none;border:none;
+  padding:8px 0;transition:color .2s}
+.back-to-top:hover{color:var(--accent)}
+.back-to-top svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
+
+/* ── Divider ── */
+.divider{width:40px;height:1px;background:var(--border);margin:32px 0}
+
+/* ── Reduced Motion ── */
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *{transition-duration:0s!important;animation-duration:0s!important}
+  #progress{transition:none}
+}
+
+/* ── Small Screens ── */
+@media(max-width:480px){
+  article{padding-top:calc(var(--topbar-h) + 8px)}
+  .hero{padding:36px 0 24px}
+  .hero h1{font-size:1.8rem}
+  .chapter{padding:20px 0 16px}
+  .spectrum-markers .mlabel{font-size:.5rem}
+  .callout{padding:14px 16px}
+  .action{padding:24px 18px}
+  .footer-inner{flex-direction:column}
+}
+</style>
+</head>
+<body>
+
+<div id="progress" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+
+<header id="topbar">
+  <a href="https://iggym.github.io/cogitatio-elegans/" class="home-link" aria-label="Home">Home</a>
+  <div class="breadcrumb" aria-label="Breadcrumb">
+    <span>›</span> Before the Snap
+  </div>
+  <div class="meta">5 min read</div>
+  <button id="hamburger" aria-label="Open navigation" aria-expanded="false">
+    <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+</header>
+
+<div id="scrim" aria-hidden="true"></div>
+
+<div class="wrap">
+
+<nav id="rail" aria-label="Article sections">
+  <h2>Sections</h2>
+  <ol>
+    <li data-num="01"><a href="#s1">Sparks in the Dark</a></li>
+    <li data-num="02"><a href="#s2">Same Song, New Key</a></li>
+    <li data-num="03"><a href="#s3">Under the Surface</a></li>
+    <li data-num="04"><a href="#s4">Ground Truth</a></li>
+    <li data-num="05"><a href="#s5">Hand on the Wheel</a></li>
+    <li data-num="06"><a href="#s6">First Steps Forward</a></li>
+  </ol>
+</nav>
+
+<main>
+<article>
+
+  <header class="hero">
+    <h1>Before the Snap</h1>
+    <p class="subtitle">The Technological Singularity isn't waiting in the future. It's a pattern that has already reshaped existence six times — and we are its next substrate, not its author.</p>
+
+    <div class="spectrum" aria-label="Timeline of singularities showing acceleration">
+      <div class="spectrum-label">Phase Transitions Across Deep Time</div>
+      <div class="spectrum-bar">
+        <div class="spectrum-markers">
+          <div class="marker" style="left:0%">
+            <span class="dot"></span>
+            <span class="mlabel">Life<span class="date">4B yr ago</span></span>
+          </div>
+          <div class="marker" style="left:30%">
+            <span class="dot"></span>
+            <span class="mlabel">Sex<span class="date">1.5B yr ago</span></span>
+          </div>
+          <div class="marker" style="left:50%">
+            <span class="dot"></span>
+            <span class="mlabel">Cambrian<span class="date">540M yr ago</span></span>
+          </div>
+          <div class="marker" style="left:70%">
+            <span class="dot"></span>
+            <span class="mlabel">Language<span class="date">50K yr ago</span></span>
+          </div>
+          <div class="marker" style="left:83%">
+            <span class="dot"></span>
+            <span class="mlabel">Agriculture<span class="date">10K BCE</span></span>
+          </div>
+          <div class="marker" style="left:92%">
+            <span class="dot"></span>
+            <span class="mlabel">Industry<span class="date">18th c.</span></span>
+          </div>
+          <div class="marker" style="left:100%">
+            <span class="dot"></span>
+            <span class="mlabel">Next<span class="date">?</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══ SECTION 1 ═══ -->
+  <section class="chapter" id="s1">
+    <h2>Sparks in the Dark</h2>
+    <p class="lede">In 1953, a graduate student named Stanley Miller sealed methane, ammonia, and hydrogen in a flask of boiling water. Two electrodes sparked. Within days, the water turned pink, then red. Amino acids — the building blocks of every living thing — had formed from nothing but chemistry and lightning.</p>
+    <p>Miller wasn't trying to create life. He was trying to prove that life's origin was inevitable. That given enough complexity and the right conditions, the system would tip. It would cross a threshold. And nothing on the other side would look the same.</p>
+    <p>We've been crossing thresholds ever since.</p>
+  </section>
+
+  <!-- ═══ SECTION 2 ═══ -->
+  <section class="chapter" id="s2">
+    <h2>Same Song, New Key</h2>
+    <p id="reframe-claim"><strong>The Singularity is not a future event. It is a pattern — a recurring phase transition where a system becomes so complex that it transcends its previous constraints.</strong> It has happened at least six times before. Each time, the rules of existence were rewritten.</p>
+
+    <div class="callout">
+      <h3>Previous Singularities</h3>
+      <ul>
+        <li><span class="era">4 billion yr ago</span> Origin of life — chemistry becomes biology</li>
+        <li><span class="era">1.5 billion yr ago</span> Invention of sex — genetic recombination unlocked</li>
+        <li><span class="era">540 million yr ago</span> Cambrian explosion — body plans diversify wildly</li>
+        <li><span class="era">50–100K yr ago</span> Evolution of language — cultural inheritance begins</li>
+        <li><span class="era">~10,000 BCE</span> Agricultural Revolution — populations explode</li>
+        <li><span class="era">18th century</span> Industrial Revolution — energy harnessing at scale</li>
+      </ul>
+    </div>
+
+    <p>Each singularity rewrote the rules of evolution. Language allowed cultural inheritance. Agriculture allowed population explosions. Industry allowed energy harnessing. The technological Singularity is simply the next one. And we are not its authors — we are its substrate.</p>
+
+    <div class="share-block">
+      <span class="share-label">Share this reframe</span>
+      <a href="#" class="share-btn" id="share-x" target="_blank" rel="noopener" aria-label="Share on X">
+        <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        X
+      </a>
+      <a href="#" class="share-btn" id="share-li" target="_blank" rel="noopener" aria-label="Share on LinkedIn">
+        <svg viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+        LinkedIn
+      </a>
+    </div>
+  </section>
+
+  <!-- ═══ SECTION 3 ═══ -->
+  <section class="chapter" id="s3">
+    <h2>Under the Surface</h2>
+    <p>Complexity theory shows that phase transitions — like water turning to ice — are inevitable in systems with positive feedback loops. Water doesn't gradually become ice. It snaps. One moment liquid, the next, crystalline. The same is true for evolutionary systems.</p>
+    <p>When single-celled organisms invented sex 1.5 billion years ago, they unlocked genetic recombination. Complexity exploded. The rules changed. After the Cambrian explosion, biological evolution accelerated. After language, cultural inheritance became possible. After agriculture, populations exploded. After industry, we harnessed energy at unprecedented scale.</p>
+
+    <blockquote class="pullquote">Each singularity didn't just add something new — it rewrote the operating system of existence.</blockquote>
+
+    <p>The printing press in 1440 and the internet in the 1990s were information singularities. They exponentially increased knowledge dissemination. They were feedback loops that made the next transition faster.</p>
+    <p>Just as single-celled organisms gave rise to multicellular life, human intelligence may give rise to post-human intelligence — a new form of existence we cannot yet comprehend. The exponential nature of progress means that just as biological evolution accelerated after the Cambrian explosion, technological evolution is accelerating toward a point of unpredictable transformation.</p>
+  </section>
+
+  <!-- ═══ PERSPECTIVE SNAP ═══ -->
+  <div class="perspective-snap" role="note" aria-label="Key insight">
+    <p>We are not the authors of our own story.</p>
+  </div>
+
+  <!-- ═══ SECTION 4 ═══ -->
+  <section class="chapter" id="s4">
+    <h2>Ground Truth</h2>
+    <p>This is not techno-determinism. The pattern is real, but the outcome is not guaranteed. Phase transitions are inevitable in systems with positive feedback — but the specific form they take depends on initial conditions. The Cambrian explosion could have produced different body plans. The Agricultural Revolution could have unfolded differently. The same is true now.</p>
+
+    <blockquote class="pullquote">The Singularity is not a destination — it is a mirror. It forces us to confront what we are and what we're becoming.</blockquote>
+
+    <p>The counterargument — that humans can control technology — assumes we are outside the system. But technology is evolving autonomously. We are its temporary stewards, not its masters. The assumption that humans are in control is itself a product of the last singularity: the Industrial Revolution's mythology of human mastery over nature.</p>
+    <p>This doesn't mean we're powerless. It means our power is different than we imagined. We are not steering the ship. We are the current.</p>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ═══ SECTION 5 ═══ -->
+  <section class="chapter" id="s5">
+    <h2>Hand on the Wheel</h2>
+    <p>If we are substrate, not author, then our agency lies not in preventing the transition but in influencing its initial conditions. We can choose what values we embed in the systems we build. We can choose what questions we ask. We can choose to pay attention to the feedback loops we're creating.</p>
+    <p>These are small, concrete, decisive choices. What data do you share? What tools do you adopt? What do you optimize for? Every choice is a vote on the shape of the next phase.</p>
+    <p>A researcher choosing to publish open-source instead of proprietary. A designer choosing accessibility over aesthetics. An engineer choosing to document the failure modes of their system. These are not abstract exhortations. They are specific, actionable decisions that shape the initial conditions of the next transition.</p>
+    <p>The question is not whether the phase transition comes. It's what crystallizes when it does.</p>
+  </section>
+
+  <!-- ═══ SECTION 6 ═══ -->
+  <section class="chapter" id="s6">
+    <div class="action">
+      <h2>First Steps Forward</h2>
+      <p class="action-sub">Within the next 24 hours</p>
+      <p>Identify one technology you use daily and trace its feedback loop. Ask: what does this tool optimize for? What does it make more of? If the answer is "more of itself," you've found a singularity in the making. Write it down. That's your map of the transition.</p>
+      <ul class="checklist" role="list">
+        <li role="listitem" tabindex="0">Identify one daily technology you depend on</li>
+        <li role="listitem" tabindex="0">Trace what it optimizes for — speed? Engagement? Scale?</li>
+        <li role="listitem" tabindex="0">Name what it makes more of</li>
+        <li role="listitem" tabindex="0">Check: does it make more of itself?</li>
+        <li role="listitem" tabindex="0">Write it down — that's your phase-transition map</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-col">
+        <h4>Navigate</h4>
+        <ul>
+          <li><a href="https://iggym.github.io/cogitatio-elegans/">Home</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Sources &amp; References</h4>
+        <ul>
+          <li>Miller, S.L. (1953). Production of amino acids under possible primitive Earth conditions.</li>
+          <li>Origin of life: ~4 billion years ago (consensus dating)</li>
+          <li>Invention of sexual reproduction: ~1.5 billion years ago</li>
+          <li>Cambrian explosion: ~540 million years ago</li>
+          <li>Evolution of language: 50,000–100,000 years ago</li>
+          <li>Agricultural Revolution: ~10,000 BCE</li>
+          <li>Industrial Revolution: 18th century</li>
+          <li>Gutenberg printing press: c. 1440</li>
+          <li>Public internet: 1990s</li>
+          <li>Complexity theory: phase transitions in systems with positive feedback loops</li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <button class="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Back to top">
+          <svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
+          Back to top
+        </button>
+      </div>
+    </div>
+  </footer>
+
+</article>
+</main>
+</div>
+
+<script>
+(function(){
+  /* ── Progress Bar ── */
+  const bar = document.getElementById('progress');
+  function updateProgress(){
+    const scrollTop = window.scrollY;
+    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    const pct = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+    bar.style.width = pct + '%';
+    bar.setAttribute('aria-valuenow', Math.round(pct));
+  }
+  window.addEventListener('scroll', updateProgress, {passive:true});
+  updateProgress();
+
+  /* ── Scrollspy ── */
+  const sections = document.querySelectorAll('section.chapter');
+  const railLinks = document.querySelectorAll('#rail a');
+  const observer = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if(entry.isIntersecting){
+        railLinks.forEach(function(l){ l.classList.remove('active'); });
+        const match = document.querySelector('#rail a[href="#'+entry.target.id+'"]');
+        if(match) match.classList.add('active');
+      }
+    });
+  }, {rootMargin:'-15% 0px -70% 0px'});
+  sections.forEach(function(s){ observer.observe(s); });
+
+  /* ── Mobile Menu ── */
+  const hamburger = document.getElementById('hamburger');
+  const rail = document.getElementById('rail');
+  const scrim = document.getElementById('scrim');
+
+  function openMenu(){
+    rail.classList.add('open');
+    scrim.classList.add('open');
+    hamburger.setAttribute('aria-expanded','true');
+  }
+  function closeMenu(){
+    rail.classList.remove('open');
+    scrim.classList.remove('open');
+    hamburger.setAttribute('aria-expanded','false');
+  }
+  hamburger.addEventListener('click', function(){
+    if(rail.classList.contains('open')){ closeMenu(); } else { openMenu(); }
+  });
+  scrim.addEventListener('click', closeMenu);
+
+  /* Close drawer on link click (mobile) */
+  railLinks.forEach(function(link){
+    link.addEventListener('click', function(){
+      if(window.innerWidth <= 880){ closeMenu(); }
+    });
+  });
+
+  /* ── Share Buttons ── */
+  var reframeEl = document.getElementById('reframe-claim');
+  var reframeText = reframeEl ? reframeEl.textContent.trim() : '';
+  var pageUrl = window.location.href;
+
+  var shareX = document.getElementById('share-x');
+  var shareLi = document.getElementById('share-li');
+
+  if(shareX){
+    var xText = encodeURIComponent(reframeText + ' ');
+    var xUrl = encodeURIComponent(pageUrl);
+    shareX.href = 'https://twitter.com/intent/tweet?text=' + xText + '&url=' + xUrl;
+  }
+  if(shareLi){
+    var liUrl = encodeURIComponent(pageUrl);
+    shareLi.href = 'https://www.linkedin.com/sharing/share-offsite/?url=' + liUrl;
+  }
+
+  /* ── Checklist Toggle ── */
+  var checkItems = document.querySelectorAll('.checklist li');
+  checkItems.forEach(function(item){
+    function toggle(){
+      item.classList.toggle('checked');
+    }
+    item.addEventListener('click', toggle);
+    item.addEventListener('keydown', function(e){
+      if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggle(); }
+    });
+  });
+
+  /* ── Reduced motion: disable smooth scroll ── */
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+    document.documentElement.style.scrollBehavior = 'auto';
+  }
+})();
+</script>
+</body>
+</html>
