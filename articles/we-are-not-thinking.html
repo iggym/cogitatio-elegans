@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Thinking That Unthought — Cogitatio Elegans</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0f0d0b;--fg:#e4ddd0;--muted:#8a7e6e;--accent:#c8943e;
+  --accent2:#b8452a;--card:#1a1612;--border:#2e2820;
+  --topbar-h:56px;--max:660px;--rail-w:220px;
+  --font-body:'Crimson Pro',Georgia,serif;
+  --font-display:'Playfair Display',Georgia,serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--font-body);font-size:1.125rem;line-height:1.7;
+  color:var(--fg);background:var(--bg);
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% 0%,rgba(200,148,62,.06),transparent),
+    radial-gradient(ellipse 60% 40% at 80% 100%,rgba(184,69,42,.04),transparent);
+  -webkit-font-smoothing:antialiased;
+}
+/* Noise overlay */
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
+  opacity:.035;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+/* Progress bar */
+#progress{
+  position:fixed;top:0;left:0;height:3px;width:0;z-index:1001;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  transition:width .1s linear;
+}
+/* Topbar */
+#topbar{
+  position:fixed;top:3px;left:0;right:0;height:var(--topbar-h);
+  z-index:1000;background:rgba(15,13,11,.88);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+}
+.topbar-inner{
+  max-width:calc(var(--max) + 260px + 2rem);margin:0 auto;
+  height:100%;display:flex;align-items:center;gap:1rem;
+  padding:0 1.5rem;
+}
+.home-link{
+  color:var(--accent);text-decoration:none;font-size:1.3rem;
+  font-weight:700;letter-spacing:-.02em;flex-shrink:0;
+  transition:color .2s;
+}
+.home-link:hover,.home-link:focus-visible{color:var(--fg)}
+.breadcrumb{
+  display:flex;align-items:center;gap:.4rem;font-size:.8rem;
+  color:var(--muted);flex:1;min-width:0;overflow:hidden;
+}
+.breadcrumb .sep{opacity:.4}
+.breadcrumb a{color:var(--muted);text-decoration:none;white-space:nowrap}
+.breadcrumb a:hover{color:var(--fg)}
+.breadcrumb .current{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--fg)}
+.read-time{
+  font-size:.75rem;color:var(--muted);white-space:nowrap;flex-shrink:0;
+  border:1px solid var(--border);border-radius:99px;padding:.2em .7em;
+}
+#menu-toggle{
+  display:none;background:none;border:none;color:var(--fg);
+  cursor:pointer;padding:.4rem;flex-shrink:0;
+}
+#menu-toggle svg{width:22px;height:22px;stroke:currentColor;stroke-width:2;fill:none}
+/* Layout */
+.wrap{
+  display:grid;grid-template-columns:var(--rail-w) 1fr;
+  gap:40px;max-width:calc(var(--max) + 260px);
+  margin:0 auto;padding:0 1.5rem;
+  padding-top:calc(var(--topbar-h) + 3px + 2rem);
+}
+/* Sidebar */
+#rail{
+  position:sticky;top:calc(var(--topbar-h) + 3px + 2rem);
+  height:fit-content;align-self:start;
+}
+#rail ol{list-style:none;counter-reset:rail}
+#rail li{
+  counter-increment:rail;margin-bottom:.15rem;
+  display:flex;align-items:baseline;gap:.6rem;
+}
+#rail li::before{
+  content:attr(data-num);font-size:.7rem;color:var(--muted);
+  font-variant-numeric:tabular-nums;min-width:1.6em;text-align:right;
+  transition:color .3s;
+}
+#rail a{
+  color:var(--muted);text-decoration:none;font-size:.88rem;
+  line-height:1.4;padding:.35em 0;border-left:2px solid transparent;
+  padding-left:.6rem;transition:color .3s,border-color .3s;
+  display:block;
+}
+#rail a:hover{color:var(--fg)}
+#rail a.active{color:var(--accent);border-left-color:var(--accent)}
+#rail li:has(a.active)::before{color:var(--accent)}
+#rail a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+/* Main */
+main{min-width:0;max-width:var(--max)}
+/* Hero */
+.hero{padding:2rem 0 3rem;position:relative}
+.hero h1{
+  font-family:var(--font-display);font-weight:900;
+  font-size:clamp(2.1rem,5vw,3.1rem);line-height:1.1;
+  letter-spacing:-.02em;color:var(--fg);margin-bottom:1rem;
+}
+.hero .subtitle{
+  font-size:1.15rem;color:var(--muted);line-height:1.5;
+  max-width:520px;margin-bottom:2.5rem;
+}
+/* Spectrum widget */
+.spectrum{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:12px;padding:1.5rem 1.5rem 1.2rem;position:relative;overflow:hidden;
+}
+.spectrum::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--accent),var(--accent2),transparent);
+}
+.spectrum-labels{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem;gap:1rem}
+.spectrum-lbl{font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;max-width:45%}
+.spectrum-lbl.left{color:var(--accent);text-align:left}
+.spectrum-lbl.right{color:var(--accent2);text-align:right}
+.spectrum-lbl span{display:block;font-size:.68rem;color:var(--muted);margin-top:.2em;text-transform:none;letter-spacing:0}
+.spectrum-bar{
+  height:8px;border-radius:99px;position:relative;overflow:hidden;
+  background:var(--border);
+}
+.spectrum-fill{
+  height:100%;border-radius:99px;width:100%;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  animation:spectrumPulse 4s ease-in-out infinite;
+}
+@keyframes spectrumPulse{0%,100%{opacity:.85}50%{opacity:1}}
+.spectrum-marker{
+  position:absolute;top:50%;right:22%;transform:translate(-50%,-50%);
+  width:14px;height:14px;border-radius:50%;background:var(--fg);
+  border:2px solid var(--accent2);box-shadow:0 0 8px rgba(184,69,42,.5);
+  transition:right .3s;
+}
+.spectrum-caption{
+  text-align:center;font-size:.72rem;color:var(--muted);margin-top:.8rem;
+  font-style:italic;
+}
+/* Chapters */
+.chapter{scroll-margin-top:calc(var(--topbar-h) + 3px + 2rem);padding:2.5rem 0}
+.chapter + .chapter{border-top:1px solid var(--border)}
+.chapter h2{
+  font-family:var(--font-display);font-weight:700;
+  font-size:clamp(1.5rem,3vw,2rem);line-height:1.2;
+  margin-bottom:1.2rem;color:var(--fg);
+}
+.lede{font-size:1.2rem;line-height:1.65;color:var(--fg);margin-bottom:1.2rem}
+.chapter p{margin-bottom:1.1rem;color:rgba(228,221,208,.88)}
+/* Callout */
+.callout{
+  background:var(--card);border:1px solid var(--border);
+  border-left:3px solid var(--accent);border-radius:0 8px 8px 0;
+  padding:1.2rem 1.4rem;margin:1.5rem 0;font-size:.95rem;
+  color:rgba(228,221,208,.9);line-height:1.6;
+}
+.callout strong{color:var(--accent);font-weight:600}
+/* Pullquote */
+.pullquote{
+  border-left:3px solid var(--accent2);padding:1rem 0 1rem 1.5rem;
+  margin:2rem 0;font-size:1.1rem;font-style:italic;
+  color:rgba(228,221,208,.8);line-height:1.6;
+}
+/* Perspective snap */
+.snap{
+  text-align:center;padding:3rem 1.5rem;margin:2.5rem 0;
+  position:relative;
+}
+.snap::before,.snap::after{
+  content:'';position:absolute;left:50%;transform:translateX(-50%);
+  height:1px;width:60px;background:linear-gradient(90deg,transparent,var(--accent),transparent);
+}
+.snap::before{top:0}
+.snap::after{bottom:0}
+.snap blockquote{
+  font-family:var(--font-display);font-weight:700;
+  font-size:clamp(1.35rem,3.5vw,2.1rem);line-height:1.35;
+  color:var(--accent);margin:0;
+}
+/* CTA */
+.action{
+  scroll-margin-top:calc(var(--topbar-h) + 3px + 2rem);
+  padding:2.5rem 0;margin-top:1rem;
+}
+.action-inner{
+  background:linear-gradient(135deg,rgba(200,148,62,.08),rgba(184,69,42,.08));
+  border:1px solid var(--border);border-radius:16px;
+  padding:2.5rem 2rem;position:relative;overflow:hidden;
+}
+.action-inner::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--accent),var(--accent2),transparent);
+}
+.action h2{
+  font-family:var(--font-display);font-weight:700;
+  font-size:clamp(1.5rem,3vw,2rem);line-height:1.2;
+  margin-bottom:1rem;color:var(--fg);
+}
+.action p{margin-bottom:1.5rem;color:rgba(228,221,208,.88)}
+.action .highlight{
+  font-size:1.1rem;color:var(--accent);font-weight:600;
+  margin-bottom:1.5rem;
+}
+/* Checklist */
+.checklist{list-style:none;margin:1.5rem 0}
+.checklist li{
+  display:flex;align-items:center;gap:.7rem;
+  padding:.6rem 0;border-bottom:1px solid rgba(46,40,32,.5);
+  cursor:pointer;user-select:none;transition:opacity .3s;
+}
+.checklist li:last-child{border-bottom:none}
+.checklist li::before{
+  content:'';width:20px;height:20px;border-radius:5px;
+  border:2px solid var(--border);flex-shrink:0;
+  transition:background .3s,border-color .3s;
+}
+.checklist li[data-done="true"]::before{
+  background:var(--accent);border-color:var(--accent);
+}
+.checklist li[data-done="true"]{opacity:.5;text-decoration:line-through}
+.checklist li span{font-size:.95rem;transition:color .3s}
+.checklist li[data-done="true"] span{color:var(--muted)}
+.checklist li:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* Footer */
+footer{
+  max-width:calc(var(--max) + 260px);margin:3rem auto 0;
+  padding:2rem 1.5rem;border-top:1px solid var(--border);
+  display:flex;flex-wrap:wrap;justify-content:space-between;
+  align-items:flex-start;gap:2rem;
+}
+.footer-citations{flex:1;min-width:260px}
+.footer-citations h3{font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:.8rem}
+.footer-citations ol{padding-left:1.2rem;font-size:.8rem;color:var(--muted);line-height:1.7}
+.footer-citations li{margin-bottom:.4rem}
+.footer-citations em{color:rgba(228,221,208,.7);font-style:normal}
+.footer-right{display:flex;flex-direction:column;align-items:flex-end;gap:1rem}
+.footer-home{color:var(--accent);text-decoration:none;font-size:.85rem;font-weight:600}
+.footer-home:hover{color:var(--fg)}
+.back-top{
+  background:none;border:1px solid var(--border);color:var(--muted);
+  padding:.5rem 1rem;border-radius:8px;cursor:pointer;font-size:.8rem;
+  transition:color .3s,border-color .3s;
+}
+.back-top:hover{color:var(--fg);border-color:var(--accent)}
+.back-top:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* Scrim */
+#scrim{
+  position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:999;
+  opacity:0;pointer-events:none;transition:opacity .3s;
+}
+#scrim.open{opacity:1;pointer-events:auto}
+/* Fade-in animation */
+.fade-in{opacity:0;transform:translateY(18px);transition:opacity .6s ease,transform .6s ease}
+.fade-in.visible{opacity:1;transform:translateY(0)}
+/* Focus visible */
+a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+/* Responsive */
+@media(max-width:880px){
+  .wrap{grid-template-columns:1fr;padding-top:calc(var(--topbar-h) + 3px + 1.5rem)}
+  #menu-toggle{display:block}
+  #rail{
+    position:fixed;top:0;left:0;bottom:0;width:82vw;
+    background:var(--bg);border-right:1px solid var(--border);
+    z-index:1000;transform:translateX(-100%);
+    transition:transform .3s ease;padding:calc(var(--topbar-h) + 3px + 1.5rem) 1.5rem 2rem;
+    overflow-y:auto;
+  }
+  #rail.open{transform:translateX(0)}
+  #rail ol{margin-top:.5rem}
+  #rail a{font-size:.95rem;padding:.5em 0 .5em .8rem}
+  .breadcrumb .hide-mobile{display:none}
+  .hero{padding:1.5rem 0 2rem}
+  .chapter{padding:2rem 0}
+  .snap{padding:2rem 1rem}
+  .action-inner{padding:2rem 1.5rem}
+  footer{flex-direction:column;max-width:100%}
+  .footer-right{align-items:flex-start;flex-direction:row;flex-wrap:wrap;gap:1rem}
+}
+@media(max-width:480px){
+  body{font-size:1rem}
+  .hero h1{font-size:1.8rem}
+  .spectrum{padding:1rem}
+  .spectrum-labels{flex-direction:column;gap:.5rem}
+  .spectrum-lbl{max-width:100%;text-align:left!important}
+  .action-inner{padding:1.5rem 1rem}
+}
+/* Reduced motion */
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .fade-in{opacity:1;transform:none;transition:none}
+  .spectrum-fill{animation:none}
+  #progress{transition:none}
+  *{transition-duration:0s!important;animation-duration:0s!important}
+}
+</style>
+</head>
+<body>
+
+<div id="progress" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+
+<header id="topbar">
+  <div class="topbar-inner">
+    <a href="https://iggym.github.io/cogitatio-elegans/" class="home-link" aria-label="Home">&#8962;</a>
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="https://iggym.github.io/cogitatio-elegans/">Home</a>
+      <span class="sep">/</span>
+      <span class="hide-mobile">Essays</span>
+      <span class="sep hide-mobile">/</span>
+      <span class="current">The Thinking That Unthought</span>
+    </nav>
+    <span class="read-time">4 min read</span>
+    <button id="menu-toggle" aria-label="Open navigation" aria-expanded="false">
+      <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </div>
+</header>
+
+<div id="scrim"></div>
+
+<div class="wrap">
+  <nav id="rail" aria-label="Article sections">
+    <ol>
+      <li data-num="01"><a href="#s1">A Map in the Mind</a></li>
+      <li data-num="02"><a href="#s2">The Crutch That Carried</a></li>
+      <li data-num="03"><a href="#s3">Offloading Our Minds</a></li>
+      <li data-num="04"><a href="#s4">The Score Behind the Score</a></li>
+      <li data-num="05"><a href="#s5">Wiring the Escape</a></li>
+      <li data-num="06"><a href="#s6">Take Back Your Brain</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <article>
+      <header class="hero">
+        <h1>The Thinking That Unthought</h1>
+        <p class="subtitle">How civilization made us cognitively smaller — and what we can still reclaim</p>
+        <div class="spectrum" role="img" aria-label="Conceptual shift from individual cognitive power to distributed cognitive network">
+          <div class="spectrum-labels">
+            <div class="spectrum-lbl left">Individual Cognitive Power<span>Civilization = product of smarter minds</span></div>
+            <div class="spectrum-lbl right">Distributed Cognitive Network<span>Civilization = prosthesis that downsizes minds</span></div>
+          </div>
+          <div class="spectrum-bar">
+            <div class="spectrum-fill"></div>
+            <div class="spectrum-marker"></div>
+          </div>
+          <p class="spectrum-caption">The shift: from individual genius to collective dependency</p>
+        </div>
+      </header>
+
+      <section class="chapter fade-in" id="s1">
+        <h2>A Map in the Mind</h2>
+        <p class="lede">Imagine you're dropped into a forest with nothing. No phone, no map, no compass. Just you and the trees. How long before you could identify which plants are edible? Which ones would kill you? Could you track water? Could you read the weather from the clouds?</p>
+        <p>Your ancestors did this every single day. They carried vast mental maps of their territory — every ridge, every seasonal water source, every animal trail. They knew hundreds of plant species by sight, taste, and seasonal availability. They could navigate by starlight, predict rain from the smell of the air, and fashion tools from raw stone in minutes.</p>
+        <p>You can't do any of that. And it's not because you're busy with other things. It's because your brain has literally gotten smaller.</p>
+      </section>
+
+      <section class="chapter fade-in" id="s2">
+        <h2>The Crutch That Carried</h2>
+        <p>Over the last 20,000 years, the average human brain has shrunk by roughly 150 cubic centimeters — about 10%. That's not a rounding error. That's the difference between a Cro-Magnon skull and yours. And the shrinkage isn't random. It tracks perfectly with the rise of civilization.</p>
+        <div class="callout">
+          <strong>1,500 cc</strong> — average brain volume of Upper Paleolithic Homo sapiens.<br>
+          <strong>1,350 cc</strong> — average brain volume today.<br>
+          This reduction is observed globally, across all habitable continents and genders.
+        </div>
+        <p>We tell ourselves a comfortable story: civilization is the product of increasingly intelligent minds. Each generation a little smarter, a little more capable, building on the last. The pyramids, the printing press, the internet — all evidence of our growing cognitive power.</p>
+        <p>The truth runs in the exact opposite direction. Civilization is not built by smarter individuals. Civilization is a distributed cognitive prosthesis that makes smarter individuals unnecessary.</p>
+      </section>
+
+      <section class="chapter fade-in" id="s3">
+        <h2>Offloading Our Minds</h2>
+        <p>The connection between brain size and civilization isn't coincidental — it's causal. When we invented writing, we offloaded memory. When we built cities, we offloaded navigation. When we divided labor, we offloaded the need for multi-dimensional competence. Every technological layer that makes modern life possible simultaneously removes a cognitive demand that kept our brains large.</p>
+        <p>In a hunter-gatherer world, natural selection penalized cognitive errors with death. You couldn't afford to forget which berries were poisonous. You couldn't afford to lose your spatial bearings. Every individual had to be a generalist — a navigator, a botanist, an engineer, a meteorologist, all at once.</p>
+        <p>Civilization relaxes that pressure. A modern human can possess severe cognitive, physical, or social limitations and still survive, reproduce, and thrive. The network catches you. The division of labor means you only need to know one narrow slice of the world. The database holds what you'd otherwise need to remember. The GPS calculates what you'd otherwise need to compute.</p>
+
+        <div class="snap">
+          <blockquote>We didn't build civilization because we got smarter. We got dumber because civilization got built.</blockquote>
+        </div>
+
+        <p class="pullquote">The division of labor, writing systems, and digital networks buffer individuals from their environment — permitting biological simplification that would have been fatal in any earlier era.</p>
+      </section>
+
+      <section class="chapter fade-in" id="s4">
+        <h2>The Score Behind the Score</h2>
+        <p>The craniometric data is unambiguous. Anthropological studies of fossil skulls from the Upper Paleolithic — Cro-Magnon and their contemporaries — show average brain volumes around 1,500 cubic centimeters. Modern humans average roughly 1,350 cc. This reduction appears globally, across all habitable continents and genders. It is not a local anomaly. It is a species-wide pattern.</p>
+        <p>But wait — what about the Flynn Effect? IQ scores rose steadily throughout the 20th century. Doesn't that prove we're getting smarter?</p>
+        <p>No. The Flynn Effect is a phenotypic response — improved nutrition, reduced pathogen loads, and the spread of abstract schooling — not a genetic shift. When researchers examine polygenic scores for educational attainment and cognitive ability, the data suggests that genotypic potential for high intelligence may actually be under slight negative selection in modern populations, driven by differential fertility rates. We're performing better on tests while our genetic capacity for the underlying abilities slowly erodes.</p>
+        <div class="callout">
+          <strong>The Flynn Effect Illusion:</strong> Rising IQ scores throughout the 20th century reflect short-term phenotypic responses to better nutrition, fewer pathogens, and more schooling — not a genotypic trend toward higher intelligence. Polygenic scores suggest the opposite may be occurring.
+        </div>
+        <p>Philosophers Andy Clark and David Chalmers formalized what's happening with their Extended Mind thesis: cognitive processes are not confined to the skull. They're physically distributed across tools, notebooks, and digital networks. When you offload memory to your phone, the neural pathways dedicated to memory undergo atrophy. When you outsource navigation to GPS, the spatial reasoning centers reorganize.</p>
+        <p>Use it or lose it isn't a metaphor. It's neurobiology.</p>
+      </section>
+
+      <section class="chapter fade-in" id="s5">
+        <h2>Wiring the Escape</h2>
+        <p>This isn't a doomsday story. It's a recognition that changes what you do next.</p>
+        <p>The same mechanism that enables cognitive atrophy also means you can choose to reverse it — in small, specific ways. You can refuse to offload a particular cognitive task. You can navigate by landmark instead of GPS. You can memorize a phone number instead of saving it. You can learn the names of the trees on your street.</p>
+        <p>Each of these is a small act of cognitive reclamation. You're not going to regrow 150 cc of brain volume. But you can strengthen the neural pathways that modern life is quietly dismantling. The division of labor gave you a narrow specialization. Nothing stops you from broadening it on your own terms.</p>
+        <p>The network is not your enemy. But it is not your brain, either. The difference matters.</p>
+      </section>
+
+      <section class="action fade-in" id="s6">
+        <div class="action-inner">
+          <h2>Take Back Your Brain</h2>
+          <p class="highlight">Within the next 24 hours, turn off your GPS for one trip you normally navigate by screen. Walk or drive using only landmarks, memory, and spatial reasoning. Notice what your brain does when the network stops doing it for you.</p>
+          <p>Then try these cognitive reclamation acts — check them off as you go:</p>
+          <ul class="checklist" role="list">
+            <li tabindex="0" data-done="false" role="checkbox" aria-checked="false"><span>Navigate one trip without GPS</span></li>
+            <li tabindex="0" data-done="false" role="checkbox" aria-checked="false"><span>Memorize a phone number instead of saving it</span></li>
+            <li tabindex="0" data-done="false" role="checkbox" aria-checked="false"><span>Learn the names of five trees on your street</span></li>
+            <li tabindex="0" data-done="false" role="checkbox" aria-checked="false"><span>Read a paper map for 10 minutes</span></li>
+            <li tabindex="0" data-done="false" role="checkbox" aria-checked="false"><span>Cook a meal without a recipe</span></li>
+          </ul>
+        </div>
+      </section>
+    </article>
+  </main>
+</div>
+
+<footer>
+  <div class="footer-citations">
+    <h3>Sources &amp; References</h3>
+    <ol>
+      <li>Craniometric data from anthropological studies of Upper Paleolithic fossil skulls; global reduction from ~1,500 cc to ~1,350 cc documented across all habitable continents and genders.</li>
+      <li>Flynn Effect research: phenotypic IQ gains throughout the 20th century attributed to improved nutrition, decreased pathogen loads, and abstract schooling — not genotypic improvement.</li>
+      <li>Polygenic score analyses of educational attainment and cognitive ability suggest slight negative selection on genotypic intelligence potential in modern populations due to differential fertility rates.</li>
+      <li><em>Clark, A. &amp; Chalmers, D. (1998). "The Extended Mind." Analysis, 58(1), 7–19.</em> — The philosophical framework establishing that cognition is physically distributed across tools, notebooks, and digital networks.</li>
+    </ol>
+  </div>
+  <div class="footer-right">
+    <a href="https://iggym.github.io/cogitatio-elegans/" class="footer-home">Home</a>
+    <button class="back-top" aria-label="Back to top">Back to top</button>
+  </div>
+</footer>
+
+<script>
+/* Progress bar */
+const progressEl = document.getElementById('progress');
+function updateProgress() {
+  const scrollTop = window.scrollY;
+  const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+  const pct = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+  progressEl.style.width = pct + '%';
+  progressEl.setAttribute('aria-valuenow', Math.round(pct));
+}
+window.addEventListener('scroll', updateProgress, { passive: true });
+updateProgress();
+
+/* Scrollspy */
+const chapters = document.querySelectorAll('section.chapter, section.action');
+const railLinks = document.querySelectorAll('#rail a');
+const observerOptions = { rootMargin: '-15% 0px -70% 0px' };
+const scrollSpy = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const id = entry.target.id;
+      railLinks.forEach(link => {
+        link.classList.toggle('active', link.getAttribute('href') === '#' + id);
+      });
+    }
+  });
+}, observerOptions);
+chapters.forEach(ch => scrollSpy.observe(ch));
+
+/* Fade-in on scroll */
+const fadeEls = document.querySelectorAll('.fade-in');
+const fadeObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+      fadeObserver.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.1 });
+fadeEls.forEach(el => fadeObserver.observe(el));
+
+/* Mobile menu */
+const menuToggle = document.getElementById('menu-toggle');
+const rail = document.getElementById('rail');
+const scrim = document.getElementById('scrim');
+
+function openMenu() {
+  rail.classList.add('open');
+  scrim.classList.add('open');
+  menuToggle.setAttribute('aria-expanded', 'true');
+  menuToggle.setAttribute('aria-label', 'Close navigation');
+}
+function closeMenu() {
+  rail.classList.remove('open');
+  scrim.classList.remove('open');
+  menuToggle.setAttribute('aria-expanded', 'false');
+  menuToggle.setAttribute('aria-label', 'Open navigation');
+}
+
+menuToggle.addEventListener('click', () => {
+  const isOpen = rail.classList.contains('open');
+  isOpen ? closeMenu() : openMenu();
+});
+scrim.addEventListener('click', closeMenu);
+
+/* Close drawer on link click (mobile) */
+railLinks.forEach(link => {
+  link.addEventListener('click', () => {
+    if (window.innerWidth <= 880) closeMenu();
+  });
+});
+
+/* Checklist toggle */
+const checkItems = document.querySelectorAll('.checklist li');
+checkItems.forEach(item => {
+  function toggle() {
+    const done = item.getAttribute('data-done') === 'true';
+    item.setAttribute('data-done', done ? 'false' : 'true');
+    item.setAttribute('aria-checked', done ? 'false' : 'true');
+  }
+  item.addEventListener('click', toggle);
+  item.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      toggle();
+    }
+  });
+});
+
+/* Back to top */
+document.querySelector('.back-top').addEventListener('click', () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+</script>
+</body>
+</html>
