@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Yardstick's Shadow — How Measurement Built Reality</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F5F0EB;--bg-alt:#EDE6DC;--text:#1A1A1A;--text-muted:#7A7A7A;
+  --accent:#C45B28;--accent-light:#E8854A;--border:#D4C8B8;
+  --callout-bg:#F0E8DC;--pullquote-bg:#2A2520;--pullquote-text:#F5F0EB;
+  --topbar-bg:rgba(245,240,235,0.88);--max:660px;
+  --font-body:Georgia,'Palatino Linotype','Book Antiqua',Palatino,serif;
+  --font-ui:system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;
+  --progress-grad:linear-gradient(to right,var(--accent),var(--accent-light));
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --bg:#1A1A1A;--bg-alt:#252525;--text:#E8E2D8;--text-muted:#9A9A9A;
+    --accent:#E8854A;--accent-light:#F0A060;--border:#3A3A3A;
+    --callout-bg:#2A2520;--pullquote-bg:#F5F0EB;--pullquote-text:#1A1A1A;
+    --topbar-bg:rgba(26,26,26,0.88);
+  }
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:17px;line-height:1.7;overflow-x:hidden}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+/* ── Progress Bar ── */
+#progress{position:fixed;top:0;left:0;height:3px;width:0;background:var(--progress-grad);z-index:2000;transition:width .1s linear}
+@media(prefers-reduced-motion:reduce){#progress{transition:none}}
+
+/* ── Topbar ── */
+#topbar{position:fixed;top:3px;left:0;right:0;height:52px;background:var(--topbar-bg);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid var(--border);z-index:1500;display:flex;align-items:center;padding:0 1.5rem;gap:1rem;font-family:var(--font-ui)}
+#topbar a.home{color:var(--accent);font-weight:700;font-size:.85rem;text-decoration:none;letter-spacing:.02em}
+#topbar a.home:hover{text-decoration:underline}
+#topbar .breadcrumb{color:var(--text-muted);font-size:.8rem;flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+#topbar .breadcrumb span{margin:0 .3em}
+#topbar .reading-time{color:var(--text-muted);font-size:.75rem;white-space:nowrap}
+#topbar .hamburger{display:none;align-items:center;justify-content:center;width:36px;height:36px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--text);font-size:1.2rem;cursor:pointer;font-family:var(--font-ui)}
+#topbar .hamburger:hover{background:var(--bg-alt)}
+
+a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ── Scrim ── */
+#scrim{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;opacity:0;pointer-events:none;transition:opacity .3s ease}
+#scrim.active{opacity:1;pointer-events:auto}
+@media(prefers-reduced-motion:reduce){#scrim{transition:none}}
+
+/* ── Article ── */
+article{padding-top:60px}
+
+/* ── Wrap (Grid) ── */
+.wrap{display:grid;grid-template-columns:220px 1fr;max-width:calc(var(--max) + 260px);margin:0 auto;padding:0 1.5rem;gap:40px}
+@media(max-width:880px){
+  .wrap{display:block;max-width:100%;padding:0}
+  main{padding:0 1.25rem}
+}
+
+/* ── Rail ── */
+#rail{position:sticky;top:100px;height:fit-content;padding:1.5rem 0;font-family:var(--font-ui)}
+#rail .rail-header{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:1rem;font-weight:600}
+#rail ul{list-style:none}
+#rail li{position:relative;padding-left:2.2rem;margin-bottom:.6rem;font-size:.85rem}
+#rail li::before{content:attr(data-num);position:absolute;left:0;color:var(--text-muted);font-size:.7rem;font-weight:700;letter-spacing:.04em;top:.15em}
+#rail a{color:var(--text-muted);text-decoration:none;transition:color .2s}
+#rail a:hover{color:var(--text)}
+#rail a.active{color:var(--accent);font-weight:600}
+#rail .close-rail{display:none}
+@media(max-width:880px){
+  #rail{position:fixed;top:0;left:0;width:82vw;height:100dvh;z-index:1000;background:var(--bg);transform:translateX(-100%);transition:transform .3s ease;overflow-y:auto;padding:2rem;box-shadow:4px 0 30px rgba(0,0,0,.15)}
+  #rail.open{transform:translateX(0)}
+  #rail .close-rail{display:block;position:absolute;top:1rem;right:1rem;width:36px;height:36px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--text);font-size:1.1rem;cursor:pointer;font-family:var(--font-ui);display:flex;align-items:center;justify-content:center}
+  #topbar .hamburger{display:flex}
+}
+@media(prefers-reduced-motion:reduce){#rail{transition:none}}
+
+/* ── Main ── */
+main{min-width:0}
+
+/* ── Hero ── */
+.hero{margin:3rem 0 2.5rem}
+.hero h1{font-size:clamp(2.1rem,5vw,3.1rem);line-height:1.15;font-weight:700;letter-spacing:-.01em;color:var(--text);margin-bottom:.75rem}
+.hero .subtitle{font-size:1.1rem;color:var(--text-muted);line-height:1.5;margin-bottom:2rem;font-style:italic}
+
+/* ── Spectrum ── */
+.spectrum{display:flex;align-items:center;gap:10px;margin:1.5rem 0 0}
+.spectrum-old,.spectrum-new{font-family:var(--font-ui);font-size:.8rem;white-space:nowrap;letter-spacing:.02em}
+.spectrum-old{color:var(--text-muted)}
+.spectrum-new{color:var(--accent);font-weight:700}
+.spectrum-bar{flex:1;height:5px;border-radius:3px;background:linear-gradient(to right,var(--text-muted),var(--accent))}
+
+/* ── Chapter ── */
+.chapter{scroll-margin-top:80px;margin-bottom:3.5rem}
+.chapter h2{font-size:clamp(1.5rem,3vw,2rem);line-height:1.2;font-weight:700;margin-bottom:1.25rem;color:var(--text);letter-spacing:-.01em}
+.chapter .lede{font-size:1.12em;line-height:1.65;margin-bottom:1.5rem;color:var(--text)}
+.chapter p{margin-bottom:1.25rem}
+
+/* ── Callout ── */
+.callout{margin:1.75rem 0;padding:1.25rem 1.5rem;background:var(--callout-bg);border-radius:6px;font-size:.95em;line-height:1.6;border-left:3px solid var(--accent)}
+.callout strong{color:var(--accent)}
+
+/* ── Pullquote ── */
+.pullquote{margin:2rem 0;padding:1.5rem 2rem;background:var(--pullquote-bg);color:var(--pullquote-text);border-radius:6px;font-size:1.05em;line-height:1.6;font-style:italic}
+@media(prefers-color-scheme:dark){.pullquote{background:#2D2820;color:#E8E2D8;border:1px solid var(--border)}}
+
+/* ── Snap (Perspective-Snap) ── */
+.snap{text-align:center;font-size:clamp(1.6rem,4vw,2.4rem);font-weight:700;line-height:1.3;padding:2.5rem 1.5rem;margin:3rem 0;background:var(--accent);color:#fff;border-radius:6px;letter-spacing:-.01em}
+.snap em{font-style:normal;font-weight:400;opacity:.85}
+@media(prefers-color-scheme:dark){.snap{background:var(--accent);color:#1A1A1A}}
+
+/* ── Reframe Claim ── */
+.reframe-claim{font-size:clamp(1.3rem,3vw,1.7rem);font-weight:700;line-height:1.35;margin:1.5rem 0;color:var(--text)}
+
+/* ── Share Block ── */
+.share-block{display:flex;align-items:center;gap:10px;margin:1.75rem 0;padding:1rem 1.25rem;background:var(--bg-alt);border-radius:6px;font-family:var(--font-ui)}
+.share-label{font-size:.8rem;color:var(--text-muted);font-weight:600;letter-spacing:.03em}
+.share-btn{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:var(--text);color:var(--bg);font-weight:700;font-size:.8rem;text-decoration:none;transition:background .2s}
+.share-btn:hover{background:var(--accent)}
+.share-btn.share-x{font-size:.9rem}
+@media(prefers-color-scheme:dark){.share-btn{background:#E8E2D8;color:#1A1A1A}.share-btn:hover{background:var(--accent);color:#1A1A1A}}
+
+/* ── Action Block ── */
+.action{margin:3rem 0;padding:2rem;background:linear-gradient(135deg,var(--bg-alt),var(--callout-bg));border:2px solid var(--accent);border-radius:8px}
+.action h3{font-size:1.3rem;font-weight:700;margin-bottom:.5rem;color:var(--accent)}
+.action p{margin-bottom:1rem;line-height:1.6}
+.action .emphasis{font-size:1.15em;font-weight:700;color:var(--text);margin:1.25rem 0;line-height:1.4}
+.checklist{list-style:none;padding:0;margin:1.25rem 0}
+.checklist li{padding:.75rem 1rem;margin:.5rem 0;background:var(--bg);border-radius:6px;cursor:pointer;transition:opacity .2s;display:flex;align-items:center;gap:.75rem;font-family:var(--font-ui);font-size:.9rem;border:1px solid var(--border)}
+.checklist li::before{content:'○';color:var(--accent);font-size:1.1em;font-weight:700}
+.checklist li.done{opacity:.55}
+.checklist li.done::before{content:'✓';color:var(--accent)}
+.checklist li:hover{background:var(--bg-alt)}
+@media(prefers-reduced-motion:reduce){.checklist li{transition:none}}
+
+/* ── Divider ── */
+.divider{border:none;height:1px;background:var(--border);margin:2.5rem 0}
+
+/* ── Footer ── */
+footer{max-width:calc(var(--max) + 260px);margin:3rem auto 0;padding:2rem 1.5rem;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;gap:2rem;align-items:start;font-family:var(--font-ui);font-size:.85rem;color:var(--text-muted)}
+footer .foot-home{flex:0 0 auto}
+footer .foot-home a{color:var(--accent);font-weight:700;text-decoration:none}
+footer .foot-home a:hover{text-decoration:underline}
+footer .foot-cites{flex:1;min-width:260px;line-height:1.6}
+footer .foot-cites h4{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.5rem;color:var(--text)}
+footer .foot-cites p{margin-bottom:.3rem}
+footer .foot-top{flex:0 0 auto;display:flex;align-items:center}
+footer .foot-top button{background:var(--accent);color:#fff;border:none;padding:.5rem 1.2rem;border-radius:6px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:var(--font-ui);transition:background .2s}
+footer .foot-top button:hover{background:var(--accent-light)}
+@media(prefers-color-scheme:dark){footer .foot-top button{color:#1A1A1A}}
+@media(prefers-reduced-motion:reduce){footer .foot-top button{transition:none}}
+@media(max-width:880px){
+  footer{max-width:100%;padding:2rem 1.25rem}
+}
+
+/* ── Misc ── */
+@media(max-width:600px){
+  body{font-size:16px}
+  .hero h1{font-size:clamp(1.8rem,6vw,2.5rem)}
+  .snap{padding:2rem 1rem;font-size:clamp(1.4rem,5vw,2rem)}
+}
+</style>
+</head>
+<body>
+
+<!-- Progress Bar -->
+<div id="progress" role="progressbar" aria-label="Reading progress"></div>
+
+<!-- Topbar -->
+<header id="topbar">
+  <a class="home" href="https://iggym.github.io/cogitatio-elegans/">Home</a>
+  <div class="breadcrumb">The Yardstick's Shadow <span>›</span> <span>Measurement & Reality</span></div>
+  <div class="reading-time">8 min read</div>
+  <button id="hamburger" class="hamburger" aria-label="Open navigation" aria-expanded="false">☰</button>
+</header>
+
+<!-- Scrim -->
+<div id="scrim" aria-hidden="true"></div>
+
+<!-- Rail -->
+<aside id="rail" aria-label="Article navigation">
+  <button id="close-rail" class="close-rail" aria-label="Close navigation">✕</button>
+  <div class="rail-header">Sections</div>
+  <ul>
+    <li data-num="01"><a href="#s1">Marks Made Worlds</a></li>
+    <li data-num="02"><a href="#s2">Mirror, Not a Window</a></li>
+    <li data-num="03"><a href="#s3">Ghosts in the Ledger</a></li>
+    <li data-num="04"><a href="#s4">The Necessary Lie</a></li>
+    <li data-num="05"><a href="#s5">Choose Your Yardstick</a></li>
+    <li data-num="06"><a href="#s6">Ask What's Missing</a></li>
+  </ul>
+</aside>
+
+<article>
+  <div class="wrap">
+    <!-- Main Content -->
+    <main>
+
+      <!-- Hero -->
+      <header class="hero">
+        <h1>The Yardstick's Shadow</h1>
+        <p class="subtitle">How measurement built the reality we think it only describes</p>
+        <div class="spectrum">
+          <span class="spectrum-old">Numbers Describe</span>
+          <div class="spectrum-bar" aria-hidden="true"></div>
+          <span class="spectrum-new">Numbers Build</span>
+        </div>
+      </header>
+
+      <!-- §1 — Opening Scene -->
+      <section class="chapter" id="s1">
+        <h2>Marks Made Worlds</h2>
+        <p class="lede">Somewhere in southern Mesopotamia, around 3400 BCE, a temple clerk pressed a reed stylus into wet clay. Three vertical marks — a tally of grain owed to the priest. That gesture changed the world more than any sword or sermon.</p>
+        <p>Before that mark, the grain existed. The obligation did not. The clay tablet turned a farmer's harvest into a debt, a temple into a creditor, and a relationship between neighbors into a transaction that could be tracked, demanded, and enforced. The number didn't describe what was already there. It brought something into being that had never existed before: a quantified obligation that could travel across time and space, survive the deaths of the people who made it, and bind strangers who never met.</p>
+        <p>We still live inside that gesture. Your credit score does not describe your financial life. It determines it. It decides whether you rent this apartment or that one, whether you drive this car or take the bus, whether the door opens or stays locked. The number doesn't reflect reality — it filters it, shapes it, excludes parts of it. And it was invented, like the clay tally, by someone who needed to make a world governable.</p>
+      </section>
+
+      <hr class="divider">
+
+      <!-- §2 — Bold Reframe -->
+      <section class="chapter" id="s2">
+        <h2>Mirror, Not a Window</h2>
+        <p id="reframe" class="reframe-claim">Measurement does not describe reality. It builds it.</p>
+        <p>Counting, calendars, clocks, maps, money, statistics, and scientific instruments — the entire apparatus of quantification — did not simply measure a pre-existing world. They made new kinds of reality governable. They turned continuous experience into discrete units. They converted fluid time into divisible hours. They transformed subjective judgment into comparable scores. They made the invisible visible, the local universal, and the qualitative quantitative.</p>
+        <p>Every measurement system is an act of construction. The thermometer doesn't find temperature — it defines it as something that can be read on a scale. The clock doesn't discover time — it chops it into equal pieces that can be sold, charged, and synchronized. The census doesn't observe a population — it creates a population as a category that can be taxed, conscripted, and governed.</p>
+
+        <!-- Share Block -->
+        <div class="share-block">
+          <span class="share-label">Share this reframe →</span>
+          <a id="share-x" class="share-btn share-x" href="#" target="_blank" rel="noopener" aria-label="Share on X (Twitter)">𝕏</a>
+          <a id="share-li" class="share-btn share-li" href="#" target="_blank" rel="noopener" aria-label="Share on LinkedIn">in</a>
+        </div>
+
+        <p>Numbers are not a mirror. They are a mold.</p>
+      </section>
+
+      <hr class="divider">
+
+      <!-- §3 — Hidden Connections -->
+      <section class="chapter" id="s3">
+        <h2>Ghosts in the Ledger</h2>
+
+        <div class="callout">
+          <strong>Evolutionary thread.</strong> Humans evolved an approximate sense of quantity — the ability to tell "more" from "less" without counting. But formal mathematics, the insistence on exact numbers, is a cultural invention. And once culture amplified that approximate sense into precise counting, the world changed. What could be counted could be compared. What could be compared could be ranked. What could be ranked could be controlled.
+        </div>
+
+        <div class="callout">
+          <strong>Technological thread.</strong> Clocks turned time into labor. Ledgers turned trade into debt. Sensors turned weather into forecasts. Satellites turned territory into maps. Algorithms turned behavior into predictions. Each extension of measurement extended the reach of governance — of empires, of markets, of institutions that needed the world in countable form.
+        </div>
+
+        <div class="callout">
+          <strong>Historical mirror.</strong> Taxation grew through quantification of land and yield. Empire grew through mapping of territory and population. Industrial labor grew through timing of the workday. Standardized time grew through railway schedules. Credit scoring grew through statistical risk models. Surveillance capitalism grows through the quantification of attention and desire.
+        </div>
+
+        <blockquote class="pullquote">
+          Science depends on measurement, instrumentation, reproducibility, abstraction. This is not a flaw — it is the engine. But it means science also constructs the realities it studies. The instruments don't just detect phenomena; they define what counts as a phenomenon.
+        </blockquote>
+
+        <!-- Perspective Snap -->
+        <div class="snap" role="note" aria-label="Key insight">
+          What gets measured <em>gets made</em>.
+        </div>
+
+        <p>This is not a typo. The old saying goes "what gets measured gets managed." But the deeper truth is that measurement doesn't merely manage what exists — it brings new realities into being. The clay tally made debt real. The clock made wage labor real. The credit score made financial identity real. Before the measurement, these were diffuse, subjective, negotiable. After the measurement, they were fixed, objective, enforceable.</p>
+      </section>
+
+      <hr class="divider">
+
+      <!-- §4 — Credibility and Nuance -->
+      <section class="chapter" id="s4">
+        <h2>The Necessary Lie</h2>
+        <p class="lede">Measurement is not evil. It is not conspiracy. It is one of the most powerful tools humans have ever built.</p>
+        <p>Medicine depends on it. Engineering depends on it. Every bridge that doesn't collapse, every drug that doesn't poison, every forecast that saves a city from a hurricane — these are victories of measurement.</p>
+        <p>But the tool has a hidden cost. When you measure something, you make a decision about what matters. You decide that temperature matters more than humidity. You decide that hours matter more than seasons. You decide that revenue matters more than wellbeing. Every measurement is a choice, and every choice is an exclusion.</p>
+
+        <div class="callout">
+          The assumption that numbers merely represent the world objectively — that they are a neutral mirror — is the <strong>necessary lie</strong> that makes measurement so powerful. It allows us to trust the thermometer without questioning who set the scale. It allows us to accept the credit score without asking what data it digests. It allows us to believe the GDP without wondering what it leaves out.
+        </div>
+
+        <p>Measurement is useful precisely because it hides its own politics. But that doesn't make the politics disappear.</p>
+        <p>You might object: "But numbers are objective! Two is two regardless of who counts." True — the formal properties of numbers are invariant. But what we choose to count, how we choose to count it, and what we do with the count are never invariant. The objectivity of arithmetic is real. The objectivity of measurement is a story we tell to make the counting feel inevitable.</p>
+      </section>
+
+      <hr class="divider">
+
+      <!-- §5 — Narrative Agency -->
+      <section class="chapter" id="s5">
+        <h2>Choose Your Yardstick</h2>
+        <p class="lede">You are not powerless against quantification. The same power that makes measurement construct reality also means that changing what we measure changes what gets constructed.</p>
+
+        <p>A school that replaces standardized test scores with portfolio assessments doesn't just change its evaluation method — it changes what kind of student becomes visible.</p>
+        <p>A company that measures employee wellbeing alongside productivity doesn't just add a metric — it shifts what counts as success.</p>
+        <p>A city that tracks pedestrian safety instead of traffic speed doesn't just swap indicators — it redesigns the streets.</p>
+
+        <blockquote class="pullquote">
+          The archive of measurement has always been running code — a program that shaped every era before this one. The patterns of taxation, empire, labor, credit, and surveillance were not inevitable. They were built by specific measurement decisions made by specific people with specific interests.
+        </blockquote>
+
+        <p>Generative algorithms and modern data tools have finally given us the debugger. We can see the program. We can trace the inputs. We can ask: what would happen if we changed the variables? What would reality look like if we measured different things — or measured the same things differently?</p>
+        <p>This is not about rejecting numbers. It is about reclaiming the choice of which numbers matter — and remembering that the choice was always ours.</p>
+      </section>
+
+      <hr class="divider">
+
+      <!-- §6 — Closing CTA -->
+      <section class="chapter" id="s6">
+        <h2>Ask What's Missing</h2>
+        <div class="action">
+          <h3>Your next 24 hours</h3>
+          <p>Find one number that governs your daily life — your step count, your credit score, your salary, your KPI, your GPA, your blood pressure reading. Look at it and ask one question:</p>
+          <p class="emphasis">What is this number making invisible?</p>
+          <p>Every measurement is a spotlight. It illuminates what it targets and casts shadows on everything else. The step count makes distance visible and joy invisible. The credit score makes risk visible and circumstance invisible. The salary makes market value visible and contribution invisible.</p>
+          <p>Write down what's in the shadow. That's where your agency lives — in the things the current measurement system chose not to count, not to value, not to make real.</p>
+          <p>You don't need a new technology to see it. You need a new question.</p>
+          <ul class="checklist" aria-label="Action checklist">
+            <li>Find one number that governs your daily life</li>
+            <li>Ask: what does this number make invisible?</li>
+            <li>Write down what's in the shadow</li>
+          </ul>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div class="foot-home">
+      <a href="https://iggym.github.io/cogitatio-elegans/">Home</a>
+    </div>
+    <div class="foot-cites">
+      <h4>Sources & Connections</h4>
+      <p>Core idea: Counting, calendars, clocks, maps, money, statistics, and scientific instruments did not simply measure reality; they made new kinds of reality governable.</p>
+      <p>Evolutionary: Humans evolved approximate quantity sense; culture amplified it into formal mathematics.</p>
+      <p>Technological: Clocks, ledgers, sensors, satellites, algorithms extend measurement everywhere.</p>
+      <p>Scientific: Science depends on measurement, instrumentation, reproducibility, abstraction.</p>
+      <p>Historical: Taxation, empire, industrial labor, standardized time, credit scoring, surveillance capitalism grew through quantification.</p>
+      <p>Paradigm challenge: Modern reality is partly constructed by what societies decide to measure.</p>
+    </div>
+    <div class="foot-top">
+      <button id="back-top" aria-label="Back to top">↑ Top</button>
+    </div>
+  </footer>
+</article>
+
+<script>
+/* ── Scroll Progress ── */
+(function(){
+  const bar = document.getElementById('progress');
+  function update(){
+    const top = document.documentElement.scrollTop || document.body.scrollTop;
+    const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+    bar.style.width = height > 0 ? (top / height * 100) + '%' : '0%';
+  }
+  window.addEventListener('scroll', update, {passive:true});
+  update();
+})();
+
+/* ── Scrollspy ── */
+(function(){
+  const sections = document.querySelectorAll('.chapter');
+  const links = document.querySelectorAll('#rail a');
+  const obs = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        links.forEach(function(l){ l.classList.remove('active'); });
+        const match = document.querySelector('#rail a[href="#'+e.target.id+'"]');
+        if(match) match.classList.add('active');
+      }
+    });
+  }, {rootMargin:'-15% 0px -70% 0px'});
+  sections.forEach(function(s){ obs.observe(s); });
+})();
+
+/* ── Mobile Menu ── */
+(function(){
+  const rail = document.getElementById('rail');
+  const scrim = document.getElementById('scrim');
+  const hamburger = document.getElementById('hamburger');
+  const closeBtn = document.getElementById('close-rail');
+
+  function openMenu(){
+    rail.classList.add('open');
+    scrim.classList.add('active');
+    hamburger.setAttribute('aria-expanded','true');
+  }
+  function closeMenu(){
+    rail.classList.remove('open');
+    scrim.classList.remove('active');
+    hamburger.setAttribute('aria-expanded','false');
+  }
+  hamburger.addEventListener('click', openMenu);
+  scrim.addEventListener('click', closeMenu);
+  closeBtn.addEventListener('click', closeMenu);
+
+  /* Close drawer when a rail link is clicked on mobile */
+  links = document.querySelectorAll('#rail a');
+  links.forEach(function(l){
+    l.addEventListener('click', function(){
+      if(window.innerWidth <= 880) closeMenu();
+    });
+  });
+})();
+
+/* ── Social Share Prefill ── */
+(function(){
+  const reframeEl = document.getElementById('reframe');
+  const text = reframeEl ? reframeEl.innerText.trim() : '';
+  const url = window.location.href;
+  const xBtn = document.getElementById('share-x');
+  const liBtn = document.getElementById('share-li');
+
+  if(xBtn && text){
+    xBtn.href = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(text) + '&url=' + encodeURIComponent(url);
+  }
+  if(liBtn && url){
+    liBtn.href = 'https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(url);
+  }
+})();
+
+/* ── Checklist Toggle ── */
+(function(){
+  const items = document.querySelectorAll('.checklist li');
+  items.forEach(function(item){
+    item.addEventListener('click', function(){
+      item.classList.toggle('done');
+    });
+    item.setAttribute('role','checkbox');
+    item.setAttribute('tabindex','0');
+    item.addEventListener('keydown', function(e){
+      if(e.key === 'Enter' || e.key === ' '){
+        e.preventDefault();
+        item.classList.toggle('done');
+      }
+    });
+  });
+})();
+
+/* ── Back to Top ── */
+(function(){
+  const btn = document.getElementById('back-top');
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  btn.addEventListener('click', function(){
+    if(reduced){
+      window.scrollTo(0,0);
+    } else {
+      window.scrollTo({top:0, behavior:'smooth'});
+    }
+  });
+})();
+</script>
+</body>
+</html>
