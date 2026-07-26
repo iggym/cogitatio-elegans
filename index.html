@@ -3,14 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cogitatio Elegans</title>
+    <title>Cogitatio Elegans — The convergence of mind, machine, and epoch</title>
+    <meta name="description" content="An evolving repository exploring the deep vectors of human evolution, technological leverage, scientific discovery, and historical mirrors.">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Cogitatio Elegans">
+    <meta property="og:description" content="The convergence of mind, machine, and epoch — essays on human evolution, technological leverage, and historical mirrors.">
+    <meta property="og:url" content="https://iggym.github.io/cogitatio-elegans/">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Cogitatio Elegans">
+    <meta name="twitter:description" content="The convergence of mind, machine, and epoch.">
     <style>
         :root {
             --bg: #0a0a0c;
             --surface: #131318;
             --border: #22222d;
             --text-main: #f3f3f6;
-            --text-muted: #8b8b9e;
+            --text-muted: #9797a8; /* lightened slightly from #8b8b9e for AA contrast on --bg */
             --accent: #64ffda;
             --accent-glow: rgba(100, 255, 218, 0.15);
             --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -36,8 +44,24 @@
             flex-direction: column;
         }
 
-        /* Custom cursor — a quiet "second point" watching where the mind looks.
-           Only on precise pointers; never replaces the real cursor for touch/a11y. */
+        .skip-link {
+            position: absolute;
+            top: -3rem;
+            left: 1rem;
+            background: var(--accent);
+            color: #0a0a0c;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            font-weight: 700;
+            padding: 0.6rem 1rem;
+            border-radius: 4px;
+            z-index: 1000;
+            transition: top 0.2s ease;
+        }
+        .skip-link:focus {
+            top: 1rem;
+        }
+
         .pointer-fine .cursor-dot,
         .pointer-fine .cursor-ring {
             display: block;
@@ -57,7 +81,6 @@
             width: 4px;
             height: 4px;
             background: var(--accent);
-            transition: opacity 0.2s ease;
         }
         .cursor-ring {
             width: 28px;
@@ -97,7 +120,7 @@
         }
 
         header {
-            margin-bottom: 5rem;
+            margin-bottom: 3rem;
             border-bottom: 1px solid var(--border);
             padding-bottom: 3rem;
         }
@@ -142,7 +165,7 @@
             color: var(--text-muted);
             line-height: 1.6;
             max-width: 600px;
-            margin-bottom: 2rem;
+            margin-bottom: 1.75rem;
             opacity: 0;
             animation: rise 0.7s ease forwards;
             animation-delay: 0.5s;
@@ -154,6 +177,27 @@
                 filter: blur(0);
                 transform: translateY(0);
             }
+        }
+
+        .stats-line {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem 0;
+            margin-bottom: 1.75rem;
+            opacity: 0;
+            animation: rise 0.7s ease forwards;
+            animation-delay: 0.58s;
+        }
+        .stats-line strong {
+            color: var(--text-main);
+            font-weight: 600;
+        }
+        .stats-line .sep {
+            margin: 0 0.6rem;
+            opacity: 0.5;
         }
 
         .meta-nav {
@@ -179,12 +223,143 @@
             transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        .meta-nav a:hover {
+        .meta-nav a:hover,
+        .meta-nav a:focus-visible {
             color: var(--accent);
         }
 
         .meta-nav a:hover svg {
             transform: rotate(-8deg) scale(1.08);
+        }
+
+        .featured-eyebrow {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--accent);
+            margin-bottom: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .featured-eyebrow::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 0 4px var(--accent-glow);
+        }
+
+        .featured-card {
+            background: linear-gradient(160deg, var(--surface), #0d0d11);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 2.25rem;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+            margin-bottom: 3.5rem;
+            position: relative;
+            overflow: hidden;
+            border-top: 2px solid var(--cat-color, var(--accent));
+            transition: border-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+        }
+        .featured-card:hover,
+        .featured-card:focus-visible {
+            transform: translateY(-3px);
+            box-shadow: 0 20px 40px -20px rgba(0,0,0,0.6);
+        }
+        .featured-card h2 {
+            font-size: clamp(1.5rem, 3vw, 2rem);
+            letter-spacing: -0.01em;
+            margin-bottom: 0.85rem;
+        }
+        .featured-card p {
+            color: var(--text-muted);
+            font-size: 1.05rem;
+            line-height: 1.6;
+            max-width: 640px;
+            margin-bottom: 1.25rem;
+        }
+        .featured-card .article-meta {
+            flex-direction: row;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .search-wrap {
+            position: relative;
+        }
+        .search-wrap svg {
+            position: absolute;
+            left: 0.9rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+        #search-input {
+            width: 100%;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-main);
+            font-size: 0.95rem;
+            padding: 0.75rem 1rem 0.75rem 2.6rem;
+            font-family: inherit;
+            transition: border-color 0.2s ease;
+        }
+        #search-input::placeholder {
+            color: var(--text-muted);
+        }
+        #search-input:focus-visible {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .filter-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .filter-pill {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            text-transform: lowercase;
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            padding: 0.4rem 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .filter-pill:hover {
+            border-color: rgba(100, 255, 218, 0.4);
+            color: var(--text-main);
+        }
+        .filter-pill:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+        .filter-pill[aria-pressed="true"] {
+            background: var(--accent-glow);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        .filter-pill .count {
+            opacity: 0.6;
+            margin-left: 0.3em;
         }
 
         .section-title {
@@ -193,7 +368,7 @@
             text-transform: uppercase;
             letter-spacing: 0.1em;
             color: var(--text-muted);
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
             display: flex;
             align-items: center;
             gap: 1rem;
@@ -238,12 +413,11 @@
             left: 0;
             width: 3px;
             height: 100%;
-            background: var(--accent);
+            background: var(--cat-color, var(--accent));
             opacity: 0;
             transition: opacity 0.3s;
         }
 
-        /* Spotlight that tracks the cursor, like the card is listening */
         .article-card::after {
             content: '';
             position: absolute;
@@ -254,19 +428,19 @@
             pointer-events: none;
         }
 
-        .article-card:hover {
+        .article-card:hover,
+        .article-card:focus-visible {
             border-color: rgba(100, 255, 218, 0.4);
             box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
         }
-
-        .article-card:hover::before {
+        .article-card:hover::before,
+        .article-card:focus-visible::before {
             opacity: 1;
         }
-
-        .article-card:hover::after {
+        .article-card:hover::after,
+        .article-card:focus-visible::after {
             opacity: 1;
         }
-
         .article-card:focus-visible {
             outline: 2px solid var(--accent);
             outline-offset: 3px;
@@ -297,8 +471,9 @@
 
         .tag {
             display: inline-block;
-            background: rgba(255,255,255,0.03);
-            border: 1px solid var(--border);
+            background: color-mix(in srgb, var(--cat-color, var(--text-muted)) 14%, transparent);
+            border: 1px solid color-mix(in srgb, var(--cat-color, var(--text-muted)) 40%, transparent);
+            color: var(--cat-color, var(--text-muted));
             padding: 0.2rem 0.5rem;
             border-radius: 3px;
             text-transform: lowercase;
@@ -327,6 +502,12 @@
             100% { content: ''; }
         }
 
+        .results-count {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
         footer {
             margin-top: auto;
             border-top: 1px solid var(--border);
@@ -350,8 +531,8 @@
 
         @media (prefers-reduced-motion: reduce) {
             html { scroll-behavior: auto; }
-            .badge, h1 .word, p.subtitle, .meta-nav,
-            .article-card {
+            .badge, h1 .word, p.subtitle, .stats-line, .meta-nav,
+            .article-card, .featured-card {
                 animation: none !important;
                 opacity: 1 !important;
                 filter: none !important;
@@ -362,6 +543,7 @@
     </style>
 </head>
 <body>
+    <a class="skip-link" href="#main-content">Skip to essays</a>
     <div class="cursor-dot" aria-hidden="true"></div>
     <div class="cursor-ring" aria-hidden="true"></div>
     <canvas id="canvas-bg" aria-hidden="true"></canvas>
@@ -371,6 +553,7 @@
             <div class="badge">Cogitatio Elegans</div>
             <h1 id="hero-heading"></h1>
             <p class="subtitle">An evolving repository exploring the deep vectors of human evolution, technological leverage, scientific discovery, and historical mirrors.</p>
+            <p class="stats-line" id="stats-line" aria-live="polite"></p>
             <div class="meta-nav">
                 <a href="https://github.com/iggym/cogitatio-elegans" target="_blank">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"></path><path d="M9 18c-4.51 2-5-2-7-2"></path></svg>
@@ -379,20 +562,33 @@
             </div>
         </header>
 
-        <main>
-            <div class="section-title">Indexed Articles &amp; Essays</div>
+        <main id="main-content">
+            <div id="featured-container"></div>
+
+            <div class="controls">
+                <div class="search-wrap">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+                    <label for="search-input" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);">Search essays</label>
+                    <input id="search-input" type="text" placeholder="Search essays by title or theme…" autocomplete="off">
+                </div>
+                <div class="filter-pills" id="filter-pills" role="group" aria-label="Filter by category"></div>
+            </div>
+
+            <div class="section-title">
+                <span>All Essays</span>
+                <span class="results-count" id="results-count" aria-live="polite"></span>
+            </div>
             <div id="articles-container" aria-live="polite">
                 <div class="state-message"><span class="dots">Indexing thought vectors</span></div>
             </div>
         </main>
 
         <footer>
-            <span>cogitatio-elegans // zero dependencies // raw data</span>
+            <span id="footer-text">cogitatio-elegans // zero dependencies // raw data</span>
         </footer>
     </div>
 
     <script>
-        // ---------- Hero heading: split into words for a staggered rise-in ----------
         (function typeHeading() {
             const heading = document.getElementById('hero-heading');
             const text = 'The convergence of mind, machine, and epoch.';
@@ -402,12 +598,10 @@
                 .join(' ');
         })();
 
-        // ---------- Respect reduced motion ----------
         const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         const hasFinePointer = window.matchMedia('(pointer: fine)').matches;
         if (hasFinePointer) document.body.classList.add('pointer-fine');
 
-        // ---------- Custom cursor ----------
         const cursorDot = document.querySelector('.cursor-dot');
         const cursorRing = document.querySelector('.cursor-ring');
         let mouseX = window.innerWidth / 2;
@@ -421,7 +615,6 @@
                 cursorDot.style.left = mouseX + 'px';
                 cursorDot.style.top = mouseY + 'px';
             });
-
             (function animateRing() {
                 ringX += (mouseX - ringX) * 0.18;
                 ringY += (mouseY - ringY) * 0.18;
@@ -430,19 +623,24 @@
                 requestAnimationFrame(animateRing);
             })();
 
-            document.querySelectorAll('a, button').forEach((el) => {
-                el.addEventListener('mouseenter', () => cursorRing.classList.add('is-active'));
-                el.addEventListener('mouseleave', () => cursorRing.classList.remove('is-active'));
-            });
+            function bindCursorTargets() {
+                document.querySelectorAll('a, button, input').forEach((el) => {
+                    el.addEventListener('mouseenter', () => cursorRing.classList.add('is-active'));
+                    el.addEventListener('mouseleave', () => cursorRing.classList.remove('is-active'));
+                });
+            }
+            bindCursorTargets();
+            window.__rebindCursor = bindCursorTargets;
         }
 
-        // ---------- Interactive canvas: a graph that notices you ----------
         const canvas = document.getElementById('canvas-bg');
         const ctx = canvas.getContext('2d');
         let width, height;
         let particles = [];
         let ripples = [];
         let pointer = { x: -9999, y: -9999, active: false };
+        let rafId = null;
+        let running = true;
 
         function resize() {
             width = canvas.width = window.innerWidth;
@@ -459,20 +657,16 @@
                 this.vy = (Math.random() - 0.5) * 0.3;
                 this.baseRadius = Math.random() * 1.5 + 0.5;
                 this.radius = this.baseRadius;
-                this.flash = 0; // brightens briefly when a ripple passes through
+                this.flash = 0;
             }
             update() {
-                // gentle drift
                 this.x += this.vx;
                 this.y += this.vy;
-
-                // wrap edges
                 if (this.x < 0) this.x = width;
                 if (this.x > width) this.x = 0;
                 if (this.y < 0) this.y = height;
                 if (this.y > height) this.y = 0;
 
-                // subtle repulsion from the cursor — the field notices attention
                 if (pointer.active) {
                     const dx = this.x - pointer.x;
                     const dy = this.y - pointer.y;
@@ -498,15 +692,12 @@
 
         function seedParticles() {
             particles = [];
-            const count = Math.floor((width * height) / 18000);
+            const count = Math.min(110, Math.floor((width * height) / 18000));
             for (let i = 0; i < count; i++) particles.push(new Particle());
         }
         seedParticles();
         window.addEventListener('resize', seedParticles);
 
-        // A ripple is a thought propagating outward from a click — an expanding
-        // ring that briefly lights up every node (and the lines between them)
-        // it passes through, like a signal crossing a network.
         class Ripple {
             constructor(x, y) {
                 this.x = x;
@@ -546,10 +737,15 @@
             if (ripples.length > 6) ripples.shift();
         });
 
+        document.addEventListener('visibilitychange', () => {
+            running = !document.hidden;
+            if (running && !rafId) animate();
+        });
+
         function animate() {
+            if (!running) { rafId = null; return; }
             ctx.clearRect(0, 0, width, height);
 
-            // connections between nearby particles
             for (let i = 0; i < particles.length; i++) {
                 particles[i].update();
                 for (let j = i + 1; j < particles.length; j++) {
@@ -568,7 +764,6 @@
                 }
             }
 
-            // a faint tether from the cursor into the nearest thoughts
             if (pointer.active && !prefersReducedMotion) {
                 particles.forEach((p) => {
                     const d = Math.hypot(p.x - pointer.x, p.y - pointer.y);
@@ -584,15 +779,13 @@
             }
 
             particles.forEach((p) => p.draw());
-
             ripples.forEach((r) => { r.update(); r.draw(); });
             ripples = ripples.filter((r) => r.life > 0);
 
-            requestAnimationFrame(animate);
+            rafId = requestAnimationFrame(animate);
         }
         animate();
 
-        // ---------- Magnetic tilt for article cards ----------
         function attachTilt(card) {
             if (!hasFinePointer || prefersReducedMotion) return;
             card.addEventListener('mousemove', (e) => {
@@ -610,7 +803,159 @@
             });
         }
 
-        // ---------- Fetch metadata & populate list ----------
+        const CATEGORY_COLORS = {
+            technology: '#64ffda',
+            history: '#e8b76a',
+            evolution: '#8fd694',
+            intelligence: '#b39ddb',
+            singularity: '#f2789f',
+            agriculture: '#c9c17a',
+            systems: '#7ec8e3',
+            science: '#f2a679'
+        };
+        const FALLBACK_PALETTE = ['#64ffda', '#e8b76a', '#8fd694', '#b39ddb', '#f2789f', '#c9c17a', '#7ec8e3', '#f2a679'];
+        function colorForCategory(cat) {
+            if (CATEGORY_COLORS[cat]) return CATEGORY_COLORS[cat];
+            let hash = 0;
+            for (let i = 0; i < cat.length; i++) hash = cat.charCodeAt(i) + ((hash << 5) - hash);
+            return FALLBACK_PALETTE[Math.abs(hash) % FALLBACK_PALETTE.length];
+        }
+
+        function escapeHtml(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            const d = new Date(dateStr + 'T00:00:00');
+            if (isNaN(d)) return dateStr;
+            return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+
+        function cardHref(item) {
+            return item.url || `./articles/${item.slug || ''}`;
+        }
+
+        function buildCard(item, index, delay) {
+            const card = document.createElement('a');
+            card.className = 'article-card';
+            card.setAttribute('role', 'listitem');
+            card.href = cardHref(item);
+            card.style.setProperty('--cat-color', colorForCategory(item.category || 'general'));
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(15px)';
+            card.style.transition = `opacity 0.4s ease ${delay}s, transform 0.4s ease ${delay}s`;
+
+            card.innerHTML = `
+                <div class="article-content">
+                    <h3>${escapeHtml(item.title)}</h3>
+                    <p>${escapeHtml(item.description || item.summary || '')}</p>
+                </div>
+                <div class="article-meta">
+                    <span class="tag">${escapeHtml(item.category || 'general')}</span>
+                    <time datetime="${escapeHtml(item.date || '')}">${formatDate(item.date)}</time>
+                </div>
+            `;
+            attachTilt(card);
+            requestAnimationFrame(() => {
+                setTimeout(() => {
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, 30);
+            });
+            return card;
+        }
+
+        function renderFeatured(item) {
+            const container = document.getElementById('featured-container');
+            if (!item) { container.innerHTML = ''; return; }
+            const card = document.createElement('a');
+            card.className = 'featured-card';
+            card.href = cardHref(item);
+            card.style.setProperty('--cat-color', colorForCategory(item.category || 'general'));
+            card.innerHTML = `
+                <div class="featured-eyebrow">Latest Thought</div>
+                <h2>${escapeHtml(item.title)}</h2>
+                <p>${escapeHtml(item.description || item.summary || '')}</p>
+                <div class="article-meta">
+                    <span class="tag">${escapeHtml(item.category || 'general')}</span>
+                    <time datetime="${escapeHtml(item.date || '')}">${formatDate(item.date)}</time>
+                </div>
+            `;
+            container.innerHTML = '';
+            container.appendChild(card);
+        }
+
+        let allArticles = [];
+        let activeCategory = 'all';
+        let searchQuery = '';
+
+        function applyFilters() {
+            const q = searchQuery.trim().toLowerCase();
+            return allArticles.filter((item) => {
+                const inCategory = activeCategory === 'all' || item.category === activeCategory;
+                const haystack = `${item.title} ${item.description || item.summary || ''}`.toLowerCase();
+                const matchesQuery = !q || haystack.includes(q);
+                return inCategory && matchesQuery;
+            });
+        }
+
+        function renderGrid() {
+            const container = document.getElementById('articles-container');
+            const resultsCount = document.getElementById('results-count');
+            const filtered = applyFilters();
+
+            resultsCount.textContent = filtered.length === allArticles.length
+                ? `${allArticles.length} total`
+                : `${filtered.length} of ${allArticles.length}`;
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="state-message">No essays match that search — try a different term or clear the filter.</div>';
+                return;
+            }
+
+            container.innerHTML = '<div class="articles-grid" id="grid" role="list"></div>';
+            const grid = document.getElementById('grid');
+            filtered.forEach((item, i) => grid.appendChild(buildCard(item, i, Math.min(i * 0.06, 0.6))));
+            if (window.__rebindCursor) window.__rebindCursor();
+        }
+
+        function renderFilterPills() {
+            const wrap = document.getElementById('filter-pills');
+            const counts = {};
+            allArticles.forEach((a) => { counts[a.category] = (counts[a.category] || 0) + 1; });
+            const categories = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+
+            const pills = [{ key: 'all', label: 'all', count: allArticles.length }]
+                .concat(categories.map((c) => ({ key: c, label: c, count: counts[c] })));
+
+            wrap.innerHTML = '';
+            pills.forEach((p) => {
+                const btn = document.createElement('button');
+                btn.className = 'filter-pill';
+                btn.type = 'button';
+                btn.setAttribute('aria-pressed', String(p.key === activeCategory));
+                btn.innerHTML = `${escapeHtml(p.label)}<span class="count">${p.count}</span>`;
+                btn.addEventListener('click', () => {
+                    activeCategory = p.key;
+                    document.querySelectorAll('.filter-pill').forEach((el) => el.setAttribute('aria-pressed', 'false'));
+                    btn.setAttribute('aria-pressed', 'true');
+                    renderGrid();
+                });
+                wrap.appendChild(btn);
+            });
+            if (window.__rebindCursor) window.__rebindCursor();
+        }
+
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            searchQuery = e.target.value;
+            renderGrid();
+        });
+
         async function loadArticles() {
             const container = document.getElementById('articles-container');
             try {
@@ -623,49 +968,20 @@
                     return;
                 }
 
-                container.innerHTML = '<div class="articles-grid" id="grid" role="list"></div>';
-                const grid = document.getElementById('grid');
+                allArticles = articles.slice().sort((a, b) => new Date(b.date) - new Date(a.date));
 
-                articles.forEach((item, index) => {
-                    const card = document.createElement('a');
-                    card.className = 'article-card';
-                    card.setAttribute('role', 'listitem');
-                    card.href = item.url || `./articles/${item.slug || ''}`;
-                    card.style.opacity = '0';
-                    card.style.transform = 'translateY(15px)';
-                    card.style.transition = `opacity 0.4s ease ${index * 0.08}s, transform 0.4s ease ${index * 0.08}s`;
+                const categoryCount = new Set(allArticles.map((a) => a.category)).size;
+                document.getElementById('stats-line').innerHTML =
+                    `<strong>${allArticles.length}</strong> essays<span class="sep">·</span><strong>${categoryCount}</strong> threads<span class="sep">·</span>updated <strong>${formatDate(allArticles[0].date)}</strong>`;
+                document.getElementById('footer-text').textContent =
+                    `cogitatio-elegans // ${allArticles.length} essays indexed // zero dependencies`;
 
-                    card.innerHTML = `
-                        <div class="article-content">
-                            <h3>${escapeHtml(item.title)}</h3>
-                            <p>${escapeHtml(item.description || item.summary || '')}</p>
-                        </div>
-                        <div class="article-meta">
-                            <span class="tag">${escapeHtml(item.category || 'general')}</span>
-                            <span>${escapeHtml(item.date || '')}</span>
-                        </div>
-                    `;
-                    grid.appendChild(card);
-                    attachTilt(card);
-
-                    requestAnimationFrame(() => {
-                        setTimeout(() => {
-                            card.style.opacity = '1';
-                            card.style.transform = 'translateY(0)';
-                        }, 30);
-                    });
-                });
+                renderFeatured(allArticles[0]);
+                renderFilterPills();
+                renderGrid();
             } catch (err) {
                 container.innerHTML = '<div class="state-message">Failed to load metadata.json stream. Ensure the file is present in root.</div>';
             }
-        }
-
-        function escapeHtml(str) {
-            return String(str)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;');
         }
 
         loadArticles();
