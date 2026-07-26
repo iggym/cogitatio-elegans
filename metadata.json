@@ -83,5 +83,27 @@
     "date": "2026-05-14",
     "slug": "history-as-code.html"
   } 
+  ,
+  {
+    "title": "The Yardstick's Shadow",
+    "description": "How measurement built the reality we think it only describes.",
+    "category": "science",
+    "date": "2026-07-05",
+    "slug": "measurement-making-reality.html"
+  },
+  {
+    "title": "You are not a camera. You are a prediction machine.",
+    "description": "Your Brain's Waking Dream.",
+    "category": "science",
+    "date": "2026-07-01",
+    "slug": "brain-making-reality.html"
+  },
+  {
+    "title": "Ghost in the Machine.",
+    "description": "Why the most powerful technologies on earth aren't made of silicon, wires, or steel.",
+    "category": "science",
+    "date": "2026-07-07",
+    "slug": "abstractions-making-reality.html"
+  } 
 ]
 
