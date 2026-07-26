@@ -1,0 +1,24 @@
+[
+  {
+    "title": "The Architecture of Synthetic Intelligences",
+    "description": "Examining how autonomous multi-agent orchestration frameworks and context memory systems mirror neural synchronization.",
+    "category": "technology",
+    "date": "2026-07-15",
+    "slug": "synthetic-intelligences.html"
+  },
+  {
+    "title": "Silicon and Memory: The Edge Infrastructure Shift",
+    "description": "How decentralized client-side applications and edge computing are transforming the topology of modern web architectures.",
+    "category": "systems",
+    "date": "2026-06-28",
+    "slug": "edge-infrastructure.html"
+  },
+  {
+    "title": "Echoes in the Archive: History as Code",
+    "description": "Tracing cyclical patterns in technological revolutions from the printing press to modern generative algorithms.",
+    "category": "history",
+    "date": "2026-05-14",
+    "slug": "history-as-code.html"
+  }
+]
+
