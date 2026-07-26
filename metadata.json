@@ -24,8 +24,22 @@
     "title": "The Thinking That Unthought",
     "description": "How civilization made us cognitively smaller — and what we can still reclaim.",
     "category": "history",
-    "date": "2026-07-25",
+    "date": "2026-07-21",
     "slug": "we-are-not-thinking.html"
+  },
+   {
+    "title": "Silicon's Second Nature",
+    "description": "Intelligence isn’t a human invention. It’s a universal solution that finds whatever substrate is available—carbon, silicon, or otherwise. We are not the endpoint; we are just the first draft.",
+    "category": "intelligence",
+    "date": "2026-07-22",
+    "slug": "silicon-thinking.html"
+  },
+  {
+    "title": "Mirror in the Machine",
+    "description": "The Technological Singularity as a Phase Transition.",
+    "category": "singularity",
+    "date": "2026-07-22",
+    "slug": "singularity-as-transition.html"
   },
   {
     "title": "Silicon and Memory: The Edge Infrastructure Shift",
