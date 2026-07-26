@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forged in Flame — Fire, Cooking, and the Technological Origin of the Human Body</title>
+<meta name="description" content="The human body may itself be a technological artifact. Fire and cooking didn't just support human evolution — they actively shaped the anatomy you carry today.">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;700&family=Literata:opsz,wght@7..40,200;7..40,400;7..40,700;7..40,900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+/* ── Custom Properties ── */
+:root {
+  --bg: #0e0c0a;
+  --fg: #f0e8d8;
+  --muted: #8a8070;
+  --accent: #e85d1c;
+  --accent2: #ffd580;
+  --card: #181614;
+  --border: #2c2820;
+  --topbar-bg: rgba(14,12,10,0.78);
+  --rail-bg: #141210;
+  --max: 660px;
+  --topbar-h: 60px;
+  --serif: 'Literata', Georgia, 'Times New Roman', serif;
+  --display: 'Cormorant Garamond', 'Playfair Display', serif;
+  --sans: system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #faf6f0;
+    --fg: #1a1816;
+    --muted: #6b6358;
+    --accent: #c94a10;
+    --accent2: #d49030;
+    --card: #ede6d8;
+    --border: #d4ccb8;
+    --topbar-bg: rgba(250,246,240,0.82);
+    --rail-bg: #f2ece0;
+  }
+}
+
+/* ── Base ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--serif);
+  background: var(--bg);
+  color: var(--fg);
+  line-height: 1.72;
+  font-size: 1.05rem;
+  min-height: 100vh;
+  background-image:
+    radial-gradient(ellipse at 18% 45%, rgba(232,97,28,0.045) 0%, transparent 55%),
+    radial-gradient(ellipse at 82% 15%, rgba(255,213,128,0.035) 0%, transparent 45%);
+}
+
+/* ── Progress Bar ── */
+#progress {
+  position: fixed; top: 0; left: 0; height: 3px; width: 0%;
+  background: linear-gradient(to right, #d4560a, var(--accent), var(--accent2));
+  z-index: 9999; transition: width 0.12s linear;
+}
+
+/* ── Topbar ── */
+#topbar {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: var(--topbar-h);
+  background: var(--topbar-bg);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+  z-index: 900; display: flex; align-items: center;
+  padding: 0 clamp(12px, 2vw, 24px);
+  gap: 12px;
+}
+#topbar .home-link {
+  color: var(--accent); font-family: var(--sans); font-size: 0.82rem;
+  text-decoration: none; font-weight: 700; letter-spacing: 0.04em;
+}
+#topbar .home-link i { margin-right: 4px; }
+#topbar .breadcrumb {
+  font-family: var(--sans); font-size: 0.78rem; color: var(--muted);
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+}
+#topbar .breadcrumb span { opacity: 0.5; }
+#topbar .reading-time {
+  font-family: var(--sans); font-size: 0.72rem; color: var(--muted);
+  margin-left: auto; white-space: nowrap;
+}
+#hamburger {
+  display: none; background: none; border: none; color: var(--fg);
+  font-size: 1.2rem; cursor: pointer; padding: 4px 8px;
+  border-radius: 6px; transition: background 0.2s;
+}
+#hamburger:hover { background: var(--card); }
+
+/* ── Layout ── */
+.wrap {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  max-width: calc(var(--max) + 260px);
+  margin: 0 auto;
+  padding-top: calc(var(--topbar-h) + 24px);
+  min-height: 100vh;
+}
+
+/* ── Rail ── */
+#rail {
+  position: sticky; top: calc(var(--topbar-h) + 36px);
+  background: var(--rail-bg); border-right: 1px solid var(--border);
+  padding: 2rem 1.2rem 2rem 1.6rem; height: calc(100vh - var(--topbar-h) - 36px);
+  overflow-y: auto;
+}
+#rail .rail-label {
+  font-family: var(--sans); font-size: 0.65rem; text-transform: uppercase;
+  letter-spacing: 0.12em; color: var(--muted); margin-bottom: 1rem;
+}
+#rail ol { list-style: none; }
+#rail li {
+  margin-bottom: 0.85rem; position: relative; padding-left: 2.4rem;
+}
+#rail li::before {
+  content: attr(data-num);
+  position: absolute; left: 0;
+  font-family: var(--display); font-weight: 700; font-size: 0.85rem;
+  color: var(--muted); transition: color 0.3s;
+}
+#rail li.active::before { color: var(--accent); }
+#rail a {
+  color: var(--muted); text-decoration: none; font-size: 0.82rem;
+  font-family: var(--sans); transition: color 0.25s;
+  display: block; line-height: 1.3;
+}
+#rail a.active { color: var(--accent); font-weight: 700; }
+#rail a:hover { color: var(--fg); }
+
+/* ── Main ── */
+main {
+  padding: 0 clamp(16px, 3vw, 40px) 4rem clamp(16px, 3vw, 40px);
+  max-width: 100%; overflow-x: hidden;
+}
+main article { max-width: var(--max); }
+
+/* ── Hero ── */
+.hero {
+  position: relative; overflow: hidden;
+  padding: 3rem 0 2.5rem 0; margin-bottom: 1rem;
+}
+.hero-glow {
+  position: absolute; top: -80px; right: -60px;
+  width: 420px; height: 420px;
+  background: radial-gradient(circle, rgba(232,97,28,0.14) 0%, rgba(255,213,128,0.06) 35%, transparent 68%);
+  border-radius: 50%; filter: blur(30px); pointer-events: none;
+}
+.hero-glow-2 {
+  position: absolute; bottom: -40px; left: -40px;
+  width: 220px; height: 220px;
+  background: radial-gradient(circle, rgba(212,86,10,0.09) 0%, transparent 70%);
+  border-radius: 50%; filter: blur(20px); pointer-events: none;
+}
+.hero h1 {
+  font-family: var(--display); font-weight: 700;
+  font-size: clamp(2.1rem, 5vw, 3.1rem); line-height: 1.1;
+  color: var(--fg); margin-bottom: 0.5rem;
+}
+.hero-sub {
+  font-family: var(--sans); font-size: 0.92rem; color: var(--muted);
+  margin-bottom: 2rem; line-height: 1.5;
+}
+
+/* ── Spectrum Widget ── */
+.spectrum { margin: 2rem 0 1.5rem 0; }
+.spectrum-header {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-family: var(--sans); font-size: 0.72rem; color: var(--muted);
+  margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.06em;
+}
+.spectrum-bar {
+  position: relative; height: 10px; border-radius: 5px;
+  background: linear-gradient(to right, #4a6741, #7a8a60, #b89050, #d4560a, #e85d1c, #ffd580);
+  overflow: visible;
+}
+.spectrum-marker {
+  position: absolute; top: -6px; left: 82%;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--accent); border: 2px solid var(--fg);
+  transform: translateX(-50%);
+  animation: pulse-marker 2.5s ease-in-out infinite;
+}
+.spectrum-marker::after {
+  content: 'This article'; position: absolute; top: 22px; left: 50%;
+  transform: translateX(-50%); font-family: var(--sans);
+  font-size: 0.68rem; color: var(--accent); white-space: nowrap;
+  font-weight: 700;
+}
+.spectrum-sub {
+  display: flex; justify-content: space-between;
+  font-family: var(--serif); font-size: 0.82rem; color: var(--fg);
+  margin-top: 30px; opacity: 0.7;
+}
+@keyframes pulse-marker {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(232,97,28,0.4); }
+  50% { box-shadow: 0 0 12px 4px rgba(232,97,28,0.25); }
+}
+
+/* ── Chapters ── */
+.chapter {
+  scroll-margin-top: calc(var(--topbar-h) + 20px);
+  padding: 1.5rem 0 2rem 0;
+  opacity: 0; transform: translateY(18px);
+  transition: opacity 0.55s ease, transform 0.55s ease;
+}
+.chapter.visible { opacity: 1; transform: translateY(0); }
+.chapter-divider {
+  width: 60px; height: 2px; border-radius: 1px;
+  background: linear-gradient(to right, var(--accent), transparent);
+  margin: 2.5rem 0 1.5rem 0;
+}
+.chapter h2 {
+  font-family: var(--display); font-weight: 700;
+  font-size: clamp(1.4rem, 3vw, 1.85rem); line-height: 1.25;
+  color: var(--fg); margin-bottom: 1rem;
+}
+
+/* ── Typography ── */
+.lede {
+  font-size: 1.1rem; line-height: 1.65; color: var(--fg);
+  margin-bottom: 1.2rem; font-weight: 400;
+}
+.chapter p {
+  margin-bottom: 1rem; color: var(--fg);
+}
+.chapter p.muted-text { color: var(--muted); }
+
+/* ── Callout ── */
+.callout {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 1.3rem 1.5rem;
+  margin: 1.5rem 0; font-size: 0.95rem;
+}
+.callout-title {
+  font-family: var(--sans); font-size: 0.72rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--accent); margin-bottom: 0.6rem;
+}
+
+/* ── Pullquote ── */
+.pullquote {
+  border-left: 3px solid var(--accent);
+  padding-left: 1.5rem; margin: 2rem 0;
+  font-style: italic; color: var(--fg); font-size: 1.05rem;
+}
+
+/* ── Perspective Snap ── */
+.snap {
+  text-align: center; padding: 2.5rem 1rem; margin: 2.5rem auto;
+  max-width: 85%; border: none; position: relative;
+}
+.snap::before {
+  content: '◆'; display: block; font-size: 0.7rem;
+  color: var(--accent); margin-bottom: 1.2rem; letter-spacing: 0.3em;
+}
+.snap p {
+  font-family: var(--display); font-weight: 700;
+  font-size: clamp(1.5rem, 3.5vw, 2.2rem); line-height: 1.35;
+  color: var(--accent); margin: 0;
+}
+.snap::after {
+  content: ''; display: block; width: 40px; height: 2px;
+  background: var(--accent); margin: 1.2rem auto 0;
+  border-radius: 1px;
+}
+
+/* ── Reframe Block ── */
+.reframe {
+  background: linear-gradient(135deg, rgba(232,97,28,0.12), rgba(255,213,128,0.08));
+  border: 1px solid rgba(232,97,28,0.25); border-radius: 14px;
+  padding: 1.5rem 1.8rem; margin: 1.2rem 0 1.5rem 0;
+}
+.reframe p {
+  font-family: var(--display); font-weight: 700;
+  font-size: clamp(1.15rem, 2.5vw, 1.45rem); line-height: 1.4;
+  color: var(--fg); margin: 0;
+}
+
+/* ── Share Block ── */
+.share-block {
+  display: flex; align-items: center; gap: 12px;
+  margin-top: 1.2rem; padding-top: 0.8rem;
+  border-top: 1px solid var(--border);
+}
+.share-label {
+  font-family: var(--sans); font-size: 0.72rem; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.share-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 8px;
+  background: var(--card); border: 1px solid var(--border);
+  color: var(--fg); font-size: 0.9rem; text-decoration: none;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+.share-btn:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* ── Action / CTA ── */
+.action {
+  background: linear-gradient(135deg, rgba(232,97,28,0.1), rgba(255,213,128,0.06));
+  border: 1px solid rgba(232,97,28,0.2); border-radius: 16px;
+  padding: 2rem; margin: 2rem 0;
+}
+.action h3 {
+  font-family: var(--display); font-weight: 700;
+  font-size: 1.25rem; color: var(--accent); margin-bottom: 0.7rem;
+}
+.action p { margin-bottom: 1rem; }
+.checklist { list-style: none; margin-top: 1rem; }
+.checklist li {
+  cursor: pointer; padding: 0.65rem 1.2rem; border-radius: 8px;
+  border: 1px solid var(--border); margin-bottom: 0.55rem;
+  font-family: var(--sans); font-size: 0.88rem; color: var(--fg);
+  transition: background 0.25s, border-color 0.25s, transform 0.15s;
+  user-select: none;
+}
+.checklist li:hover { border-color: var(--muted); }
+.checklist li.done {
+  background: rgba(232,97,28,0.15); border-color: var(--accent);
+  color: var(--accent); transform: translateX(4px);
+}
+.checklist li.done::after {
+  content: ' ✓'; font-weight: 700;
+}
+
+/* ── Footer ── */
+footer {
+  max-width: calc(var(--max) + 260px); margin: 0 auto;
+  padding: 2rem clamp(16px, 3vw, 40px);
+  border-top: 1px solid var(--border);
+  display: flex; flex-wrap: wrap; align-items: center;
+  justify-content: space-between; gap: 1rem;
+}
+footer .footer-home {
+  color: var(--accent); font-family: var(--sans); font-size: 0.82rem;
+  text-decoration: none; font-weight: 700;
+}
+footer .footer-home i { margin-right: 4px; }
+footer .sources {
+  font-family: var(--sans); font-size: 0.72rem; color: var(--muted);
+  line-height: 1.6; max-width: 60%;
+}
+footer .sources strong { color: var(--fg); font-weight: 600; }
+#back-top {
+  background: var(--card); border: 1px solid var(--border);
+  color: var(--fg); font-family: var(--sans); font-size: 0.78rem;
+  padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer;
+  transition: background 0.2s, border-color 0.2s; text-decoration: none;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+#back-top:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* ── Focus ── */
+a:focus-visible, button:focus-visible, .share-btn:focus-visible,
+.checklist li:focus-visible, #back-top:focus-visible {
+  outline: 2px solid var(--accent2); outline-offset: 2px;
+}
+
+/* ── Scrim ── */
+#scrim {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+  opacity: 0; pointer-events: none; z-index: 998;
+  transition: opacity 0.3s ease;
+}
+#scrim.open { opacity: 1; pointer-events: all; }
+
+/* ── Mobile ── */
+@media (max-width: 880px) {
+  #hamburger { display: block; }
+  .wrap {
+    grid-template-columns: 1fr;
+    max-width: 100%;
+  }
+  #rail {
+    position: fixed; top: 0; left: 0;
+    width: 82vw; height: 100vh; z-index: 1000;
+    background: var(--rail-bg);
+    transform: translateX(-100%);
+    transition: transform 0.35s ease;
+    padding: calc(var(--topbar-h) + 16px) 1.5rem 2rem 1.8rem;
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+  }
+  #rail.open { transform: translateX(0); }
+  main { padding: 0 clamp(14px, 4vw, 28px) 3rem clamp(14px, 4vw, 28px); }
+  .hero h1 { font-size: clamp(1.8rem, 6vw, 2.6rem); }
+  footer .sources { max-width: 100%; }
+  .spectrum-sub { font-size: 0.72rem; }
+}
+
+/* ── Reduced Motion ── */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  #progress { transition: none; }
+  .chapter { opacity: 1; transform: none; transition: none; }
+  .spectrum-marker { animation: none; }
+  #rail { transition: none; }
+  #scrim { transition: none; }
+  .checklist li { transition: none; }
+  .share-btn { transition: none; }
+  #back-top { transition: none; }
+  #hamburger { transition: none; }
+  #rail a { transition: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- Progress Bar -->
+<div id="progress" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+
+<!-- Topbar -->
+<header id="topbar">
+  <a class="home-link" href="https://iggym.github.io/cogitatio-elegans/" aria-label="Home"><i class="fa-solid fa-house"></i> Home</a>
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="https://iggym.github.io/cogitatio-elegans/">Cogitatio Elegans</a>
+    <span>·</span>
+    <span style="color:var(--fg);opacity:0.85;">Forged in Flame</span>
+  </nav>
+  <span class="reading-time">6 min read</span>
+  <button id="hamburger" aria-label="Open navigation" aria-expanded="false"><i class="fa-solid fa-bars"></i></button>
+</header>
+
+<!-- Scrim overlay for mobile drawer -->
+<div id="scrim" aria-hidden="true"></div>
+
+<!-- Layout wrapper -->
+<div class="wrap">
+
+  <!-- Navigation Rail -->
+  <nav id="rail" aria-label="Section navigation">
+    <div class="rail-label">Sections</div>
+    <ol>
+      <li data-num="01"><a href="#s1">Born at the Hearth</a></li>
+      <li data-num="02"><a href="#s2">Made by the Flame</a></li>
+      <li data-num="03"><a href="#s3">Fire in the Blood</a></li>
+      <li data-num="04"><a href="#s4">Rooted in Bone</a></li>
+      <li data-num="05"><a href="#s5">Own the Spark</a></li>
+      <li data-num="06"><a href="#s6">Strike the Flint</a></li>
+    </ol>
+  </nav>
+
+  <!-- Main Content -->
+  <main>
+    <article>
+
+      <!-- Hero -->
+      <header class="hero">
+        <div class="hero-glow" aria-hidden="true"></div>
+        <div class="hero-glow-2" aria-hidden="true"></div>
+        <h1>Forged in Flame</h1>
+        <p class="hero-sub">Fire, Cooking, and the Technological Origin of the Human Body</p>
+
+        <!-- Spectrum Widget -->
+        <div class="spectrum" role="figure" aria-label="Conceptual shift spectrum from external addition to constitutive force">
+          <div class="spectrum-header">
+            <span>Nature-first view</span>
+            <span>Technology-first view</span>
+          </div>
+          <div class="spectrum-bar">
+            <div class="spectrum-marker" aria-hidden="true"></div>
+          </div>
+          <div class="spectrum-sub">
+            <span>Technology is external to humanity</span>
+            <span>Technology is constitutive of humanity</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Section 1: Born at the Hearth -->
+      <div class="chapter-divider" aria-hidden="true"></div>
+      <section class="chapter" id="s1">
+        <h2>Born at the Hearth</h2>
+        <p class="lede">A woman crouches by a fire pit, turning a charred root on a stick. Smoke stings her eyes. Her child watches from the circle of warmth, waiting. This isn't a romantic scene from prehistory — this is the moment that shrank your gut, swelled your brain, and turned dinner into a shared event instead of a solitary scramble.</p>
+        <p>Every cooked meal you've ever eaten is an echo of that fire. The softness of braised meat, the sweetness of roasted tubers, the way heat unlocks nutrients your raw-digesting ancestors could never reach — these aren't conveniences. They're inheritances. They're the afterlife of a decision made by a creature that wasn't yet you.</p>
+        <p>We tell ourselves a story about technology: that it arrived late, that it's external, that homo sapiens existed for hundreds of thousands of years as pure biological creatures before we started adding gadgets. We draw a line — the natural human on one side, the technological human on the other. It's a comforting line. It preserves the idea that somewhere underneath all the screens and engines, there's an original, unmodified self.</p>
+        <p>That line is fiction.</p>
+      </section>
+
+      <!-- Section 2: Made by the Flame -->
+      <div class="chapter-divider" aria-hidden="true"></div>
+      <section class="chapter" id="s2">
+        <h2>Made by the Flame</h2>
+        <div id="reframe-text" class="reframe">
+          <p>Humanity is not a species that uses technology. Humanity is a species partly made by technology.</p>
+        </div>
+        <p>Fire and cooking didn't just give us more calories. They rewired our digestion, shrank our intestines, freed energy for brain expansion, and restructured every waking hour around a shared hearth. The cooked meal created the social circle. The social circle created language. Language created planning. Planning created more technology. The loop didn't start with a handheld tool. It started with an external stomach.</p>
+        <p>Consider what cooking actually does. It pre-digests food outside the body. Heat denatures proteins, breaks down starches, ruptures cell walls. Work that your gut would have performed — slowly, expensively, with huge metabolic overhead — gets offloaded to the hearth. The calories saved went somewhere. The expensive tissue hypothesis suggests they went to the brain.</p>
+
+        <!-- Share Block -->
+        <div class="share-block">
+          <span class="share-label">Share this reframe</span>
+          <a id="share-x" class="share-btn" href="#" target="_blank" rel="noopener" aria-label="Share on X (Twitter)"><i class="fa-brands fa-x-twitter"></i></a>
+          <a id="share-li" class="share-btn" href="#" target="_blank" rel="noopener" aria-label="Share on LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+        </div>
+      </section>
+
+      <!-- Section 3: Fire in the Blood -->
+      <div class="chapter-divider" aria-hidden="true"></div>
+      <section class="chapter" id="s3">
+        <h2>Fire in the Blood</h2>
+        <p class="lede">The connections hide inside you right now.</p>
+        <p>Cooking made calories easier to absorb. Less energy spent digesting meant more energy available for the brain. The expensive tissue hypothesis, proposed by Aiello and Wheeler, suggests that gut reduction and brain expansion traded calories directly — your small intestine is evidence of a technological decision made half a million years ago.</p>
+
+        <div class="callout">
+          <div class="callout-title">Metabolic Extension</div>
+          <p>Fire didn't just sit outside the body. It became a metabolic extension of it. Externalizing digestion to a hearth is the same logic as externalizing computation to a server. The boundary between "biological process" and "technological process" was always blurry.</p>
+        </div>
+
+        <p>The pattern repeats at every scale. Agriculture externalized energy production from foraging to fields. Coal externalized mechanical labor from muscle to engine. Electricity externalized power distribution from local generation to grid. Computing externalized cognition from brain to chip. Each revolution follows the same template: take a process that was inside the body, move it outside, and reorganize life around the new external organ.</p>
+
+        <blockquote class="snap">
+          <p>The first technology wasn't a tool for the hand.<br>It was a tool for the stomach.</p>
+        </blockquote>
+
+        <p>That sentence reorganizes the entire timeline. The hand axe came later — perhaps 1.4 million years after controlled fire. Language came later. Agriculture came much later. The sequence isn't brain → tool → society. It's stomach → hearth → brain → language → tool → society. The metabolic revolution precedes the cognitive one.</p>
+      </section>
+
+      <!-- Section 4: Rooted in Bone -->
+      <div class="chapter-divider" aria-hidden="true"></div>
+      <section class="chapter" id="s4">
+        <h2>Rooted in Bone</h2>
+        <p>The evidence is physical. Archaeological sites show controlled fire use at least 400,000 years ago — possibly much earlier. Nutrition science confirms that cooking increases macronutrient bioavailability across nearly all staple foods. Raw starches become digestible. Proteins denature into forms our enzymes attack more efficiently. Even the texture change reduces the mechanical cost of chewing by up to 40 percent.</p>
+
+        <div class="callout">
+          <div class="callout-title">What the Data Shows</div>
+          <p>Biology, archaeology, and nutrition science converge on the same point: energy processing shapes anatomy and cognition. The human body — smaller gut, larger brain, weaker jaw, softer diet — maps directly onto the adoption of cooked food.</p>
+        </div>
+
+        <p>But the claim isn't simple cause-and-effect. Brain expansion had other drivers — social cooperation, genetic variation, environmental pressures. Cooking was one force among several, not a single switch. The expensive tissue hypothesis remains debated; some researchers argue that gut-brain tradeoffs were more nuanced than a direct calorie swap, that other tissues also competed for energy, and that dietary quality improvements beyond cooking played roles.</p>
+        <p class="muted-text">What's not debated is that cooking fundamentally changed the energy budget of the human body. That change enabled possibilities that raw-foraging hominids never reached. The nuance matters. Acknowledging complexity isn't hedging — it's honesty. The core claim survives the nuance: fire and cooking didn't just support human evolution. They actively shaped the anatomy you carry today.</p>
+      </section>
+
+      <!-- Section 5: Own the Spark -->
+      <div class="chapter-divider" aria-hidden="true"></div>
+      <section class="chapter" id="s5">
+        <h2>Own the Spark</h2>
+        <p class="lede">Understanding your body as a technological artifact doesn't make you less human. It makes you more honest about what humanity has always been: a species that remakes itself from the inside out.</p>
+        <p>That clarity changes how you evaluate every new technology. Gene editing, neural interfaces, artificial organs — they aren't violations of "natural human integrity." They're continuations of a process that started when the first hominid held a burning branch and decided not to let go. The question isn't whether to use technology. The question is which technologies serve which values — and who gets to decide.</p>
+
+        <blockquote class="pullquote">
+          <p>The choice isn't "natural versus technological." The choice is "which technologies, and for whom."</p>
+        </blockquote>
+
+        <p>You already participate in this loop. Every time you cook a meal instead of eating raw, you're executing a metabolic technology that predates your species. Every time you adjust your environment with clothing, shelter, or tools, you're extending the same logic that shrank your gut. Agency isn't something you need to discover. It's something you've been exercising since birth — you just weren't calling it that.</p>
+        <p>The reframing gives you a sharper lens. When someone says "technology is destroying our humanity," you can ask: which humanity? The one that was never separate from technology to begin with? The one that was forged in a hearth and rebuilt by every energy revolution since? The complaint isn't wrong — specific technologies can harm specific values. But the diagnosis is off. The threat isn't technology invading human nature. The threat is misaligned technology — tools that serve narrow interests instead of shared ones.</p>
+      </section>
+
+      <!-- Section 6: Strike the Flint -->
+      <div class="chapter-divider" aria-hidden="true"></div>
+      <section class="chapter" id="s6">
+        <h2>Strike the Flint</h2>
+        <div class="action">
+          <h3>Your oldest technology, still running</h3>
+          <p>Within the next 24 hours, do this one thing: cook a meal from raw ingredients and eat it with another person. Nothing processed. Nothing microwaved. Start from scratch — chop, season, apply heat, share.</p>
+          <p>Pay attention to what happens. Notice how heat transforms what you can digest — how a raw carrot becomes sweet, how tough fiber softens, how starches unlock. Notice how sharing changes how you connect — how passing a plate creates an unspoken bond, how conversation flows differently around a cooked meal than around a granola bar.</p>
+          <p>That transformation and that connection are the oldest technologies you possess. They're still running. They're still making you.</p>
+          <ul class="checklist" role="list" aria-label="Action checklist">
+            <li role="listitem" tabindex="0">Choose raw ingredients</li>
+            <li role="listitem" tabindex="0">Apply heat with attention</li>
+            <li role="listitem" tabindex="0">Share the result</li>
+            <li role="listitem" tabindex="0">Notice the transformation</li>
+          </ul>
+        </div>
+      </section>
+
+    </article>
+  </main>
+</div>
+
+<!-- Footer -->
+<footer>
+  <a class="footer-home" href="https://iggym.github.io/cogitatio-elegans/"><i class="fa-solid fa-house"></i> Home</a>
+  <div class="sources">
+    <strong>Sources and references:</strong><br>
+    Aiello, L.C. & Wheeler, P. (1995). "The Expensive Tissue Hypothesis: The Brain and the Digestive System in Human and Primate Evolution." <em>Current Anthropology</em>, 36(1), 199-221.<br>
+    Wrangham, R. (2009). <em>Catching Fire: How Cooking Made Us Human.</em> Basic Books.<br>
+    Archaeological evidence of controlled fire use ≥ 400 kya; nutrition science on cooking bioavailability; historical pattern of energy revolutions (agriculture, coal, oil, electricity, computing).
+  </div>
+  <a href="#" id="back-top" aria-label="Back to top"><i class="fa-solid fa-arrow-up"></i> Top</a>
+</footer>
+
+<script>
+/* ── Scroll Progress ── */
+(function() {
+  const bar = document.getElementById('progress');
+  function updateProgress() {
+    const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+    const scrollHeight = document.documentElement.scrollHeight;
+    const clientHeight = document.documentElement.clientHeight;
+    const pct = scrollTop / Math.max(1, scrollHeight - clientHeight);
+    bar.style.width = (pct * 100) + '%';
+    bar.setAttribute('aria-valuenow', Math.round(pct * 100));
+  }
+  window.addEventListener('scroll', updateProgress, { passive: true });
+  updateProgress();
+})();
+
+/* ── Scrollspy ── */
+(function() {
+  const sections = document.querySelectorAll('.chapter');
+  const links = document.querySelectorAll('#rail a');
+  const observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        links.forEach(function(a) {
+          const isMatch = a.getAttribute('href') === '#' + id;
+          a.classList.toggle('active', isMatch);
+          a.closest('li').classList.toggle('active', isMatch);
+        });
+      }
+    });
+  }, { rootMargin: '-15% 0px -70% 0px' });
+  sections.forEach(function(s) { observer.observe(s); });
+})();
+
+/* ── Reveal on Scroll ── */
+(function() {
+  const chapters = document.querySelectorAll('.chapter');
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reducedMotion) {
+    chapters.forEach(function(c) { c.classList.add('visible'); });
+    return;
+  }
+  const revealObserver = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        revealObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.12 });
+  chapters.forEach(function(c) { revealObserver.observe(c); });
+})();
+
+/* ── Mobile Menu ── */
+(function() {
+  const hamburger = document.getElementById('hamburger');
+  const rail = document.getElementById('rail');
+  const scrim = document.getElementById('scrim');
+
+  function toggleMenu(open) {
+    const isOpen = typeof open === 'boolean' ? open : !rail.classList.contains('open');
+    rail.classList.toggle('open', isOpen);
+    scrim.classList.toggle('open', isOpen);
+    hamburger.setAttribute('aria-expanded', isOpen);
+  }
+
+  hamburger.addEventListener('click', function() { toggleMenu(); });
+  scrim.addEventListener('click', function() { toggleMenu(false); });
+
+  // Close drawer when a rail link is clicked on mobile
+  rail.querySelectorAll('a').forEach(function(a) {
+    a.addEventListener('click', function() {
+      if (window.innerWidth <= 880) toggleMenu(false);
+    });
+  });
+})();
+
+/* ── Social Share Prefill ── */
+(function() {
+  const reframeEl = document.getElementById('reframe-text');
+  if (!reframeEl) return;
+  const reframeText = reframeEl.textContent.trim();
+  const articleUrl = window.location.href;
+
+  const xUrl = 'https://twitter.com/intent/tweet?text=' +
+    encodeURIComponent(reframeText + ' — ') +
+    '&url=' + encodeURIComponent(articleUrl);
+  const liUrl = 'https://www.linkedin.com/sharing/share-offsite/?url=' +
+    encodeURIComponent(articleUrl);
+
+  const shareX = document.getElementById('share-x');
+  const shareLi = document.getElementById('share-li');
+  if (shareX) shareX.href = xUrl;
+  if (shareLi) shareLi.href = liUrl;
+})();
+
+/* ── Checklist Toggle ── */
+(function() {
+  document.querySelectorAll('.checklist li').forEach(function(item) {
+    function toggle() { item.classList.toggle('done'); }
+    item.addEventListener('click', toggle);
+    item.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+    });
+  });
+})();
+
+/* ── Back to Top ── */
+(function() {
+  const btn = document.getElementById('back-top');
+  btn.addEventListener('click', function(e) {
+    e.preventDefault();
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reducedMotion) {
+      window.scrollTo(0, 0);
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  });
+})();
+</script>
+
+</body>
+</html>
