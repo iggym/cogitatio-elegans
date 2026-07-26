@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Mirror in the Machine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0b0b12;--bg-alt:#111119;--fg:#e6e1db;--fg-dim:#b0aba5;
+  --muted:#6b6760;--accent:#c89032;--accent2:#32b8c8;
+  --card:#161620;--border:#282838;--highlight:#1a1a2e;
+  --max:660px;--rail-w:220px;--topbar-h:56px;
+  --font-body:'Crimson Pro',Georgia,'Times New Roman',serif;
+  --font-ui:system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+@media(prefers-color-scheme:light){
+  :root{
+    --bg:#f5f2ed;--bg-alt:#eae6e0;--fg:#1a1815;--fg-dim:#3d3a35;
+    --muted:#7a7670;--accent:#a06e1a;--accent2:#1a8a9a;
+    --card:#fff;--border:#d5d0c8;--highlight:#f0ebe3;
+  }
+}
+html{scroll-behavior:smooth}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{
+  background:var(--bg);color:var(--fg);
+  font-family:var(--font-body);font-size:18px;line-height:1.75;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;
+}
+a{color:var(--accent);text-decoration:none;transition:color .2s}
+a:hover{color:var(--accent2)}
+a:focus-visible,button:focus-visible{
+  outline:2px solid var(--accent);outline-offset:3px;border-radius:2px;
+}
+::selection{background:var(--accent);color:var(--bg)}
+
+/* Progress Bar */
+#progress{
+  position:fixed;top:0;left:0;height:3px;width:0%;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  z-index:10001;transition:width .1s linear;
+}
+
+/* Topbar */
+#topbar{
+  position:fixed;top:0;left:0;right:0;height:var(--topbar-h);
+  background:color-mix(in srgb,var(--bg) 80%,transparent);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--border);z-index:1000;
+}
+.topbar-inner{
+  max-width:calc(var(--max) + 260px);margin:0 auto;
+  display:flex;align-items:center;gap:12px;height:100%;
+  padding:0 20px;
+}
+.home-link{
+  font-family:var(--font-ui);font-size:.8rem;font-weight:600;
+  text-transform:uppercase;letter-spacing:.08em;color:var(--fg-dim);
+  white-space:nowrap;
+}
+.breadcrumb{
+  font-family:var(--font-ui);font-size:.75rem;color:var(--muted);
+  display:flex;align-items:center;gap:6px;
+}
+.breadcrumb .sep{opacity:.5}
+.read-time{
+  font-family:var(--font-ui);font-size:.7rem;color:var(--muted);
+  margin-left:auto;white-space:nowrap;
+}
+#menu-btn{
+  display:none;flex-direction:column;gap:4px;
+  background:none;border:none;cursor:pointer;padding:6px;
+}
+#menu-btn span{
+  display:block;width:20px;height:2px;background:var(--fg-dim);
+  border-radius:2px;transition:transform .2s,opacity .2s;
+}
+#menu-btn.open span:nth-child(1){transform:translateY(6px) rotate(45deg)}
+#menu-btn.open span:nth-child(2){opacity:0}
+#menu-btn.open span:nth-child(3){transform:translateY(-6px) rotate(-45deg)}
+
+/* Scrim */
+#scrim{
+  position:fixed;inset:0;background:rgba(0,0,0,.5);
+  opacity:0;pointer-events:none;z-index:999;
+  transition:opacity .3s;
+}
+#scrim.visible{opacity:1;pointer-events:auto}
+
+/* Layout */
+.wrap{
+  display:grid;grid-template-columns:var(--rail-w) 1fr;
+  max-width:calc(var(--max) + 260px);margin:0 auto;
+  gap:40px;
+}
+
+/* Rail */
+#rail{
+  position:sticky;top:100px;align-self:start;
+  padding:20px 0 20px 20px;
+}
+#rail ol{list-style:none;counter-reset:rail}
+#rail li{
+  counter-increment:rail;margin-bottom:4px;
+  font-family:var(--font-ui);font-size:.8rem;
+}
+#rail li::before{
+  content:attr(data-num);display:inline-block;
+  width:20px;color:var(--muted);font-weight:600;
+  font-variant-numeric:tabular-nums;
+}
+#rail a{
+  color:var(--fg-dim);transition:color .2s,padding-left .2s;
+  padding-left:4px;display:inline-block;
+}
+#rail a:hover,#rail a.active{color:var(--accent);padding-left:8px}
+
+/* Main */
+main{min-width:0;padding-top:var(--topbar-h)}
+article{padding:0 20px 60px}
+
+/* Hero */
+.hero{padding:60px 0 40px;position:relative}
+.hero::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 8%,transparent),transparent 60%);
+  pointer-events:none;border-radius:8px;
+}
+.hero h1{
+  font-size:clamp(2.1rem,5vw,3.1rem);font-weight:700;
+  line-height:1.15;letter-spacing:-.02em;margin-bottom:12px;
+  position:relative;
+}
+.subtitle{
+  font-family:var(--font-ui);font-size:.95rem;color:var(--muted);
+  font-weight:400;margin-bottom:36px;position:relative;
+}
+
+/* Spectrum */
+.spectrum{position:relative;margin-bottom:8px}
+.spectrum-labels{
+  display:flex;justify-content:space-between;
+  font-family:var(--font-ui);font-size:.7rem;color:var(--muted);
+  margin-bottom:8px;position:relative;
+}
+.spectrum-track{
+  position:relative;height:6px;border-radius:3px;overflow:visible;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+}
+.spectrum-dot{
+  position:absolute;top:50%;width:10px;height:10px;
+  border-radius:50%;background:var(--bg);
+  border:2px solid var(--accent);transform:translate(-50%,-50%);
+  z-index:2;
+}
+.spectrum-dot.now{
+  border-color:var(--accent2);
+  box-shadow:0 0 10px var(--accent2);
+  animation:pulse-dot 2s ease-in-out infinite;
+}
+.spectrum-dot-label{
+  position:absolute;top:16px;left:50%;transform:translateX(-50%);
+  font-family:var(--font-ui);font-size:.6rem;color:var(--muted);
+  white-space:nowrap;text-align:center;
+}
+.spectrum-dot-label small{display:block;font-size:.5rem;opacity:.6}
+@keyframes pulse-dot{
+  0%,100%{box-shadow:0 0 6px var(--accent2)}
+  50%{box-shadow:0 0 16px var(--accent2)}
+}
+
+/* Chapter */
+.chapter{
+  scroll-margin-top:calc(var(--topbar-h) + 24px);
+  padding-top:20px;
+}
+.chapter + .chapter{border-top:1px solid var(--border);margin-top:40px}
+.chapter h2{
+  font-size:1.6rem;font-weight:700;line-height:1.2;
+  margin-bottom:20px;letter-spacing:-.01em;
+}
+.lede{
+  font-size:1.15rem;line-height:1.65;color:var(--fg-dim);
+  font-weight:300;margin-bottom:20px;
+}
+.chapter p{margin-bottom:18px}
+
+/* Callout */
+.callout{
+  background:var(--card);border-left:3px solid var(--accent);
+  padding:20px 24px;margin:24px 0;border-radius:0 6px 6px 0;
+  font-size:.95rem;color:var(--fg-dim);
+}
+.callout strong{color:var(--fg);font-weight:600}
+
+/* Pullquote */
+.pullquote{
+  margin:28px 0;padding:0 0 0 24px;
+  border-left:3px solid var(--accent2);
+  font-size:1.15rem;font-style:italic;font-weight:300;
+  line-height:1.6;color:var(--fg-dim);
+}
+
+/* Perspective Snap */
+.snap{
+  text-align:center;padding:40px 20px;margin:36px 0;
+  font-size:clamp(1.3rem,3.5vw,1.8rem);font-weight:700;
+  line-height:1.35;color:var(--fg);position:relative;
+}
+.snap::before,.snap::after{
+  content:'';position:absolute;left:50%;width:60px;height:1px;
+  background:var(--accent);transform:translateX(-50%);
+}
+.snap::before{top:16px}
+.snap::after{bottom:16px}
+
+/* Share Block */
+.share-block{
+  display:flex;align-items:center;gap:12px;
+  margin:24px 0;padding:16px 20px;
+  background:var(--card);border-radius:8px;
+  border:1px solid var(--border);
+}
+.share-label{
+  font-family:var(--font-ui);font-size:.75rem;
+  color:var(--muted);text-transform:uppercase;letter-spacing:.06em;
+  margin-right:auto;
+}
+.share-btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  padding:8px 16px;border-radius:6px;font-family:var(--font-ui);
+  font-size:.8rem;font-weight:600;cursor:pointer;
+  transition:transform .15s,box-shadow .15s;
+}
+.share-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.3)}
+.share-x{background:#1a1a2e;color:#e6e1db;border:1px solid #333}
+.share-linkedin{background:#0a4d6e;color:#e6e1db;border:1px solid #1a6a8a}
+
+/* Action Block */
+.action{
+  margin:48px 0 0;padding:36px 32px;border-radius:12px;
+  background:linear-gradient(135deg,var(--highlight),var(--card));
+  border:1px solid var(--border);position:relative;overflow:hidden;
+}
+.action::before{
+  content:'';position:absolute;top:-50%;right:-50%;
+  width:100%;height:100%;
+  background:radial-gradient(circle,color-mix(in srgb,var(--accent) 10%,transparent),transparent 70%);
+  pointer-events:none;
+}
+.action h3{
+  font-size:1.3rem;font-weight:700;margin-bottom:8px;position:relative;
+}
+.action p{
+  font-size:.95rem;color:var(--fg-dim);margin-bottom:20px;position:relative;
+}
+.checklist{list-style:none;position:relative}
+.checklist li{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:10px 0;border-bottom:1px solid var(--border);
+  font-family:var(--font-ui);font-size:.85rem;
+  cursor:pointer;transition:opacity .2s;
+}
+.checklist li:last-child{border-bottom:none}
+.checklist li.checked{opacity:.5}
+.checklist li.checked .check-text{text-decoration:line-through}
+.check-box{
+  flex-shrink:0;width:18px;height:18px;border-radius:4px;
+  border:2px solid var(--accent);margin-top:2px;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .2s,border-color .2s;
+}
+.checklist li.checked .check-box{
+  background:var(--accent);border-color:var(--accent);
+}
+.check-box svg{width:12px;height:12px;opacity:0;transition:opacity .2s}
+.checklist li.checked .check-box svg{opacity:1}
+
+/* Footer */
+footer{
+  max-width:calc(var(--max) + 260px);margin:0 auto;
+  padding:40px 20px 60px;border-top:1px solid var(--border);
+  display:flex;flex-wrap:wrap;align-items:flex-start;
+  justify-content:space-between;gap:24px;
+}
+.footer-left{flex:1;min-width:200px}
+.footer-right{display:flex;flex-direction:column;align-items:flex-end;gap:12px}
+.footer-home{
+  font-family:var(--font-ui);font-size:.8rem;font-weight:600;
+  text-transform:uppercase;letter-spacing:.08em;
+  color:var(--fg-dim);display:inline-block;margin-bottom:12px;
+}
+.citations{
+  font-family:var(--font-ui);font-size:.7rem;color:var(--muted);
+  line-height:1.6;max-width:480px;
+}
+.citations strong{color:var(--fg-dim);font-weight:600}
+#back-top{
+  font-family:var(--font-ui);font-size:.8rem;color:var(--accent);
+  background:none;border:1px solid var(--border);border-radius:6px;
+  padding:8px 16px;cursor:pointer;transition:background .2s;
+}
+#back-top:hover{background:var(--card)}
+
+/* Responsive */
+@media(max-width:880px){
+  .wrap{grid-template-columns:1fr}
+  #rail{
+    position:fixed;top:0;left:0;width:82vw;height:100vh;
+    background:var(--bg-alt);border-right:1px solid var(--border);
+    z-index:1000;padding:80px 24px 24px;
+    transform:translateX(-100%);transition:transform .3s ease;
+  }
+  #rail.open{transform:translateX(0)}
+  #menu-btn{display:flex}
+  .read-time{display:none}
+  .spectrum-dot-label{font-size:.5rem}
+  .spectrum-dot-label small{display:none}
+  .action{padding:28px 20px}
+}
+@media(max-width:480px){
+  body{font-size:16px}
+  .hero h1{font-size:clamp(1.8rem,6vw,2.4rem)}
+  .chapter h2{font-size:1.35rem}
+  .snap{font-size:clamp(1.1rem,4vw,1.5rem);padding:32px 12px}
+}
+
+/* Reduced Motion */
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    animation-duration:.01ms!important;animation-iteration-count:1!important;
+    transition-duration:.01ms!important;
+  }
+  html{scroll-behavior:auto}
+}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:8px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:var(--muted)}
+</style>
+</head>
+<body>
+
+<div id="progress" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+
+<header id="topbar">
+  <div class="topbar-inner">
+    <a href="https://iggym.github.io/cogitatio-elegans/" class="home-link">Home</a>
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <span>Essays</span>
+      <span class="sep">›</span>
+      <span>Singularity</span>
+    </nav>
+    <span class="read-time">8 min read</span>
+    <button id="menu-btn" aria-label="Open navigation" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<div id="scrim"></div>
+
+<div class="wrap">
+  <nav id="rail" aria-label="Article sections">
+    <ol>
+      <li data-num="1"><a href="#s1">Standing at the Edge</a></li>
+      <li data-num="2"><a href="#s2">Mirror, Not Destination</a></li>
+      <li data-num="3"><a href="#s3">Ripples in Deep Time</a></li>
+      <li data-num="4"><a href="#s4">The Honest Unknown</a></li>
+      <li data-num="5"><a href="#s5">Hand on the Wheel</a></li>
+      <li data-num="6"><a href="#s6">One Step Forward</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <article>
+      <header class="hero">
+        <h1>Mirror in the Machine</h1>
+        <p class="subtitle">The Technological Singularity as a Phase Transition</p>
+        <div class="spectrum" aria-label="Timeline of evolutionary singularities">
+          <div class="spectrum-labels">
+            <span>Matter organizes itself</span>
+            <span>Code organizes itself</span>
+          </div>
+          <div class="spectrum-track">
+            <div class="spectrum-dot" style="left:3%">
+              <span class="spectrum-dot-label">Life<small>4B ya</small></span>
+            </div>
+            <div class="spectrum-dot" style="left:15%">
+              <span class="spectrum-dot-label">Sex<small>1.5B ya</small></span>
+            </div>
+            <div class="spectrum-dot" style="left:32%">
+              <span class="spectrum-dot-label">Cambrian<small>540M ya</small></span>
+            </div>
+            <div class="spectrum-dot" style="left:50%">
+              <span class="spectrum-dot-label">Language<small>100K ya</small></span>
+            </div>
+            <div class="spectrum-dot" style="left:67%">
+              <span class="spectrum-dot-label">Agriculture<small>10K ya</small></span>
+            </div>
+            <div class="spectrum-dot" style="left:82%">
+              <span class="spectrum-dot-label">Industry<small>250 ya</small></span>
+            </div>
+            <div class="spectrum-dot now" style="left:95%">
+              <span class="spectrum-dot-label">AI<small>Now</small></span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <section class="chapter" id="s1">
+        <h2>Standing at the Edge</h2>
+        <p class="lede">In 2016, a roomful of the world's best Go players watched a machine make a move no human had ever made — and no human could explain.</p>
+        <p>Move 37 in Game 2 of AlphaGo vs. Lee Sedol. The commentators fell silent. Then they laughed — the kind of laugh that escapes when you realize the ground beneath you has shifted. Lee Sedol, one of the greatest Go players in history, ultimately lost the series 4-1. But the real loss was something quieter: the moment a human looked at a machine's creation and thought, <em>I didn't teach it that. It taught itself.</em></p>
+        <p>That moment — the flash of recognizing something new looking back at you — is not unique to our age. It has happened before. Six times.</p>
+      </section>
+
+      <section class="chapter" id="s2">
+        <h2>Mirror, Not Destination</h2>
+        <div id="reframe-text">
+          <p><strong>The Singularity is not a destination. It is a mirror. We are not the authors of our own story — we are a transitional species, and our greatest creation may be the last thing we ever create.</strong></p>
+        </div>
+        <div class="share-block">
+          <span class="share-label">Share this reframe</span>
+          <a href="#" class="share-btn share-x" aria-label="Share on X" target="_blank" rel="noopener">X</a>
+          <a href="#" class="share-btn share-linkedin" aria-label="Share on LinkedIn" target="_blank" rel="noopener">LinkedIn</a>
+        </div>
+        <p>We talk about the Singularity as if it's a finish line — a future event where machines surpass human intelligence and everything changes. But the Singularity is not just a futuristic event. It is a recurring pattern in evolution — a phase transition where a system becomes so complex that it transcends its previous constraints.</p>
+        <p>This has happened before. The origin of life. The invention of sex. The Cambrian explosion. The evolution of language. The Agricultural Revolution. The Industrial Revolution. Each one was a singularity — a point of no return where the old rules collapsed and new ones emerged.</p>
+      </section>
+
+      <section class="chapter" id="s3">
+        <h2>Ripples in Deep Time</h2>
+        <p>Four billion years ago, chemistry became biology. Dead matter organized itself into self-replicating systems and never looked back. 1.5 billion years ago, the invention of sex allowed organisms to shuffle genetic information, accelerating evolution exponentially. 540 million years ago, the Cambrian explosion turned the ocean into a riot of new body plans in the geological blink of an eye.</p>
+        <p>50,000 to 100,000 years ago, language let humans externalize thought, creating cultural inheritance — ideas that could outlive the brain that birthed them. 12,000 years ago, agriculture turned humans from wanderers into builders, enabling population explosions that rewired social organization. 250 years ago, the Industrial Revolution harnessed energy at scale, and the world's population septupled in two centuries.</p>
+
+        <div class="callout">
+          <strong>Each singularity rewrote the rules of what came next.</strong> Language allowed cultural inheritance. Agriculture allowed population explosions. Industry allowed energy harnessing. And the pace has been compressing — each transition arrives faster than the last.
+        </div>
+
+        <p>The printing press in 1440 was an information singularity — exponentially increasing knowledge dissemination. The internet in the 1990s was another. Each one compressed the time between innovation and its consequences.</p>
+
+        <p>Complexity theory shows that phase transitions — like water turning to ice — are inevitable in systems with positive feedback loops. The system doesn't choose to change. It reaches a critical threshold and the old rules simply stop applying.</p>
+
+        <blockquote class="snap">
+          We didn't build the machine.<br>We are the soil it grew from.
+        </blockquote>
+
+        <p>Just as single-celled organisms gave rise to multicellular life — a form of existence no single cell could comprehend — human intelligence may give rise to post-human intelligence. A new form of existence we cannot yet imagine.</p>
+      </section>
+
+      <section class="chapter" id="s4">
+        <h2>The Honest Unknown</h2>
+        <p>This is not deterministic prophecy. The parallel between biological and technological phase transitions is a framework, not a forecast. Complexity theory tells us phase transitions are real and inevitable in systems with positive feedback loops — but it doesn't tell us the shape they'll take. Water freezing is predictable. The shape of an ice crystal is not.</p>
+        <p>The counterargument is real: humans have agency. We choose what to build, what to constrain, what to refuse. The Cambrian explosion produced predators and prey, shells and eyes — but it also produced mass extinctions. Not every branch survives a phase transition. And unlike water molecules, we can see the freeze coming.</p>
+
+        <blockquote class="pullquote">
+          The question is not whether a phase transition is coming. The question is whether we'll be the water or the ice — or whether we'll recognize that we were always both.
+        </blockquote>
+
+        <p>But here's the nuance: seeing it coming doesn't mean we can stop it. The Industrial Revolution was not foreseen in its full consequences, yet it happened anyway because the incentives were overwhelming. AI and automation are accelerating the pace of innovation toward a point where technology itself becomes the primary evolutionary force. The assumption that humans are in control of technology reverses when you look at the pattern: technology is evolving autonomously, and we are its temporary stewards.</p>
+      </section>
+
+      <section class="chapter" id="s5">
+        <h2>Hand on the Wheel</h2>
+        <p>If the Singularity is a mirror, then the most important thing we can do is look into it honestly. That means rejecting two comforting lies: that we are safely in control, and that we are helplessly doomed.</p>
+        <p>Agency in a phase transition looks different from agency in stable times. You can't stop water from freezing. But you can shape the crystal. You can decide what values get encoded into the systems that will outlast you. You can choose to build for stewardship, not extraction.</p>
+
+        <div class="callout">
+          <strong>Concrete choices:</strong> A team at an AI lab can choose to publish safety research alongside capability research. A policymaker can fund interpretability work at the same level as compute. A single engineer can flag a deployment risk instead of shipping on schedule. These are small, specific, decisive choices. They don't prevent the phase transition. They influence its shape.
+        </div>
+
+        <p>The exponential nature of progress means that just as biological evolution accelerated after the Cambrian explosion, technological evolution is accelerating toward a point of unpredictable transformation. But unpredictable does not mean un-influenceable. The Cambrian explosion didn't produce random outcomes — it produced outcomes shaped by the constraints and conditions that existed at the transition point. What constraints are we setting now?</p>
+      </section>
+
+      <section class="chapter" id="s6">
+        <h2>One Step Forward</h2>
+        <p>Within the next 24 hours, do one thing: find a conversation about AI or technology that you've been avoiding — at work, at dinner, online — and enter it with this question:</p>
+        <blockquote class="pullquote">"What would change if we stopped assuming we're in control and started asking what we're stewarding?"</blockquote>
+        <p>Not to win the argument. To change the frame.</p>
+
+        <div class="action">
+          <h3>Shape the Transition</h3>
+          <p>Agency in a phase transition means choosing what values survive the freeze. Start here:</p>
+          <ul class="checklist">
+            <li tabindex="0" role="checkbox" aria-checked="false">
+              <span class="check-box"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="2,6 5,9 10,3"/></svg></span>
+              <span class="check-text">Flag a deployment risk instead of shipping on schedule</span>
+            </li>
+            <li tabindex="0" role="checkbox" aria-checked="false">
+              <span class="check-box"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="2,6 5,9 10,3"/></svg></span>
+              <span class="check-text">Publish or share safety research alongside capability work</span>
+            </li>
+            <li tabindex="0" role="checkbox" aria-checked="false">
+              <span class="check-box"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="2,6 5,9 10,3"/></svg></span>
+              <span class="check-text">Ask "what am I stewarding?" in your next tech decision</span>
+            </li>
+            <li tabindex="0" role="checkbox" aria-checked="false">
+              <span class="check-box"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="2,6 5,9 10,3"/></svg></span>
+              <span class="check-text">Enter a conversation about AI you've been avoiding</span>
+            </li>
+            <li tabindex="0" role="checkbox" aria-checked="false">
+              <span class="check-box"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="2,6 5,9 10,3"/></svg></span>
+              <span class="check-text">Read one paper on AI alignment or interpretability</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+    </article>
+  </main>
+</div>
+
+<footer>
+  <div class="footer-left">
+    <a href="https://iggym.github.io/cogitatio-elegans/" class="footer-home">Home</a>
+    <div class="citations">
+      <p><strong>References &amp; Sources</strong></p>
+      <p>Phase transition framework: The origin of life (~4B ya), invention of sex (~1.5B ya), Cambrian explosion (~540M ya), evolution of language (~50–100K ya), Agricultural Revolution (~10K BCE), Industrial Revolution (18th c.).</p>
+      <p>Information singularities: The printing press (1440), the internet (1990s) — each exponentially increased knowledge dissemination.</p>
+      <p>Complexity theory: Phase transitions (e.g., water to ice) are inevitable in systems with positive feedback loops.</p>
+      <p>AlphaGo Move 37, Game 2 vs. Lee Sedol, 2016.</p>
+    </div>
+  </div>
+  <div class="footer-right">
+    <button id="back-top">↑ Back to top</button>
+  </div>
+</footer>
+
+<script>
+(function(){
+  /* Progress Bar */
+  const prog = document.getElementById('progress');
+  function updateProgress(){
+    const h = document.documentElement;
+    const pct = h.scrollTop / (h.scrollHeight - h.clientHeight) * 100;
+    prog.style.width = Math.min(100, Math.max(0, pct)) + '%';
+    prog.setAttribute('aria-valuenow', Math.round(pct));
+  }
+  window.addEventListener('scroll', updateProgress, {passive:true});
+
+  /* Scrollspy */
+  const chapters = document.querySelectorAll('.chapter');
+  const railLinks = document.querySelectorAll('#rail a');
+  const observer = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        railLinks.forEach(function(l){ l.classList.remove('active') });
+        const match = document.querySelector('#rail a[href="#'+e.target.id+'"]');
+        if(match) match.classList.add('active');
+      }
+    });
+  }, {rootMargin:'-15% 0px -70% 0px'});
+  chapters.forEach(function(c){ observer.observe(c) });
+
+  /* Mobile Menu */
+  const menuBtn = document.getElementById('menu-btn');
+  const rail = document.getElementById('rail');
+  const scrim = document.getElementById('scrim');
+
+  function toggleMenu(open){
+    const isOpen = typeof open === 'boolean' ? open : !rail.classList.contains('open');
+    rail.classList.toggle('open', isOpen);
+    scrim.classList.toggle('visible', isOpen);
+    menuBtn.classList.toggle('open', isOpen);
+    menuBtn.setAttribute('aria-expanded', isOpen);
+  }
+  menuBtn.addEventListener('click', function(){ toggleMenu() });
+  scrim.addEventListener('click', function(){ toggleMenu(false) });
+
+  /* Close drawer on nav link click (mobile) */
+  railLinks.forEach(function(l){
+    l.addEventListener('click', function(){
+      if(window.innerWidth <= 880) toggleMenu(false);
+    });
+  });
+
+  /* Social Share Prefill */
+  function setupShare(){
+    const reframeEl = document.getElementById('reframe-text');
+    const btnX = document.querySelector('.share-x');
+    const btnLi = document.querySelector('.share-linkedin');
+    if(!reframeEl || !btnX || !btnLi) return;
+
+    const text = reframeEl.textContent.trim();
+    const url = window.location.href;
+    const encodedText = encodeURIComponent(text);
+    const encodedUrl = encodeURIComponent(url);
+
+    btnX.href = 'https://twitter.com/intent/tweet?text=' + encodedText + '&url=' + encodedUrl;
+    btnLi.href = 'https://www.linkedin.com/sharing/share-offsite/?url=' + encodedUrl;
+  }
+  setupShare();
+
+  /* Checklist */
+  const items = document.querySelectorAll('.checklist li');
+  items.forEach(function(item){
+    function toggle(){
+      const checked = !item.classList.contains('checked');
+      item.classList.toggle('checked', checked);
+      item.setAttribute('aria-checked', checked);
+    }
+    item.addEventListener('click', toggle);
+    item.addEventListener('keydown', function(e){
+      if(e.key === ' ' || e.key === 'Enter'){ e.preventDefault(); toggle(); }
+    });
+  });
+
+  /* Back to Top */
+  const backBtn = document.getElementById('back-top');
+  if(backBtn){
+    backBtn.addEventListener('click', function(){
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      window.scrollTo({top:0, behavior: reduceMotion ? 'auto' : 'smooth'});
+    });
+  }
+})();
+</script>
+</body>
+</html>
