@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Strings, Not Solos — Intelligence as Collective Technology</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ── Theme tokens ── */
+:root{
+  --bg:#f5f0e8;--bg-sub:#ebe6da;--topbar-bg:rgba(245,240,232,.88);
+  --text:#1d1d1b;--text-mid:#4a4a45;--text-light:#7a7a72;
+  --accent:#c8943e;--accent-hover:#a06b20;
+  --highlight:#2a7a6a;--highlight-soft:rgba(42,122,106,.1);
+  --card:rgba(255,255,255,.85);--border:#d4cfc4;
+  --snap-bg:#1d1d1b;--snap-text:#f5f0e8;
+  --rail-bg:#ebe6da;
+  --topbar-h:56px;--max:660px;
+  --serif:'Newsreader',Georgia,'Palatino Linotype','Book Antiqua',Palatino,serif;
+  --sans:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --bg:#0e0e0e;--bg-sub:#161616;--topbar-bg:rgba(14,14,14,.88);
+    --text:#e8e3d6;--text-mid:#a8a89e;--text-light:#6e6e64;
+    --accent:#d4a54e;--accent-hover:#c0882a;
+    --highlight:#3dba9e;--highlight-soft:rgba(61,186,158,.1);
+    --card:rgba(26,26,26,.85);--border:#2a2a2a;
+    --snap-bg:#f5f0e8;--snap-text:#1d1d1b;
+    --rail-bg:#161616;
+  }
+}
+
+/* ── Reset ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+
+body{
+  font-family:var(--serif);background:var(--bg);
+  background-image:radial-gradient(ellipse at 50% 0%,var(--bg-sub) 0%,var(--bg) 70%);
+  color:var(--text);line-height:1.65;font-size:1.05rem;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ── Progress ── */
+#progress{
+  position:fixed;top:0;left:0;height:3px;width:0%;
+  background:linear-gradient(90deg,var(--accent),var(--highlight));
+  z-index:10010;transition:width .12s linear;
+}
+
+/* ── Topbar ── */
+#topbar{
+  position:fixed;top:0;left:0;right:0;height:var(--topbar-h);
+  background:var(--topbar-bg);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--border);z-index:9999;
+  display:flex;align-items:center;justify-content:space-between;padding:0 20px;
+}
+.home-link{
+  font-family:var(--sans);font-size:.84rem;font-weight:600;
+  color:var(--accent);text-decoration:none;letter-spacing:.03em;
+  padding:4px 0;
+}
+.home-link:hover{text-decoration:underline}
+.topbar-meta{display:flex;align-items:center;gap:12px;font-family:var(--sans);font-size:.78rem}
+.breadcrumb{color:var(--text-light)}
+.reading-time{color:var(--text-mid);font-weight:500}
+.hamburger{
+  display:none;background:none;border:none;cursor:pointer;
+  padding:8px;color:var(--text);font-size:1.3rem;line-height:1;
+}
+
+/* ── Scrim ── */
+#scrim{
+  position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;
+  opacity:0;pointer-events:none;transition:opacity .3s ease;
+}
+#scrim.open{opacity:1;pointer-events:auto}
+
+/* ── Layout grid ── */
+.wrap{
+  display:grid;grid-template-columns:220px 1fr;
+  max-width:calc(var(--max) + 260px);margin:0 auto;
+  padding-top:calc(var(--topbar-h) + 20px);min-height:100vh;
+}
+
+/* ── Rail ── */
+#rail{
+  align-self:start;position:sticky;top:100px;
+  padding:0 16px 40px 24px;height:fit-content;overflow-y:auto;
+}
+#rail h2{
+  font-family:var(--sans);font-size:.72rem;font-weight:600;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--text-light);
+  margin-bottom:16px;
+}
+#rail ol{list-style:none}
+#rail ol li{position:relative;padding-left:28px;margin-bottom:10px}
+#rail ol li::before{
+  content:attr(data-num);position:absolute;left:0;top:2px;
+  font-family:var(--sans);font-size:.7rem;font-weight:600;
+  color:var(--text-light);width:20px;text-align:right;
+}
+#rail ol li a{
+  font-family:var(--sans);font-size:.82rem;font-weight:400;
+  color:var(--text-mid);text-decoration:none;line-height:1.45;
+  transition:color .2s;
+}
+#rail ol li a:hover{color:var(--accent)}
+#rail ol li a.active{color:var(--accent);font-weight:500}
+
+/* ── Main column ── */
+main{max-width:var(--max);padding:0 20px 80px 40px}
+
+/* ── Hero ── */
+.hero{margin-bottom:48px;padding-top:32px}
+.hero-sub{
+  font-family:var(--sans);font-size:.84rem;font-weight:500;
+  color:var(--accent);letter-spacing:.02em;margin-bottom:12px;
+  padding-left:14px;border-left:3px solid var(--accent);
+}
+.hero-title{
+  font-family:var(--serif);font-size:clamp(2.1rem,5vw,3.1rem);
+  font-weight:600;line-height:1.15;color:var(--text);margin-bottom:28px;
+}
+.lede{font-size:1.12rem;line-height:1.7;color:var(--text-mid);margin-bottom:32px}
+
+/* ── Spectrum widget ── */
+.spectrum{margin:28px 0 48px}
+.spectrum-labels{display:flex;justify-content:space-between;margin-bottom:10px}
+.spectrum-label{font-family:var(--sans);font-size:.72rem}
+.spectrum-label .tag{
+  display:block;font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--text-light);margin-bottom:2px;
+}
+.spectrum-label .text{font-weight:500}
+.spectrum-left .text{color:var(--accent)}
+.spectrum-right .text{color:var(--highlight)}
+.spectrum-track{
+  position:relative;height:10px;border-radius:5px;
+  background:linear-gradient(to right,var(--accent) 0%,var(--accent) 25%,var(--highlight) 75%,var(--highlight) 100%);
+}
+.spectrum-dot-single{
+  position:absolute;left:10px;top:-5px;width:20px;height:20px;border-radius:50%;
+  background:var(--accent);
+  box-shadow:0 0 12px var(--accent),0 0 4px var(--accent);
+}
+.spectrum-dot-cluster{
+  position:absolute;right:28px;top:0;width:10px;height:10px;border-radius:50%;
+  background:var(--highlight);
+  box-shadow:
+    -14px 5px 0 1px var(--highlight),
+    -7px -5px 0 1px var(--highlight),
+    -20px 0px 0 1px var(--highlight),
+    4px 7px 0 1px var(--highlight),
+    -5px 9px 0 1px var(--highlight),
+    10px 2px 0 1px var(--highlight),
+    -12px -3px 0 1px var(--highlight);
+}
+
+/* ── Chapters ── */
+.chapter{scroll-margin-top:96px;margin-bottom:56px}
+.chapter-num{
+  font-family:var(--sans);font-size:.72rem;font-weight:600;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--text-light);
+  margin-bottom:8px;
+}
+.chapter h3{
+  font-family:var(--serif);font-size:1.55rem;font-weight:600;
+  line-height:1.3;color:var(--text);margin-bottom:20px;
+}
+.chapter p{margin-bottom:18px}
+.chapter strong{font-weight:600;color:var(--text)}
+
+/* ── Divider ── */
+.divider{height:1px;background:var(--border);margin:40px 0}
+
+/* ── Callout ── */
+.callout{
+  border-left:3px solid var(--highlight);background:var(--highlight-soft);
+  padding:16px 20px;margin:24px 0;font-size:.95rem;line-height:1.6;
+  color:var(--text-mid);border-radius:0 4px 4px 0;
+}
+.callout.reframe{
+  border-left:4px solid var(--accent);background:none;
+  font-size:1.05rem;line-height:1.7;padding:20px 24px;
+}
+
+/* ── Pullquote ── */
+.pullquote{
+  margin:32px 0;padding:24px 0;
+  border-top:2px solid var(--border);border-bottom:2px solid var(--border);
+  font-style:italic;font-size:1.15rem;line-height:1.6;
+  color:var(--text-mid);text-align:center;
+}
+
+/* ── Perspective Snap ── */
+.snap{
+  margin:44px auto;padding:36px 28px;
+  background:var(--snap-bg);color:var(--snap-text);text-align:center;
+  font-family:var(--serif);font-size:clamp(1.3rem,3.5vw,1.9rem);
+  font-weight:600;line-height:1.4;border-radius:6px;max-width:88%;
+}
+
+/* ── Share block ── */
+.share-block{margin:24px 0 8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.share-label{
+  font-family:var(--sans);font-size:.72rem;font-weight:600;
+  color:var(--text-light);letter-spacing:.04em;
+}
+.share-btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  padding:8px 16px;font-family:var(--sans);font-size:.78rem;font-weight:500;
+  border:1px solid var(--border);background:var(--card);color:var(--text-mid);
+  border-radius:4px;cursor:pointer;text-decoration:none;transition:all .2s;
+}
+.share-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+/* ── CTA action block ── */
+.action{
+  background:linear-gradient(135deg,var(--accent) 0%,var(--highlight) 100%);
+  padding:36px 28px;border-radius:8px;color:#fff;margin:48px 0;
+}
+.action h3{
+  font-family:var(--serif);font-size:1.5rem;font-weight:600;
+  margin-bottom:16px;color:#fff;
+}
+.action p{font-size:1rem;line-height:1.65;margin-bottom:24px;color:rgba(255,255,255,.82)}
+.checklist{list-style:none;display:flex;flex-wrap:wrap;gap:8px}
+.checklist li{
+  font-family:var(--sans);font-size:.82rem;font-weight:500;
+  padding:8px 14px;background:rgba(255,255,255,.15);
+  border-radius:20px;color:#fff;cursor:default;transition:background .2s;
+}
+.checklist li:hover{background:rgba(255,255,255,.28)}
+
+/* ── Footer ── */
+footer{
+  display:flex;justify-content:space-between;align-items:flex-start;gap:24px;
+  padding:32px 0 48px;border-top:1px solid var(--border);
+  font-family:var(--sans);font-size:.78rem;color:var(--text-light);line-height:1.5;
+}
+footer a{color:var(--accent);text-decoration:none}
+footer a:hover{text-decoration:underline}
+.back-top{
+  font-family:var(--sans);font-size:.78rem;font-weight:500;
+  color:var(--accent);cursor:pointer;background:none;border:none;padding:0;
+  transition:opacity .2s;display:inline-block;margin-left:16px;
+}
+.back-top:hover{opacity:.7}
+.citations{max-width:60%}
+.citations h4{font-weight:600;margin-bottom:6px;color:var(--text-mid)}
+
+/* ── Responsive ── */
+@media(max-width:880px){
+  .hamburger{display:block}
+  .wrap{display:block;max-width:100%;padding-top:calc(var(--topbar-h) + 16px)}
+  #rail{
+    position:fixed;top:0;left:-82vw;width:82vw;height:100vh;z-index:1001;
+    background:var(--rail-bg);padding:24px;transition:left .3s ease;
+    overflow-y:auto;box-shadow:none;
+  }
+  #rail.open{left:0;box-shadow:4px 0 24px rgba(0,0,0,.2)}
+  main{max-width:100%;padding:0 20px 80px}
+  .breadcrumb{display:none}
+  .snap{max-width:100%}
+  .spectrum-labels{flex-direction:column;gap:6px}
+  footer{flex-direction:column}
+  .citations{max-width:100%}
+}
+@media(max-width:480px){
+  body{font-size:.96rem}
+  .hero-title{font-size:clamp(1.8rem,6vw,2.5rem)}
+  main{padding:0 16px 60px}
+}
+
+/* ── Focus states ── */
+a:focus-visible,button:focus-visible,.share-btn:focus-visible,.back-top:focus-visible{
+  outline:2px solid var(--accent);outline-offset:2px;
+}
+
+/* ── Motion guards ── */
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important}
+  #progress{transition:none}
+}
+</style>
+</head>
+<body>
+
+<!-- Scroll progress -->
+<div id="progress" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+
+<!-- Glassmorphism topbar -->
+<header id="topbar">
+  <a class="home-link" href="https://iggym.github.io/cogitatio-elegans/">Home</a>
+  <div class="topbar-meta">
+    <span class="breadcrumb">Strings, Not Solos</span>
+    <span class="reading-time">4 min read</span>
+  </div>
+  <button class="hamburger" aria-label="Open navigation" id="menuBtn">&#9776;</button>
+</header>
+
+<!-- Mobile scrim overlay -->
+<div id="scrim" aria-hidden="true"></div>
+
+<!-- Two-column layout -->
+<div class="wrap">
+  <nav id="rail" aria-label="Article sections">
+    <h2>Sections</h2>
+    <ol>
+      <li data-num="01"><a href="#s1">Solo Acts Sink</a></li>
+      <li data-num="02"><a href="#s2">Beyond the Bone</a></li>
+      <li data-num="03"><a href="#s3">Mind the Web</a></li>
+      <li data-num="04"><a href="#s4">Roots, Not Wings</a></li>
+      <li data-num="05"><a href="#s5">Grab the Thread</a></li>
+      <li data-num="06"><a href="#s6">Pass the Baton</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <article>
+
+      <!-- ─── Hero ─── -->
+      <header class="hero">
+        <p class="hero-sub">Intelligence as Collective Technology, Not Individual Trait</p>
+        <h1 class="hero-title">Strings, Not Solos</h1>
+
+        <!-- Spectrum: old model → new lens -->
+        <div class="spectrum" aria-label="Conceptual shift from individual to collective intelligence">
+          <div class="spectrum-labels">
+            <div class="spectrum-label spectrum-left">
+              <span class="tag">Old Model</span>
+              <span class="text">Inside the Skull</span>
+            </div>
+            <div class="spectrum-label spectrum-right">
+              <span class="tag">New Lens</span>
+              <span class="text">Between the Minds</span>
+            </div>
+          </div>
+          <div class="spectrum-track">
+            <div class="spectrum-dot-single" aria-hidden="true"></div>
+            <div class="spectrum-dot-cluster" aria-hidden="true"></div>
+          </div>
+        </div>
+
+        <p class="lede">We measure intelligence by what a single mind can produce alone — a test score, a clever insight, a solitary breakthrough. But that metric misses the real source of human power. Intelligence isn't locked inside individual skulls. It's distributed, pooled, accumulated. It lives between us.</p>
+      </header>
+
+      <!-- ─── 01 · Opening Scene ─── -->
+      <section class="chapter" id="s1">
+        <span class="chapter-num">01</span>
+        <h3>Solo Acts Sink</h3>
+        <p>A woman sits at her desk at 2 a.m., staring at a blinking cursor. She's been tasked with solving a problem that matters — a design challenge, a strategic decision, a creative brief. She's smart. Everyone tells her so. She has the degrees, the pedigree, the reputation. But right now, alone in the dark, the cursor blinks and her mind feels like a sealed room. She types. She deletes. She types again. Nothing lands.</p>
+        <p>We've all been there. That moment where you're supposed to be "smart" — where intelligence is measured by what you can produce from the raw material of your own skull, unaided, in isolation. And the silence feels like failure. Like you're not who you said you were. Like the genius myth was always a lie.</p>
+      </section>
+
+      <div class="divider" aria-hidden="true"></div>
+
+      <!-- ─── 02 · Bold Reframe ─── -->
+      <section class="chapter" id="s2">
+        <span class="chapter-num">02</span>
+        <h3>Beyond the Bone</h3>
+        <div class="callout reframe" id="reframe-text">Intelligence isn't a substance inside your skull. It's a technology that humans built across generations, pooled between minds, embedded in tools, language, institutions, and accumulated culture. The human mind didn't evolve to be a solo processor. It evolved to plug into a network.</div>
+        <p>You are not a genius operating alone. You are a node in a cognitive system that remembers, computes, and discovers far beyond any individual capacity. The question isn't how smart you are. It's how well you connect.</p>
+
+        <!-- Share integration -->
+        <div class="share-block">
+          <span class="share-label">Share this reframe</span>
+          <a class="share-btn" id="shareX" href="#" target="_blank" rel="noopener noreferrer" aria-label="Share on X">&#120143;&nbsp; Post on X</a>
+          <a class="share-btn" id="shareLi" href="#" target="_blank" rel="noopener noreferrer" aria-label="Share on LinkedIn">in&nbsp; Share on LinkedIn</a>
+        </div>
+      </section>
+
+      <div class="divider" aria-hidden="true"></div>
+
+      <!-- ─── 03 · Hidden Connections ─── -->
+      <section class="chapter" id="s3">
+        <span class="chapter-num">03</span>
+        <h3>Mind the Web</h3>
+        <p>The evidence surrounds us, once you stop looking inside skulls and start looking between them:</p>
+
+        <p><strong>Evolutionary:</strong> Human brains didn't grow to solve calculus. They grew for social learning — imitation, shared attention, communication. We became the species that could watch someone crack a nut with a rock and immediately adopt the technique. That's not individual brilliance. That's distributed processing.</p>
+
+        <p><strong>Technological:</strong> Writing didn't just record thoughts — it externalized memory. Libraries offloaded storage. Mathematics gave us a shared computational language. Maps collapsed geography into portable cognition. Computers and AI are the latest nodes in a chain that started with the first spoken word.</p>
+
+        <p><strong>Scientific:</strong> Cognitive science increasingly views intelligence as embodied, distributed, and scaffolded. Your brain doesn't work alone. It works with your hands, your environment, your social group, your tools. Intelligence is an ecosystem, not an organ.</p>
+
+        <p><strong>Historical:</strong> From oral traditions to the printing press to the internet — every major leap in human power came not from smarter individuals, but from better systems for sharing, storing, and building on what others already knew.</p>
+
+        <!-- Perspective snap -->
+        <blockquote class="snap">Your brain didn't evolve to think. It evolved to connect.</blockquote>
+      </section>
+
+      <div class="divider" aria-hidden="true"></div>
+
+      <!-- ─── 04 · Credibility ─── -->
+      <section class="chapter" id="s4">
+        <span class="chapter-num">04</span>
+        <h3>Roots, Not Wings</h3>
+        <p>I'm not saying individual minds don't matter. They do. A brilliant physicist can see patterns others miss. A gifted writer can articulate what others feel but can't express. But those individuals are powerful only because they're standing on a mountain of accumulated collective cognition — centuries of recorded observation, tested theories, shared language, and institutional knowledge.</p>
+
+        <blockquote class="pullquote">The heroic model of genius isn't wrong because individuals aren't smart. It's wrong because it misattributes the source.</blockquote>
+
+        <p>Einstein didn't invent relativity from scratch. He leaned on Maxwell's equations, Lorentz's transformations, Minkowski's geometry, and an entire infrastructure of peer review and correspondence. He was a brilliant node. But the network made the breakthrough possible.</p>
+
+        <p>This is also why isolated minds struggle. When you cut someone off from their cognitive scaffold — from language, from books, from community — their intelligence doesn't just diminish. It qualitatively changes. The most capable thinker in the world, without a shared system of knowledge and communication, operates with one hand tied behind their back.</p>
+      </section>
+
+      <div class="divider" aria-hidden="true"></div>
+
+      <!-- ─── 05 · Agency ─── -->
+      <section class="chapter" id="s5">
+        <span class="chapter-num">05</span>
+        <h3>Grab the Thread</h3>
+        <p>This reframe isn't just philosophical. It changes what you do next.</p>
+
+        <p>If intelligence is collective, then your job isn't to be the smartest person in the room. Your job is to plug in — to contribute to and draw from the network. Write things down so others can build on them. Ask questions so others can answer them. Share what you've learned so it doesn't die with you. Use tools that extend your reach. Build systems that outlast your involvement.</p>
+
+        <div class="callout">Small, concrete choices: Instead of keeping an insight in your head, put it in a shared document. Instead of solving a problem alone, send one email asking for help. Instead of trusting your memory, build a personal reference system. Instead of trying to be the genius, try to be the connector — the person who links two ideas that weren't talking to each other.</div>
+      </section>
+
+      <div class="divider" aria-hidden="true"></div>
+
+      <!-- ─── 06 · Call to Action ─── -->
+      <section class="chapter" id="s6">
+        <span class="chapter-num">06</span>
+        <div class="action">
+          <h3>Pass the Baton</h3>
+          <p>Within the next 24 hours, take one piece of knowledge that's currently locked inside your head — a technique, a lesson, an observation, a hard-won insight — and externalize it. Write it down in a shared space. Post it. Send it to a colleague. Add it to a wiki. Put it somewhere that someone else can find it, build on it, connect it to something you never considered.</p>
+          <p>That's not a small act. That's how collective intelligence grows. That's how humanity's real superpower works — not by being brilliant alone, but by being brilliant together.</p>
+          <ul class="checklist">
+            <li>Write down one insight today</li>
+            <li>Share it in a public space</li>
+            <li>Ask one question publicly</li>
+            <li>Build a reference habit</li>
+            <li>Connect two distant ideas</li>
+          </ul>
+        </div>
+      </section>
+
+    </article>
+
+    <!-- ─── Footer ─── -->
+    <footer>
+      <div>
+        <a href="https://iggym.github.io/cogitatio-elegans/">Home</a>
+        <button class="back-top" id="backTop" aria-label="Back to top">&#8593; Back to top</button>
+      </div>
+      <div class="citations">
+        <h4>Sources &amp; Traditions Drawn On</h4>
+        <p>Evolutionary psychology: brains evolved for social learning, imitation, shared attention, communication. Cultural evolution: writing, libraries, maps, mathematics, computers, and AI externalize cognition. Cognitive science: intelligence as embodied, distributed, and scaffolded. History of knowledge technologies: oral traditions &rarr; printing press &rarr; internet. Core paradigm: humanity's superpower is building systems that remember, compute, coordinate, and discover beyond any individual mind.</p>
+      </div>
+    </footer>
+  </main>
+</div>
+
+<script>
+/* ── Progress bar ── */
+const progressEl = document.getElementById('progress');
+function updateProgress(){
+  const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+  const scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+  const pct = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+  progressEl.style.width = pct + '%';
+  progressEl.setAttribute('aria-valuenow', Math.round(pct));
+}
+window.addEventListener('scroll', updateProgress, {passive:true});
+updateProgress();
+
+/* ── Scrollspy ── */
+const chapters = document.querySelectorAll('.chapter');
+const railLinks = document.querySelectorAll('#rail ol li a');
+const spyObserver = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if(entry.isIntersecting){
+      const id = entry.target.id;
+      railLinks.forEach(link => {
+        link.classList.toggle('active', link.getAttribute('href') === '#' + id);
+      });
+    }
+  });
+}, {rootMargin:'-15% 0px -70% 0px'});
+chapters.forEach(ch => spyObserver.observe(ch));
+
+/* ── Mobile menu ── */
+const menuBtn  = document.getElementById('menuBtn');
+const rail     = document.getElementById('rail');
+const scrim    = document.getElementById('scrim');
+
+function openMenu(){
+  rail.classList.add('open');
+  scrim.classList.add('open');
+  scrim.setAttribute('aria-hidden','false');
+  menuBtn.textContent = '\u2715';          // ✕
+  menuBtn.setAttribute('aria-label','Close navigation');
+}
+function closeMenu(){
+  rail.classList.remove('open');
+  scrim.classList.remove('open');
+  scrim.setAttribute('aria-hidden','true');
+  menuBtn.textContent = '\u2630';          // ☰
+  menuBtn.setAttribute('aria-label','Open navigation');
+}
+
+menuBtn.addEventListener('click', () => {
+  rail.classList.contains('open') ? closeMenu() : openMenu();
+});
+scrim.addEventListener('click', closeMenu);
+
+railLinks.forEach(link => {
+  link.addEventListener('click', () => {
+    if(window.innerWidth <= 880) closeMenu();
+  });
+});
+
+/* ── Dynamic social share ── */
+const reframeEl = document.getElementById('reframe-text');
+const shareX    = document.getElementById('shareX');
+const shareLi   = document.getElementById('shareLi');
+
+function buildShareURLs(){
+  const text = reframeEl.textContent.trim();
+  const url  = window.location.href;
+  shareX.href  = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(text) + '&url=' + encodeURIComponent(url);
+  shareLi.href = 'https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(url);
+}
+buildShareURLs();
+
+/* ── Back to top (respects reduced motion) ── */
+const backTop = document.getElementById('backTop');
+backTop.addEventListener('click', () => {
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  window.scrollTo({top:0, behavior: reduceMotion ? 'auto' : 'smooth'});
+});
+</script>
+</body>
+</html>
