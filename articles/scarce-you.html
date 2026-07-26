@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scarcity Changed Address</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #F2ECDE;
+    --bg-raised: #EAE2CE;
+    --ink: #1C1810;
+    --ink-soft: #5B5546;
+    --line: #D6CBAC;
+    --gold: #92721F;
+    --gold-bright: #B68A2A;
+    --dark: #202E27;
+    --dark-2: #16211C;
+    --on-dark: #EFE7D2;
+    --on-dark-soft: #B9C4B9;
+    --max-w: 680px;
+  }
+
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg: #18150F;
+      --bg-raised: #211D14;
+      --ink: #EDE5D2;
+      --ink-soft: #B4AA92;
+      --line: #3A3324;
+      --gold: #D6A94A;
+      --gold-bright: #E8C06A;
+      --dark: #0F1712;
+      --dark-2: #0A100C;
+      --on-dark: #EFE7D2;
+      --on-dark-soft: #A9B5A9;
+    }
+  }
+
+  *{ box-sizing: border-box; }
+
+  html{ -webkit-text-size-adjust: 100%; }
+
+  body{
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Lora', Georgia, 'Times New Roman', serif;
+    font-size: clamp(17px, 1.6vw, 19px);
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  a{ color: var(--gold-bright); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  a:hover{ color: var(--gold); }
+
+  .wrap{
+    max-width: var(--max-w);
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* ---------- Home button ---------- */
+  .home-row{
+    display: flex;
+    justify-content: center;
+    padding: 22px 24px;
+  }
+  .home-btn{
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    text-decoration: none;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 10px 18px;
+    min-height: 40px;
+    transition: border-color .15s ease, color .15s ease, background .15s ease;
+  }
+  .home-btn:hover{
+    color: var(--ink);
+    border-color: var(--gold-bright);
+    background: var(--bg-raised);
+  }
+  .home-btn svg{ width: 14px; height: 14px; }
+
+  /* ---------- Hero ---------- */
+  header.hero{
+    padding: 20px 0 48px;
+  }
+  .eyebrow{
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .eyebrow .stamp{ flex-shrink: 0; }
+
+  h1{
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: clamp(2.4rem, 7vw, 3.6rem);
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+    margin: 0 0 20px;
+  }
+  h1 em{
+    font-style: italic;
+    font-weight: 500;
+    color: var(--gold-bright);
+  }
+
+  .deck{
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: clamp(1.05rem, 2.3vw, 1.25rem);
+    color: var(--ink-soft);
+    max-width: 34ch;
+    margin: 0;
+  }
+
+  /* ---------- Article body ---------- */
+  article{ padding-bottom: 8px; }
+
+  h2.section-head{
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-style: italic;
+    font-size: clamp(1.4rem, 3.4vw, 1.75rem);
+    color: var(--gold);
+    margin: 3.2em 0 0.9em;
+    padding-top: 0.2em;
+    border-top: 1px solid var(--line);
+  }
+  h2.section-head.first{ border-top: none; margin-top: 0.4em; }
+
+  p{ margin: 0 0 1.3em; }
+  p.lead{
+    font-size: 1.08em;
+  }
+
+  strong{ color: var(--ink); font-weight: 600; }
+
+  blockquote{
+    margin: 0 0 1.3em;
+    padding-left: 18px;
+    border-left: 2px solid var(--gold);
+    font-style: italic;
+    color: var(--ink-soft);
+  }
+
+  sup.cite a{
+    font-family: 'Inter', sans-serif;
+    font-size: 0.68em;
+    color: var(--gold);
+    text-decoration: none;
+    padding: 0 2px;
+  }
+
+  /* ---------- Perspective snap ---------- */
+  .snap{
+    background: var(--dark);
+    color: var(--on-dark);
+    margin: 2.4em -24px;
+    padding: 52px 24px;
+    text-align: center;
+    position: relative;
+  }
+  .snap-inner{
+    max-width: 520px;
+    margin: 0 auto;
+  }
+  .snap p{
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-style: italic;
+    font-size: clamp(1.5rem, 5vw, 2.1rem);
+    line-height: 1.28;
+    margin: 0;
+    color: var(--on-dark);
+  }
+  .snap .mark{
+    display: block;
+    margin: 0 auto 20px;
+    width: 30px;
+    height: 30px;
+    opacity: 0.85;
+  }
+
+  /* ---------- CTA box ---------- */
+  .cta{
+    background: var(--dark-2);
+    color: var(--on-dark);
+    border-radius: 14px;
+    padding: 36px 28px;
+    margin: 2.6em 0 2.2em;
+  }
+  .cta .cta-eyebrow{
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold-bright);
+    margin-bottom: 12px;
+  }
+  .cta h3{
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: clamp(1.3rem, 3.6vw, 1.6rem);
+    margin: 0 0 14px;
+    color: var(--on-dark);
+  }
+  .cta p{
+    color: var(--on-dark-soft);
+    margin-bottom: 0.9em;
+    font-size: 0.98em;
+  }
+  .cta p:last-child{ margin-bottom: 0; }
+  .cta strong{ color: var(--on-dark); }
+
+  /* ---------- Further reading ---------- */
+  .reading{
+    margin-top: 3em;
+    padding-top: 1.6em;
+    border-top: 1px solid var(--line);
+  }
+  .reading h4{
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin: 0 0 14px;
+  }
+  .reading ol{
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    line-height: 1.9;
+    color: var(--ink-soft);
+    padding-left: 20px;
+    margin: 0;
+  }
+  .reading a{ color: var(--ink-soft); }
+  .reading a:hover{ color: var(--gold-bright); }
+
+  footer.pagefoot{
+    padding: 12px 0 60px;
+    display: flex;
+    justify-content: center;
+  }
+
+  @media (max-width: 480px){
+    .snap{ margin: 2.2em -16px; padding: 40px 16px; }
+    .wrap{ padding: 0 18px; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="home-row">
+    <a class="home-btn" href="https://iggym.github.io/cogitatio-elegans/">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 3l9 6.5"/><path d="M5 9.5V21h14V9.5"/></svg>
+      Home
+    </a>
+  </div>
+
+  <div class="wrap">
+    <header class="hero">
+      <div class="eyebrow">
+        <svg class="stamp" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.3 2.3L16 9.5"/></svg>
+        On worth, in an age of plenty
+      </div>
+      <h1>Scarcity Changed <em>Address</em></h1>
+      <p class="deck">The machines are about to out-perform you at almost everything. Here's the one line of work they can't take — and why it's already rearranging who gets paid for what.</p>
+    </header>
+
+    <article>
+      <h2 class="section-head first">The Barista Test</h2>
+      <p class="lead">You walk into a coffee shop with a touchscreen kiosk sitting dark in the corner, unplugged in every way that matters, while a person behind the counter asks how your week's going and gets your order right without you repeating it. That's not nostalgia. It's a business decision. <span class="cite" style="all:unset">Starbucks announced it was walking back its bet on self-order automation and hiring more baristas instead, because customers wanted to be served by a human being<sup class="cite"><a href="https://www.theguardian.com/business/2025/apr/30/starbucks-says-cutting-shop-staff-in-favour-of-automation-has-failed" target="_blank" rel="noopener">1</a></sup></span>.</p>
+
+      <p>Meanwhile the people who build the machines are suddenly obsessed with something that sounds almost quaint. Silicon Valley's most influential builders — <a href="https://finance.yahoo.com/news/good-taste-may-just-job-224031255.html?guccounter=1" target="_blank" rel="noopener">Sam Altman</a> among them, alongside <a href="https://paulgraham.com/taste.html" target="_blank" rel="noopener">Paul Graham</a> — have started writing essays about taste. Founders are enrolling in etiquette classes. None of this is a coincidence, and none of it is really about coffee or manners. It's a live rehearsal for a question that's about to hit everyone: if a machine can out-code you, out-write you, out-diagnose you, and out-design you, what exactly are you being paid for right now?</p>
+
+      <h2 class="section-head">You're the Currency</h2>
+      <p class="lead"><strong>Here's the claim: when intelligence and labor stop being scarce, the thing that stays scarce is you — specifically, the fact that you're a person, in the room, paying attention.</strong> Not your résumé. Not your output. Your presence.</p>
+
+      <p>The economist <a href="https://aleximas.substack.com/p/what-will-be-scarce" target="_blank" rel="noopener">Alex Imas</a> made this argument in one of the sharper essays on the subject: once AI can match or beat humans at essentially every task, value doesn't vanish, it relocates — away from what you can do and toward the simple, stubborn fact of being human and being there<sup class="cite"><a href="https://aleximas.substack.com/p/what-will-be-scarce" target="_blank" rel="noopener">2</a></sup>. That's a genuinely uncomfortable thought if your entire sense of worth is built on being good at things. It means the goalposts aren't shrinking. They're moving to a field you didn't know you were standing on.</p>
+
+      <p>The pessimist's version of this future already has a name: <em>Nosedive</em>, the 2016 <em>Black Mirror</em> episode where every interaction gets rated one to five stars, and your cumulative score decides your rent, your friends, your worth<sup class="cite"><a href="https://en.wikipedia.org/wiki/Nosedive_(Black_Mirror)" target="_blank" rel="noopener">3</a></sup>. Pastel, smiling, and suffocating. If human presence really is about to become the most valuable thing in the economy, that's the fear worth sitting with: a single, universal ranking of who's worth talking to.</p>
+
+      <h2 class="section-head">A Thousand Ponds</h2>
+      <p>But a world that prices presence doesn't have to converge on one ranking. It's more likely to do the opposite.</p>
+
+      <p>Society was never one arena. It's a patchwork of smaller ones, each running on its own currency and its own hierarchy — a structure sociologists call <em>fields</em>. A chef doesn't lose sleep over a senator's approval. A junior academic doesn't envy a hedge fund manager's bonus. They're not competing, because they're not in the same field. And the internet already proved how far this fragmentation can go: once distribution got cheap, we ended up with <a href="https://en.wikipedia.org/wiki/The_Long_Tail_(book)" target="_blank" rel="noopener">whole thriving subcultures</a> built around marble racing, competitive whistling, flag design — audiences too small to exist in any single town, big enough to exist online.</p>
+
+      <p>If AI does the same thing to production that the internet did to distribution — makes it nearly free to make something for an audience of five hundred — then the number of these small fields doesn't shrink. It multiplies. And inside each one, someone still becomes the person everyone else measures themselves against; <a href="https://home.uchicago.edu/~vlima/courses/econ201/Superstars.pdf" target="_blank" rel="noopener">superstar economics</a> shows up at every scale, not just the biggest one<sup class="cite"><a href="https://home.uchicago.edu/~vlima/courses/econ201/Superstars.pdf" target="_blank" rel="noopener">4</a></sup>. The best fountain-pen reviewer on the internet doesn't split an audience with the tenth-best. The field is small. The hierarchy inside it is steep regardless.
+
+      </p>
+
+      <div class="snap">
+        <div class="snap-inner">
+          <svg class="mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.3 2.3L16 9.5"/></svg>
+          <p>You don't need to win the world.<br>You need to matter in one room.</p>
+        </div>
+      </div>
+
+      <h2 class="section-head">Old Story, New Stakes</h2>
+      <p>None of this is as new as it feels, and that's actually reassuring. Every time the basis of value has shifted, human behavior has bent to fit it — and people adapted. The factory rewarded punctuality, and it rewired how entire populations experienced time itself, a shift the historian E.P. Thompson traced from the loose rhythms of rural work to the clock-governed discipline of industrial labor<sup class="cite"><a href="https://files.libcom.org/files/timeworkandindustrialcapitalism.pdf" target="_blank" rel="noopener">5</a></sup>. Literacy did something similar at the level of the brain: learning to read measurably repurposes the visual cortex, recruiting territory that once specialized in recognizing faces<sup class="cite"><a href="https://www.nature.com/articles/nrn3924?proof=t%25C2%25A0" target="_blank" rel="noopener">6</a></sup>. Even belief systems have functioned as incentive systems — Max Weber's account of Calvinist theology helping produce the work ethic behind early capitalism<sup class="cite"><a href="https://en.wikipedia.org/wiki/The_Protestant_Ethic_and_the_Spirit_of_Capitalism" target="_blank" rel="noopener">7</a></sup>, and economists have even found that a strong cultural belief in hell correlates with better economic outcomes, presumably because the threat of eternal punishment is a remarkably effective motivator<sup class="cite"><a href="https://www.nber.org/papers/w9682" target="_blank" rel="noopener">8</a></sup>.
+
+      </p>
+
+      <p>Social skill being economically decisive isn't new either. Among the Hadza, a hunter-gatherer society, being well-liked is one of the two things that actually determines your status<sup class="cite"><a href="https://www.nature.com/articles/s41598-024-72238-w" target="_blank" rel="noopener">9</a></sup>. And even inside our current, supposedly cognition-obsessed economy, the wage premium on social skills has been rising steadily since the 1980s — including in famously awkward industries like tech<sup class="cite"><a href="https://academic.oup.com/qje/article-abstract/132/4/1593/3861633?redirectedFrom=fulltext" target="_blank" rel="noopener">10</a></sup>. The relational economy isn't arriving from nowhere. It's been quietly gaining ground for forty years.</p>
+
+      <p>It's also fair to worry this shift isn't neutral. Relational skill is itself substantially heritable — roughly as heritable as IQ, according to twin studies<sup class="cite"><a href="https://pubmed.ncbi.nlm.nih.gov/10789354/" target="_blank" rel="noopener">11</a></sup> — so a relational economy won't be some pure meritocracy free of the arbitrary advantages that shaped the old one. Fair concern. But it's worth remembering the cognitive economy was never that clean either: IQ is somewhere between 50 and 80 percent heritable, and conscientiousness, the trait that best predicts job performance, sits around 60 percent<sup class="cite"><a href="https://www.nature.com/articles/ng.3285" target="_blank" rel="noopener">12</a></sup>. No one earns their starting line in either economy. And relational capital has already shown it can travel outside traditional class routes — creators with no elite cultural pedigree at all have built enormous audiences purely on presence and charisma, which suggests this new currency isn't simply old money in a new coat.</p>
+
+      <h2 class="section-head">Pick Your Pond</h2>
+      <p>If value is fragmenting into a thousand small fields instead of collapsing into one master ranking, the practical move isn't to become generically likable, or to chase a single viral audience. It's to find — or build — the specific, smaller room where your presence already registers.</p>
+
+      <p>That's a decision you can actually make, today, in specific and unglamorous ways: showing up consistently to the same Tuesday run club instead of a different gym every week. Replying to people in your group chat by name and by memory, not just emoji. Choosing one niche — woodworking, distance running, a particular strain of internet humor, your kid's Little League team — and becoming a known face there instead of a stranger everywhere. Presence compounds locally. It doesn't compound by being spread thin across everyone.</p>
+
+      <div class="cta">
+        <div class="cta-eyebrow">Before this time tomorrow</div>
+        <h3>Do this by tomorrow</h3>
+        <p>Pick <strong>one</strong> room where people would actually notice if you stopped showing up — a group chat, a team, a regular table at the same coffee shop, a Sunday call with your parents. Not your biggest audience. Your realest one.</p>
+        <p>Then do <strong>one thing there in the next 24 hours</strong> that only an attentive, present human could do: remember a detail someone mentioned weeks ago and bring it up. Show up in person instead of texting. Ask a real follow-up question and actually wait for the answer.</p>
+        <p>That's the whole exercise. Not building a personal brand. Just proving, to one small field, that you're worth being in the room.</p>
+      </div>
+
+      <div class="reading">
+        <h4>Sources &amp; further reading</h4>
+        <ol>
+          <li>Starbucks reverses automation push, hires more baristas — <a href="https://www.theguardian.com/business/2025/apr/30/starbucks-says-cutting-shop-staff-in-favour-of-automation-has-failed" target="_blank" rel="noopener">The Guardian</a></li>
+          <li>Alex Imas, "What Will Be Scarce" — <a href="https://aleximas.substack.com/p/what-will-be-scarce" target="_blank" rel="noopener">Substack</a></li>
+          <li>"Nosedive," Black Mirror — <a href="https://en.wikipedia.org/wiki/Nosedive_(Black_Mirror)" target="_blank" rel="noopener">Wikipedia</a></li>
+          <li>Sherwin Rosen, superstar economics — <a href="https://home.uchicago.edu/~vlima/courses/econ201/Superstars.pdf" target="_blank" rel="noopener">PDF</a></li>
+          <li>E.P. Thompson, "Time, Work-Discipline and Industrial Capitalism" — <a href="https://files.libcom.org/files/timeworkandindustrialcapitalism.pdf" target="_blank" rel="noopener">PDF</a></li>
+          <li>Literacy and visual-cortex reorganization — <a href="https://www.nature.com/articles/nrn3924?proof=t%25C2%25A0" target="_blank" rel="noopener">Nature Reviews Neuroscience</a></li>
+          <li>Weber, The Protestant Ethic and the Spirit of Capitalism — <a href="https://en.wikipedia.org/wiki/The_Protestant_Ethic_and_the_Spirit_of_Capitalism" target="_blank" rel="noopener">Wikipedia</a></li>
+          <li>Belief in hell and economic outcomes — <a href="https://www.nber.org/papers/w9682" target="_blank" rel="noopener">NBER</a></li>
+          <li>Popularity and status among the Hadza — <a href="https://www.nature.com/articles/s41598-024-72238-w" target="_blank" rel="noopener">Scientific Reports</a></li>
+          <li>Rising labor-market returns to social skills — <a href="https://academic.oup.com/qje/article-abstract/132/4/1593/3861633?redirectedFrom=fulltext" target="_blank" rel="noopener">Quarterly Journal of Economics</a></li>
+          <li>Heritability of relational/social skills — <a href="https://pubmed.ncbi.nlm.nih.gov/10789354/" target="_blank" rel="noopener">PubMed</a></li>
+          <li>Heritability of IQ — <a href="https://www.nature.com/articles/ng.3285" target="_blank" rel="noopener">Nature Genetics</a></li>
+          <li>The long tail — <a href="https://en.wikipedia.org/wiki/The_Long_Tail_(book)" target="_blank" rel="noopener">Wikipedia</a></li>
+          <li>Julia Willemyns, "At least you're likable," the essay this piece draws its argument from — <a href="https://juliawillemyns.substack.com/p/at-least-youre-likable" target="_blank" rel="noopener">Substack</a></li>
+        </ol>
+      </div>
+    </article>
+  </div>
+
+  <footer class="pagefoot">
+    <a class="home-btn" href="https://iggym.github.io/cogitatio-elegans/">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 3l9 6.5"/><path d="M5 9.5V21h14V9.5"/></svg>
+      Home
+    </a>
+  </footer>
+
+</body>
+</html>
