@@ -137,22 +137,36 @@
     "title": "The Silent Majority Isn't Silent — It's Scattered.",
     "description": "Why polarization isn't a volume problem, and what network geometry reveals that head counts never will.",
     "category": "media",
-    "date": "2026-07-12",
+    "date": "2026-06-12",
     "slug": "media-polarization.html"
   } ,
   {
     "title": "Stories Over Synapses.",
     "description": "We were never meant to stop at 150. We just needed better stories.",
     "category": "social",
-    "date": "2026-07-12",
+    "date": "2026-06-11",
     "slug": "beyond-150.html"
   }  ,
   {
     "title": "Born From the Wreckage.",
     "description": "Why the safest systems humans ever built are not monuments to genius — but to the failures they refused to repeat.",
     "category": "media",
-    "date": "2026-07-12",
+    "date": "2026-06-13",
     "slug": "born-from-fails.html"
+  }  ,
+  {
+    "title": "The Inverted Moat.",
+    "description": "Why AI is coming for your degree before it comes for your plumber.",
+    "category": "media",
+    "date": "2026-06-08",
+    "slug": "inverted-moat.html"
+  }  ,
+  {
+    "title": "Pills in Perpetuity.",
+    "description": "Modern medicine isn't failing to cure chronic disease. It's succeeding at managing it — because that's what it was built to do.",
+    "category": "media",
+    "date": "2026-06-07",
+    "slug": "pills-in-perpetuity.html"
   } 
 ]
 
