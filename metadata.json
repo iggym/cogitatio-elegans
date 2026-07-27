@@ -9,7 +9,7 @@
   {
     "title": "Scarcity Changed Address",
     "description": "The machines are about to out-perform you at almost everything. Here's the one line of work they can't take — and why it's already rearranging who gets paid for what.",
-    "category": "history",
+    "category": "AI",
     "date": "2026-07-25",
     "slug": "scarce-you.html"
   },
@@ -20,14 +20,14 @@
     "date": "2026-07-20",
     "slug": "agriculture-domesticated-humans.html"
   },
-   {
+  {
     "title": "The Thinking That Unthought",
     "description": "How civilization made us cognitively smaller — and what we can still reclaim.",
     "category": "history",
     "date": "2026-07-21",
     "slug": "we-are-not-thinking.html"
   },
-   {
+  {
     "title": "Silicon's Second Nature",
     "description": "Intelligence isn’t a human invention. It’s a universal solution that finds whatever substrate is available—carbon, silicon, or otherwise. We are not the endpoint; we are just the first draft.",
     "category": "intelligence",
@@ -82,8 +82,7 @@
     "category": "history",
     "date": "2026-05-14",
     "slug": "history-as-code.html"
-  } 
-  ,
+  },
   {
     "title": "The Yardstick's Shadow",
     "description": "How measurement built the reality we think it only describes.",
@@ -104,69 +103,96 @@
     "category": "science",
     "date": "2026-07-07",
     "slug": "abstractions-making-reality.html"
-  } ,
+  },
   {
     "title": "The Thermodynamic Trap.",
     "description": "Civilization as an Entropy Accelerator — and what it means for every choice you make tomorrow morning.",
     "category": "science",
     "date": "2026-07-08",
     "slug": "civilization-entropy-accelerator.html"
-  } ,
+  },
   {
     "title": "The Treadmill Trap.",
     "description": "We like to think we’re climbing a ladder of progress. But what if we’re just sprinting on a treadmill, running faster and faster just to avoid falling off?.",
     "category": "science",
     "date": "2026-07-03",
     "slug": "treadmill-trap.html"
-  } ,
+  },
   {
     "title": "Two Governments, One Year.",
     "description": "some of the first political scientists on Earth ran two systems at once — and switched between them on a schedule.",
     "category": "politics",
     "date": "2026-07-03",
     "slug": "two-governments.html"
-  } ,
+  },
   {
     "title": "Old Ghosts, New Machines.",
     "description": "Why your uncle's misinformation habit started in 1440, not 2004 — and why that changes what you do about it.",
     "category": "media",
     "date": "2026-07-23",
     "slug": "media-effects.html"
-  } ,
+  },
   {
     "title": "The Silent Majority Isn't Silent — It's Scattered.",
     "description": "Why polarization isn't a volume problem, and what network geometry reveals that head counts never will.",
     "category": "media",
     "date": "2026-06-12",
     "slug": "media-polarization.html"
-  } ,
+  },
   {
     "title": "Stories Over Synapses.",
     "description": "We were never meant to stop at 150. We just needed better stories.",
     "category": "social",
     "date": "2026-06-11",
     "slug": "beyond-150.html"
-  }  ,
+  },
   {
     "title": "Born From the Wreckage.",
     "description": "Why the safest systems humans ever built are not monuments to genius — but to the failures they refused to repeat.",
     "category": "engineering",
     "date": "2026-06-13",
     "slug": "born-from-fails.html"
-  }  ,
+  },
   {
     "title": "The Inverted Moat.",
     "description": "Why AI is coming for your degree before it comes for your plumber.",
     "category": "AI",
     "date": "2026-06-08",
     "slug": "inverted-moat.html"
-  }  ,
+  },
   {
     "title": "Pills in Perpetuity.",
     "description": "Modern medicine isn't failing to cure chronic disease. It's succeeding at managing it — because that's what it was built to do.",
     "category": "health",
     "date": "2026-06-07",
     "slug": "pills-in-perpetuity.html"
-  } 
+  },
+  {
+    "title": "Words Wore Us.",
+    "description": "A parasite moved into your skull before you turned two. It's still there. It's talking right now — and you've been calling the voice "your thoughts."",
+    "category": "language",
+    "date": "2026-05-07",
+    "slug": "word-wore-us.html"
+  },
+  {
+    "title": "You Are the Crop.",
+    "description": "What if the company, the church, and the nation were never your tools — but predators that learned to farm you so gently you mistook it for belonging?",
+    "category": "language",
+    "date": "2026-05-01",
+    "slug": "you-are-crop.html"
+  },
+  {
+    "title": "The Great Shell Game.",
+    "description": "Technology doesn't solve problems. It moves them — into domains where they're harder to see, harder to name, and harder to contain.",
+    "category": "language",
+    "date": "2026-05-03",
+    "slug": "great-shell-game.html"
+  },
+  {
+    "title": "The Earth Still Wins.",
+    "description": "High technology didn't escape geography. It married it — and built a house on a fault line.",
+    "category": "language",
+    "date": "2026-05-02",
+    "slug": "you-are-crop.html"
+  }
 ]
-
