@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Old Ghosts, New Machines — Why Misinformation Started in 1440</title>
+<style>
+  :root {
+    --bg: #f4ede0;
+    --fg: #1a1410;
+    --muted: #6b5d4c;
+    --accent: #8b2818;
+    --accent-soft: #c4a08a;
+    --card: #fffbf2;
+    --border: #d8c9b3;
+    --rail-bg: #ede3d0;
+    --max: 660px;
+    --serif: 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, 'Times New Roman', serif;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, Roboto, sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #13100c;
+      --fg: #e8e0cf;
+      --muted: #9a8c76;
+      --accent: #e8765a;
+      --accent-soft: #5d3a2e;
+      --card: #1e1913;
+      --border: #2e261d;
+      --rail-bg: #191510;
+    }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--serif);
+    line-height: 1.72;
+    font-size: 18px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection { background: var(--accent); color: var(--bg); }
+
+  /* Progress bar */
+  #progress {
+    position: fixed;
+    top: 0; left: 0;
+    height: 3px;
+    width: 0%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-soft));
+    z-index: 1100;
+    transition: width 0.1s linear;
+  }
+
+  /* Topbar */
+  #topbar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 60px;
+    background: color-mix(in srgb, var(--bg) 78%, transparent);
+    backdrop-filter: blur(10px) saturate(140%);
+    -webkit-backdrop-filter: blur(10px) saturate(140%);
+    border-bottom: 1px solid var(--border);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    padding: 0 22px;
+  }
+
+  #topbar nav {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    width: 100%;
+    max-width: 980px;
+    margin: 0 auto;
+    font-family: var(--sans);
+    font-size: 14px;
+  }
+
+  #topbar a.home {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+  }
+
+  .crumbs {
+    color: var(--muted);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .crumbs .sep { opacity: 0.5; margin: 0 6px; }
+
+  .meta {
+    color: var(--muted);
+    font-size: 12px;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  #menu-btn {
+    display: none;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 11px;
+    color: var(--fg);
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    font-family: var(--sans);
+  }
+
+  /* Layout */
+  .wrap {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 50px;
+    max-width: calc(var(--max) + 260px);
+    margin: 0 auto;
+    padding: 90px 24px 40px;
+  }
+
+  /* Rail */
+  #rail {
+    position: sticky;
+    top: 100px;
+    align-self: start;
+    max-height: calc(100vh - 130px);
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  #rail .rail-label {
+    font-family: var(--sans);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    margin-bottom: 16px;
+    padding-left: 4px;
+  }
+
+  #rail ul {
+    list-style: none;
+  }
+
+  #rail li {
+    margin-bottom: 4px;
+    position: relative;
+  }
+
+  #rail li::before {
+    content: attr(data-num);
+    position: absolute;
+    left: 0;
+    top: 7px;
+    width: 24px;
+    height: 24px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--sans);
+    font-variant-numeric: tabular-nums;
+    transition: all 0.25s;
+  }
+
+  #rail a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 13.5px;
+    line-height: 1.35;
+    display: block;
+    padding: 8px 0 8px 36px;
+    font-family: var(--sans);
+    transition: color 0.2s;
+  }
+
+  #rail a:hover { color: var(--fg); }
+  #rail a.active { color: var(--accent); font-weight: 600; }
+  #rail li:has(a.active)::before {
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
+  }
+
+  /* Main */
+  main {
+    max-width: var(--max);
+    min-width: 0;
+  }
+
+  /* Hero */
+  .hero {
+    margin-bottom: 56px;
+    padding-bottom: 28px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .hero .eyebrow {
+    font-family: var(--sans);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--accent);
+    margin-bottom: 14px;
+    font-weight: 600;
+  }
+
+  .hero h1 {
+    font-family: var(--serif);
+    font-size: clamp(2.1rem, 5vw, 3.1rem);
+    line-height: 1.08;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    margin-bottom: 18px;
+  }
+
+  .hero .lede {
+    font-size: 1.12rem;
+    color: var(--muted);
+    font-style: italic;
+    line-height: 1.55;
+    max-width: 95%;
+  }
+
+  /* Spectrum widget */
+  .spectrum {
+    margin: 32px 0 8px;
+    padding: 22px 24px 20px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+
+  .spectrum-label {
+    font-family: var(--sans);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    margin-bottom: 16px;
+    font-weight: 600;
+  }
+
+  .spectrum-bar {
+    height: 10px;
+    border-radius: 5px;
+    background: linear-gradient(90deg,
+      var(--muted) 0%,
+      var(--muted) 42%,
+      var(--accent-soft) 50%,
+      var(--accent) 58%,
+      var(--accent) 100%);
+    position: relative;
+    margin-bottom: 16px;
+  }
+
+  .spectrum-bar::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: -3px;
+    width: 2px;
+    height: 16px;
+    background: var(--fg);
+    transform: translateX(-50%);
+    opacity: 0.4;
+  }
+
+  .spectrum-ends {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--sans);
+    font-size: 12px;
+    gap: 12px;
+  }
+
+  .spectrum-old { color: var(--muted); max-width: 45%; }
+  .spectrum-new { color: var(--accent); font-weight: 600; text-align: right; max-width: 45%; }
+
+  /* Chapters */
+  .chapter {
+    margin-bottom: 56px;
+    scroll-margin-top: 88px;
+  }
+
+  .chapter h2 {
+    font-size: 1.68rem;
+    font-weight: 700;
+    margin-bottom: 22px;
+    letter-spacing: -0.015em;
+    line-height: 1.18;
+  }
+
+  .chapter p {
+    margin-bottom: 20px;
+  }
+
+  .chapter p strong {
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  .chapter p em {
+    font-style: italic;
+  }
+
+  .firstpara::first-letter {
+    font-size: 3.2em;
+    float: left;
+    line-height: 0.88;
+    padding: 4px 10px 0 0;
+    font-weight: 700;
+    color: var(--accent);
+    font-family: var(--serif);
+  }
+
+  /* Callout */
+  .callout {
+    background: var(--card);
+    border-left: 3px solid var(--accent);
+    padding: 16px 22px;
+    margin: 28px 0;
+    border-radius: 0 8px 8px 0;
+    font-size: 0.97rem;
+    color: var(--muted);
+  }
+
+  .callout strong { color: var(--fg); }
+
+  /* Pullquote */
+  .pullquote {
+    font-size: 1.22rem;
+    line-height: 1.45;
+    font-style: italic;
+    text-align: center;
+    margin: 36px auto;
+    padding: 0 12px;
+    max-width: 92%;
+    color: var(--muted);
+    position: relative;
+  }
+
+  .pullquote::before {
+    content: '"';
+    position: absolute;
+    left: -8px;
+    top: -18px;
+    font-size: 3rem;
+    color: var(--accent-soft);
+    font-family: var(--serif);
+    line-height: 1;
+  }
+
+  /* Perspective snap */
+  .snap {
+    font-size: clamp(1.45rem, 3.8vw, 1.95rem);
+    font-weight: 700;
+    font-style: normal;
+    text-align: center;
+    margin: 52px 0;
+    padding: 32px 16px;
+    border-top: 2px solid var(--accent);
+    border-bottom: 2px solid var(--accent);
+    color: var(--accent);
+    line-height: 1.28;
+    letter-spacing: -0.015em;
+    font-family: var(--serif);
+  }
+
+  .snap .snap-mark {
+    display: block;
+    font-family: var(--sans);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 14px;
+    font-style: normal;
+  }
+
+  /* Action block */
+  .action {
+    background: linear-gradient(135deg, var(--card), color-mix(in srgb, var(--accent) 7%, var(--card)));
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 34px 30px;
+    margin: 64px 0 44px;
+  }
+
+  .action .action-eyebrow {
+    font-family: var(--sans);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--accent);
+    margin-bottom: 10px;
+    font-weight: 700;
+  }
+
+  .action h2 {
+    font-size: 1.8rem;
+    margin-bottom: 16px;
+    letter-spacing: -0.015em;
+  }
+
+  .action p { margin-bottom: 18px; }
+
+  .checklist {
+    list-style: none;
+    margin: 24px 0 12px;
+  }
+
+  .checklist li {
+    padding: 12px 0 12px 38px;
+    position: relative;
+    border-bottom: 1px dashed var(--border);
+    cursor: pointer;
+    transition: opacity 0.2s;
+    font-family: var(--sans);
+    font-size: 14.5px;
+    line-height: 1.5;
+  }
+
+  .checklist li:last-child { border-bottom: none; }
+
+  .checklist li::before {
+    content: '▢';
+    position: absolute;
+    left: 4px;
+    top: 10px;
+    font-size: 20px;
+    color: var(--accent);
+    transition: transform 0.2s;
+  }
+
+  .checklist li:hover::before { transform: scale(1.12); }
+
+  .checklist li.done {
+    opacity: 0.45;
+    text-decoration: line-through;
+  }
+
+  .checklist li.done::before { content: '▣'; }
+
+  .checklist-hint {
+    font-family: var(--sans);
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 8px;
+    font-style: italic;
+  }
+
+  /* Footer */
+  footer {
+    margin-top: 70px;
+    padding-top: 32px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 28px;
+    justify-content: space-between;
+    align-items: flex-start;
+    font-family: var(--sans);
+    font-size: 13px;
+  }
+
+  footer .foot-home {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .sources {
+    flex: 1;
+    min-width: 220px;
+    color: var(--muted);
+  }
+
+  .sources h4 {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 10px;
+    color: var(--fg);
+    font-weight: 700;
+  }
+
+  .sources ul {
+    list-style: none;
+  }
+
+  .sources li {
+    margin-bottom: 7px;
+    line-height: 1.45;
+    padding-left: 14px;
+    position: relative;
+  }
+
+  .sources li::before {
+    content: '—';
+    position: absolute;
+    left: 0;
+    color: var(--accent-soft);
+  }
+
+  #top-btn {
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    padding: 10px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 600;
+    transition: opacity 0.2s, transform 0.15s;
+    align-self: flex-start;
+  }
+
+  #top-btn:hover { transform: translateY(-1px); }
+
+  /* Scrim */
+  #scrim {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    z-index: 900;
+  }
+
+  #scrim.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Focus */
+  a:focus-visible, button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 3px;
+  }
+
+  .checklist li:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* Mobile */
+  @media (max-width: 880px) {
+    #menu-btn { display: block; }
+    .wrap {
+      grid-template-columns: 1fr;
+      padding: 80px 18px 40px;
+      gap: 0;
+    }
+    #rail {
+      position: fixed;
+      top: 0; left: 0;
+      width: 82vw;
+      max-width: 320px;
+      height: 100vh;
+      background: var(--rail-bg);
+      padding: 84px 24px 24px;
+      transform: translateX(-100%);
+      transition: transform 0.3s ease;
+      z-index: 1000;
+      overflow-y: auto;
+      max-height: none;
+    }
+    #rail.open { transform: translateX(0); }
+    .meta { display: none; }
+    .crumbs { font-size: 13px; }
+    main { max-width: 100%; }
+    .hero h1 { font-size: clamp(1.9rem, 7vw, 2.6rem); }
+    .action { padding: 26px 20px; }
+    .snap { padding: 24px 12px; }
+    body { font-size: 17px; }
+  }
+
+  @media (max-width: 480px) {
+    .crumbs { display: none; }
+    .spectrum-ends { font-size: 11px; }
+  }
+
+  /* Motion */
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+    #progress { transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+
+<header id="topbar">
+  <nav>
+    <a href="https://iggym.github.io/cogitatio-elegans/" class="home">Cogitatio Elegans</a>
+    <div class="crumbs">
+      <span>Essays</span><span class="sep">/</span><span>Media & Networked Systems</span>
+    </div>
+    <span class="meta">~7 min read</span>
+    <button id="menu-btn" aria-label="Open navigation">☰</button>
+  </nav>
+</header>
+
+<div id="scrim"></div>
+
+<div class="wrap">
+  <aside id="rail" aria-label="Table of contents">
+    <div class="rail-label">In this essay</div>
+    <nav>
+      <ul>
+        <li data-num="1"><a href="#s1">A Page Turns</a></li>
+        <li data-num="2"><a href="#s2">Old Wine, New Skins</a></li>
+        <li data-num="3"><a href="#s3">Print, Panic, Repeat</a></li>
+        <li data-num="4"><a href="#s4">Throughput, Not Trickery</a></li>
+        <li data-num="5"><a href="#s5">Not the Machine's Fault</a></li>
+        <li data-num="6"><a href="#s6">A Hand on the Wheel</a></li>
+        <li data-num="7"><a href="#s7">Ink in Your Hands</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <main>
+    <article>
+      <header class="hero">
+        <div class="eyebrow">Media &amp; Networked Systems</div>
+        <h1>Old Ghosts, New Machines</h1>
+        <p class="lede">Why your uncle's misinformation habit started in 1440, not 2004 — and why that changes what you do about it.</p>
+
+        <div class="spectrum" aria-label="Conceptual shift">
+          <div class="spectrum-label">The Reframe</div>
+          <div class="spectrum-bar"></div>
+          <div class="spectrum-ends">
+            <div class="spectrum-old">Algorithms invented this crisis</div>
+            <div class="spectrum-new">Throughput leaps always do</div>
+          </div>
+        </div>
+      </header>
+
+      <section class="chapter" id="s1">
+        <h2>A Page Turns</h2>
+        <p class="firstpara">In 1486, two Dominican monks named Heinrich Kramer and Jacob Sprenger walked into a printing shop in Cologne carrying a manuscript about witches. They walked out with the means to set Europe on fire.</p>
+        <p>The <em>Malleus Maleficarum</em> — the "Hammer of Witches" — became one of the first true bestsellers of the print era. Cheap to reproduce, impossible to recall, it moved faster than any bishop could rebut it. Towns that had never tried a witch began trying them. Priests who had never mentioned the devil began preaching about him nightly. Over the next two centuries, tens of thousands of people — mostly women, mostly poor, mostly old — died because two men with a manuscript met a machine that had no editor.</p>
+        <p>Last Tuesday, your uncle forwarded a video about microchips in vaccines to forty-seven people.</p>
+        <p>You have seen this story before. You just didn't recognize it yet.</p>
+      </section>
+
+      <section class="chapter" id="s2">
+        <h2>Old Wine, New Skins</h2>
+        <p>Here is the claim nobody in the misinformation debate seems willing to make out loud:</p>
+        <p><strong>The algorithm did not invent this. Cheap distribution did.</strong></p>
+        <p>Every conversation about misinformation starts with the same villain. Engagement rankings. Recommendation engines. The infinite scroll. We treat these as a unique deformation of software design — a betrayal of the early internet's promise, a corporate sin that could be confessed away with better code and a congressional hearing or two.</p>
+        <p>It's a comfortable story. It is also a category error.</p>
+        <p>What you are watching is not a software crisis. It is a media crisis. And it has happened before, in exactly this shape, every time humanity invented a cheaper way to move words around.</p>
+        <div class="callout">
+          <strong>The pattern:</strong> distribution gets cheap, the old gatekeepers get irrelevant, and new norms for verification haven't formed yet. The gap between those two events is where information crises live.
+        </div>
+      </section>
+
+      <section class="chapter" id="s3">
+        <h2>Print, Panic, Repeat</h2>
+        <p>Gutenberg built his press in 1440. Within a generation, the cost of distributing text collapsed by orders of magnitude. A book that once took a scribe a year to copy could be reprinted in a week.</p>
+        <p>What followed was not the Enlightenment. The Enlightenment came later. What came first was the Reformation — and with it, over 150 years of continent-wide religious war.</p>
+        <p>German peasants read pamphlets about the Antichrist in Rome and marched. Catholic princes read pamphlets about Protestant conspiracies and burned heretics. Towns that had lived beside each other for centuries started killing each other over the wording of communion. Witch trials exploded — not in the medieval period, when the Church controlled text — but in the Renaissance, when the press did not.</p>
+        <p>The medieval Church had been a gatekeeper. Slow, brittle, often cruel, but at least <em>something</em> stood between a writer and a reader. When the press dissolved that gate, nothing replaced it for a very long time. The panic fed itself because the text could now feed itself.</p>
+        <blockquote class="pullquote">The gatekeeping collapsed before new norms for verification could form. That gap is the wound.</blockquote>
+      </section>
+
+      <section class="chapter" id="s4">
+        <h2>Throughput, Not Trickery</h2>
+        <p>Look at the structure, not the surface.</p>
+        <p>The structure is: distribution gets cheap, gatekeepers get irrelevant, new norms don't exist yet. The surface — what the panic is <em>about</em> — changes with each era.</p>
+        <p>In 1500, the panic was witches. In 1700, it was Jacobite conspiracies in coffeehouse pamphlets. In the 1890s, it was yellow journalism dragging the United States into a war. In 2020, it was microchips in the vaccine. Different surface. Same depth. Same machinery underneath: cheap words, no editor, frightened readers, no shared standard for what counts as true.</p>
+
+        <div class="snap">
+          <span class="snap-mark">Perspective Snap</span>
+          The algorithm is just the printing press wearing a hoodie.
+        </div>
+
+        <p>We keep renaming the disease after whatever the new machine is, because that's the thing we can see. But the disease isn't the machine. The disease is the throughput — and what throughput always does to a society that hasn't built new norms for it yet.</p>
+        <p>This is the part that should unsettle you. If every social platform were deleted tomorrow, the underlying dynamic would still produce information crises through whatever came next. Email chains. Printed flyers. Whisper networks. Whatever carried words cheaply enough, fast enough, with no editor in between.</p>
+      </section>
+
+      <section class="chapter" id="s5">
+        <h2>Not the Machine's Fault</h2>
+        <p>None of this lets algorithms off the hook. Engagement-based ranking measurably amplifies outrage. Recommendation engines measurably accelerate radicalization. YouTube's autoplay measurably pulls viewers toward more extreme content in pursuit of one more minute of attention. These effects are real, studied, and worth fighting.</p>
+        <p>But treating the algorithm as the <em>cause</em> rather than the <em>current vehicle</em> is like blaming a flood on the river. The river is doing what rivers do. The flood happens when you build a town in the floodplain and then act surprised every spring.</p>
+        <p>The historical reference points are stark. The printing press took roughly 150 years to settle into norms — citation, peer review, professional journalism, the scientific method, the editorial board. None of those were natural features of text. They were hard-won institutions, built deliberately to survive cheap distribution. People died to make them normal. People were burned at the stake, in fact, while the norms were still being argued out.</p>
+        <p>We are roughly thirty years into the internet's throughput leap. We are not at the end of this. We are early.</p>
+      </section>
+
+      <section class="chapter" id="s6">
+        <h2>A Hand on the Wheel</h2>
+        <p>You cannot fix the throughput. You cannot single-handedly rebuild the institutions. But you are not helpless, and the people who survived the last information collapse were not the ones who read everything that came off the press. They were the ones who learned to ask better questions of what they read.</p>
+        <p>The question that survived the print era — <em>who wrote this, and why?</em> — survives this one too. It just has to be asked more often, and out loud, before you forward.</p>
+        <div class="callout">
+          <strong>The realization:</strong> Depth is the antidote to throughput. You don't need to verify everything — just the things you actually repeat.
+        </div>
+        <p>A few small, concrete moves that survived the 16th century and will survive this one:</p>
+        <p><strong>Wait a day before sharing something that makes you angry.</strong> Anger is the cheapest emotion to manufacture and the easiest to distribute. Time is the cheapest defense against it. The Malleus sold because it made priests furious. Your uncle's video sells for the same reason.</p>
+        <p><strong>Name the source out loud before you forward.</strong> If you can't say where it came from — not the friend who sent it, but where it actually originated — you don't know what you're sharing. Saying it aloud is surprisingly effective at exposing that you don't know.</p>
+        <p><strong>Pick one topic to go deep on.</strong> Choose the thing you care about most and learn its actual landscape — the real experts, the real debates, the real uncertainty. You will start noticing how thin most viral claims about that topic are. That skepticism will bleed into everything else.</p>
+        <p><strong>When you notice a panic building, ask who benefits from your fear.</strong> That single question would have stopped a great many witch trials. It stops a great many retweets now.</p>
+        <p>None of these are slogans. They are habits. Habits are how individuals survive structural problems they cannot solve alone.</p>
+      </section>
+
+      <section class="chapter action" id="s7">
+        <div class="action-eyebrow">Your Move — Within 24 Hours</div>
+        <h2>Ink in Your Hands</h2>
+        <p>Within the next day, do this one thing. It takes twenty minutes.</p>
+        <p>Pick one piece of content you have shared, forwarded, or amplified in the last week. A headline. A video. A quote. A meme that made a political claim. Anything you pushed outward.</p>
+        <p>Then trace it.</p>
+        <ul class="checklist" role="list">
+          <li tabindex="0">Find the original source — not the friend who sent it, not the platform that surfaced it. The actual origin: the author, the outlet, the study, the press release.</li>
+          <li tabindex="0">Read what that original source actually says, in full, not the excerpt that reached you.</li>
+          <li tabindex="0">Find one thing the original source gets right that the viral version preserved.</li>
+          <li tabindex="0">Find one thing the viral version distorted, omitted, or invented.</li>
+          <li tabindex="0">Ask the question: knowing what I now know, would I still have shared it?</li>
+        </ul>
+        <p class="checklist-hint">Tap each line to mark it done.</p>
+        <p>If the answer is yes, you have earned confidence in that share — and you have a habit worth keeping.</p>
+        <p>If the answer is no, you have just done something most people never do. You have put a hand on the wheel of your own information diet. You have acted like a citizen of a media transition, not a victim of one.</p>
+        <p>That's the whole game. One share at a time. One source at a time. One day at a time — until the new norms the internet hasn't built yet start to look like the ones you've built for yourself.</p>
+      </section>
+    </article>
+
+    <footer>
+      <a href="https://iggym.github.io/cogitatio-elegans/" class="foot-home">← Back to Cogitatio Elegans</a>
+      <div class="sources">
+        <h4>Reference Points</h4>
+        <ul>
+          <li>Gutenberg printing press, Mainz, c. 1440 — the original throughput leap</li>
+          <li><em>Malleus Maleficarum</em>, Kramer &amp; Sprenger, 1486 — early print-era bestseller; catalyst of Continental witch panics</li>
+          <li>European wars of religion, c. 1524–1648 — ~150 years of continent-wide conflict following the collapse of ecclesial gatekeeping</li>
+          <li>Thesis: information crises are structural features of media throughput transitions, not flaws unique to modern software</li>
+        </ul>
+      </div>
+      <button id="top-btn">Back to top ↑</button>
+    </footer>
+  </main>
+</div>
+
+<script>
+  // Reading progress
+  const progress = document.getElementById('progress');
+  function updateProgress() {
+    const h = document.documentElement;
+    const scrollable = h.scrollHeight - h.clientHeight;
+    const pct = scrollable > 0 ? (h.scrollTop || document.body.scrollTop) / scrollable * 100 : 0;
+    progress.style.width = Math.min(100, Math.max(0, pct)) + '%';
+  }
+  window.addEventListener('scroll', updateProgress, { passive: true });
+  window.addEventListener('resize', updateProgress);
+  updateProgress();
+
+  // Scrollspy
+  const sections = document.querySelectorAll('section.chapter, .hero');
+  const railLinks = document.querySelectorAll('#rail a');
+  let activeId = null;
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        if (id !== activeId) {
+          activeId = id;
+          railLinks.forEach(link => {
+            link.classList.toggle('active', link.getAttribute('href') === '#' + id);
+          });
+        }
+      }
+    });
+  }, { rootMargin: '-15% 0px -70% 0px', threshold: 0 });
+
+  sections.forEach(s => observer.observe(s));
+
+  // Mobile menu
+  const menuBtn = document.getElementById('menu-btn');
+  const rail = document.getElementById('rail');
+  const scrim = document.getElementById('scrim');
+
+  function toggleMenu(open) {
+    rail.classList.toggle('open', open);
+    scrim.classList.toggle('open', open);
+    menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    document.body.style.overflow = open ? 'hidden' : '';
+  }
+
+  menuBtn.addEventListener('click', () => {
+    toggleMenu(!rail.classList.contains('open'));
+  });
+
+  scrim.addEventListener('click', () => toggleMenu(false));
+
+  railLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      if (window.innerWidth <= 880) {
+        toggleMenu(false);
+      }
+    });
+  });
+
+  // Escape closes drawer
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && rail.classList.contains('open')) {
+      toggleMenu(false);
+    }
+  });
+
+  // Checklist interactivity
+  document.querySelectorAll('.checklist li').forEach(li => {
+    const toggle = () => li.classList.toggle('done');
+    li.addEventListener('click', toggle);
+    li.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggle();
+      }
+    });
+  });
+
+  // Back to top
+  document.getElementById('top-btn').addEventListener('click', () => {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+  });
+</script>
+
+</body>
+</html>
