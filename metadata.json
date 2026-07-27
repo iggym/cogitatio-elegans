@@ -125,6 +125,20 @@
     "category": "politics",
     "date": "2026-07-03",
     "slug": "two-governments.html"
+  } ,
+  {
+    "title": "Old Ghosts, New Machines.",
+    "description": "Why your uncle's misinformation habit started in 1440, not 2004 — and why that changes what you do about it.",
+    "category": "media",
+    "date": "2026-07-23",
+    "slug": "media-effects.html"
+  } ,
+  {
+    "title": "The Silent Majority Isn't Silent — It's Scattered.",
+    "description": "Why polarization isn't a volume problem, and what network geometry reveals that head counts never will.",
+    "category": "media",
+    "date": "2026-07-12",
+    "slug": "media-polarization.html"
   } 
 ]
 
