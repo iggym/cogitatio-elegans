@@ -143,9 +143,16 @@
   {
     "title": "Stories Over Synapses.",
     "description": "We were never meant to stop at 150. We just needed better stories.",
-    "category": "media",
+    "category": "social",
     "date": "2026-07-12",
     "slug": "beyond-150.html"
+  }  ,
+  {
+    "title": "Born From the Wreckage.",
+    "description": "Why the safest systems humans ever built are not monuments to genius — but to the failures they refused to repeat.",
+    "category": "media",
+    "date": "2026-07-12",
+    "slug": "born-from-fails.html"
   } 
 ]
 
