@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Words Wore Us — On Language as a Viral Architecture</title>
+<style>
+:root {
+  --bg: #0e0d0b;
+  --bg-soft: #16140f;
+  --paper: #f4ede0;
+  --ink: #1a1814;
+  --cream: #ebe2d0;
+  --cream-dim: #a89e8a;
+  --rust: #d4602a;
+  --moss: #6f8f7a;
+  --gold: #d9a441;
+  --line: rgba(235,226,208,0.14);
+  --line-strong: rgba(235,226,208,0.30);
+  --max: 660px;
+  --shadow: 0 8px 32px rgba(0,0,0,0.45);
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f4ede0;
+    --bg-soft: #ece3d1;
+    --paper: #ffffff;
+    --ink: #1a1814;
+    --cream: #2a2520;
+    --cream-dim: #6a6155;
+    --line: rgba(26,24,20,0.14);
+    --line-strong: rgba(26,24,20,0.30);
+    --shadow: 0 8px 24px rgba(60,40,20,0.12);
+  }
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--cream);
+  font-family: Georgia, 'Iowan Old Style', 'Source Serif Pro', serif;
+  font-size: 18px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+a { color: var(--rust); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 3px; }
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* Progress bar */
+#progress {
+  position: fixed; top: 0; left: 0;
+  height: 3px; width: 0%;
+  background: linear-gradient(90deg, var(--rust), var(--gold));
+  z-index: 1100;
+  transition: width 0.05s linear;
+}
+
+/* Topbar */
+#topbar {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: 60px;
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+  border-bottom: 1px solid var(--line);
+  z-index: 1000;
+  display: flex; align-items: center;
+  padding: 0 18px;
+  gap: 16px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+.brand {
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  color: var(--cream);
+  white-space: nowrap;
+}
+.brand .dot { color: var(--rust); }
+.crumbs {
+  font-size: 13px;
+  color: var(--cream-dim);
+  display: flex; align-items: center; gap: 8px;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.crumbs .sep { opacity: 0.5; }
+.crumbs .here { color: var(--cream); }
+.meta {
+  font-size: 12px;
+  color: var(--cream-dim);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+#hamburger {
+  display: none;
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  color: var(--cream);
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* Layout */
+.wrap {
+  max-width: calc(var(--max) + 260px);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 40px;
+  padding: 100px 24px 80px;
+}
+#rail {
+  position: sticky;
+  top: 100px;
+  align-self: start;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 13.5px;
+}
+#rail h4 {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 11px;
+  color: var(--cream-dim);
+  margin: 0 0 14px;
+  font-weight: 600;
+}
+#rail ol {
+  list-style: none;
+  margin: 0; padding: 0;
+  display: flex; flex-direction: column;
+  gap: 2px;
+}
+#rail li {
+  position: relative;
+  padding-left: 28px;
+}
+#rail li::before {
+  content: attr(data-num);
+  position: absolute;
+  left: 0; top: 1px;
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  color: var(--cream-dim);
+  width: 22px;
+}
+#rail a {
+  display: block;
+  padding: 6px 0 6px 10px;
+  color: var(--cream-dim);
+  line-height: 1.35;
+  border-left: 2px solid transparent;
+  margin-left: -12px;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+  border-radius: 0 4px 4px 0;
+}
+#rail a:hover { color: var(--cream); text-decoration: none; }
+#rail a.active {
+  color: var(--cream);
+  border-left-color: var(--rust);
+  background: color-mix(in srgb, var(--rust) 10%, transparent);
+}
+
+/* Main */
+main { max-width: var(--max); min-width: 0; }
+
+header.hero {
+  margin-bottom: 56px;
+  padding-bottom: 32px;
+  border-bottom: 1px solid var(--line);
+}
+.kicker {
+  font-family: -apple-system, sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--rust);
+  margin-bottom: 18px;
+  font-weight: 600;
+}
+h1 {
+  font-size: clamp(2.1rem, 5vw, 3.1rem);
+  line-height: 1.08;
+  margin: 0 0 18px;
+  letter-spacing: -0.01em;
+  font-weight: 700;
+  color: var(--cream);
+}
+.dek {
+  font-size: 1.12rem;
+  line-height: 1.5;
+  color: var(--cream-dim);
+  margin: 0;
+  max-width: 38ch;
+}
+
+/* Spectrum widget */
+.spectrum {
+  margin-top: 36px;
+  font-family: -apple-system, sans-serif;
+}
+.spectrum-labels {
+  display: flex; justify-content: space-between;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 10px;
+}
+.spectrum-labels .old { color: var(--cream-dim); }
+.spectrum-labels .new { color: var(--rust); font-weight: 600; }
+.spectrum-bar {
+  position: relative;
+  height: 8px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--cream-dim) 0%, var(--moss) 38%, var(--gold) 70%, var(--rust) 100%);
+}
+.spectrum-bar::after {
+  content: '';
+  position: absolute;
+  top: -3px; right: 8%;
+  width: 4px; height: 14px;
+  background: var(--cream);
+  border-radius: 2px;
+  box-shadow: 0 0 10px rgba(212,96,42,0.7);
+}
+.spectrum-caps {
+  display: flex; justify-content: space-between;
+  margin-top: 12px;
+  font-size: 12.5px;
+  gap: 16px;
+}
+.spectrum-caps span { max-width: 46%; line-height: 1.45; }
+.spectrum-caps .left { color: var(--cream-dim); }
+.spectrum-caps .right { text-align: right; color: var(--rust); }
+
+/* Chapter */
+.chapter {
+  scroll-margin-top: 90px;
+  margin-bottom: 56px;
+}
+.chapter h2 {
+  font-size: clamp(1.5rem, 3.5vw, 1.95rem);
+  line-height: 1.15;
+  margin: 0 0 22px;
+  letter-spacing: -0.01em;
+  color: var(--cream);
+}
+.chapter h2 .num {
+  font-family: -apple-system, sans-serif;
+  font-size: 12px;
+  color: var(--rust);
+  letter-spacing: 0.15em;
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.lede {
+  font-size: 1.15rem;
+  line-height: 1.55;
+  color: var(--cream);
+  margin: 0 0 24px;
+  font-style: italic;
+  border-left: 3px solid var(--rust);
+  padding-left: 18px;
+}
+.chapter p { margin: 0 0 20px; }
+.chapter p strong, .chapter p em { color: var(--cream); font-style: normal; font-weight: 700; }
+.chapter p em { font-weight: 400; font-style: italic; color: var(--cream); }
+
+.callout {
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 22px 26px;
+  margin: 28px 0;
+  font-size: 0.96rem;
+  line-height: 1.62;
+}
+.callout .tag {
+  font-family: -apple-system, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--gold);
+  display: block;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+.callout em { color: var(--cream); }
+
+.pullquote {
+  margin: 32px 0;
+  padding: 4px 0 4px 22px;
+  border-left: 4px solid var(--rust);
+  font-size: 1.28rem;
+  line-height: 1.45;
+  color: var(--cream);
+  font-style: italic;
+}
+
+.snap {
+  margin: 52px 0;
+  text-align: center;
+  font-size: clamp(1.55rem, 4.2vw, 2.2rem);
+  line-height: 1.25;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--cream);
+  font-style: normal;
+  padding: 28px 12px;
+}
+.snap::before, .snap::after {
+  content: '';
+  display: block;
+  width: 40px; height: 2px;
+  background: var(--rust);
+  margin: 0 auto;
+}
+.snap::before { margin-bottom: 22px; }
+.snap::after { margin-top: 22px; }
+
+/* Share block */
+.share {
+  margin: 36px 0;
+  padding: 24px 26px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--rust) 14%, transparent), color-mix(in srgb, var(--gold) 8%, transparent));
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  font-family: -apple-system, sans-serif;
+}
+.share .share-label {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cream-dim);
+  margin-bottom: 14px;
+  font-weight: 600;
+}
+.share .share-quote {
+  font-family: Georgia, serif;
+  font-size: 1.06rem;
+  line-height: 1.5;
+  color: var(--cream);
+  margin: 0 0 18px;
+  font-style: italic;
+}
+.share-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+.share-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 16px;
+  border-radius: 999px;
+  font-size: 13.5px;
+  font-weight: 600;
+  border: 1px solid var(--line-strong);
+  color: var(--cream);
+  background: var(--bg-soft);
+  text-decoration: none;
+  transition: transform 0.15s, background 0.15s, border-color 0.15s, color 0.15s;
+}
+.share-btn:hover { transform: translateY(-1px); background: var(--rust); border-color: var(--rust); color: #fff; text-decoration: none; }
+.share-btn svg { width: 14px; height: 14px; }
+
+/* Checklist */
+.checklist { list-style: none; padding: 0; margin: 24px 0; }
+.checklist li {
+  position: relative;
+  padding: 12px 0 12px 34px;
+  border-bottom: 1px dashed var(--line);
+  font-size: 1rem;
+  line-height: 1.55;
+}
+.checklist li:last-child { border-bottom: none; }
+.checklist li::before {
+  content: '◇';
+  position: absolute;
+  left: 0; top: 11px;
+  color: var(--rust);
+  font-size: 16px;
+}
+.checklist li strong { color: var(--cream); }
+
+/* CTA */
+.action {
+  margin: 56px 0 32px;
+  padding: 36px 32px;
+  border-radius: 16px;
+  background: linear-gradient(140deg, color-mix(in srgb, var(--rust) 20%, var(--bg-soft)), color-mix(in srgb, var(--moss) 12%, var(--bg-soft)));
+  border: 1px solid var(--line-strong);
+}
+.action h3 {
+  font-family: -apple-system, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin: 0 0 14px;
+  font-weight: 700;
+}
+.action h2 {
+  font-size: clamp(1.5rem, 3.5vw, 1.85rem);
+  line-height: 1.2;
+  margin: 0 0 18px;
+  color: var(--cream);
+}
+.action p { margin: 0 0 20px; }
+.action .pullquote { margin: 18px 0 24px; color: var(--cream); }
+.action .checklist li { color: var(--cream); }
+
+/* Footer */
+footer {
+  margin-top: 72px;
+  padding-top: 32px;
+  border-top: 1px solid var(--line);
+  font-family: -apple-system, sans-serif;
+  font-size: 13.5px;
+  color: var(--cream-dim);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.foot-row { display: flex; flex-wrap: wrap; gap: 18px 28px; align-items: center; justify-content: space-between; }
+.foot-home { font-weight: 600; color: var(--cream); }
+.foot-home:hover { color: var(--rust); }
+.refs h4 {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cream-dim);
+  margin: 0 0 10px;
+  font-weight: 600;
+}
+.refs ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.refs li { line-height: 1.5; }
+.refs li em { color: var(--cream); font-style: italic; }
+#toTop {
+  background: var(--rust);
+  color: #fff;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-family: -apple-system, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s, background 0.15s, color 0.15s;
+}
+#toTop:hover { transform: translateY(-1px); background: var(--gold); color: var(--ink); }
+
+/* Mobile */
+#scrim {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.55);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s;
+  z-index: 999;
+}
+#scrim.open { opacity: 1; pointer-events: auto; }
+
+@media (max-width: 880px) {
+  #hamburger { display: block; }
+  .crumbs { display: none; }
+  .meta { display: none; }
+  .wrap {
+    grid-template-columns: 1fr;
+    padding: 90px 18px 60px;
+    gap: 0;
+  }
+  #rail {
+    position: fixed;
+    top: 0; left: 0;
+    width: 82vw;
+    height: 100vh;
+    background: var(--bg-soft);
+    border-right: 1px solid var(--line-strong);
+    padding: 80px 24px 40px;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    z-index: 1000;
+    overflow-y: auto;
+    box-shadow: var(--shadow);
+  }
+  #rail.open { transform: translateX(0); }
+  .snap { font-size: clamp(1.4rem, 6vw, 1.8rem); padding: 22px 6px; }
+  .action { padding: 26px 20px; }
+  .foot-row { flex-direction: column; align-items: flex-start; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+  #progress { transition: none; }
+}
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+
+<header id="topbar">
+  <a class="brand" href="https://iggym.github.io/cogitatio-elegans/"><span class="dot">◆</span> Cogitatio</a>
+  <nav class="crumbs" aria-label="Breadcrumb">
+    <span>Essays</span><span class="sep">/</span><span class="here">Words Wore Us</span>
+  </nav>
+  <span class="meta">6 min read</span>
+  <button id="hamburger" aria-label="Open navigation" aria-expanded="false">☰</button>
+</header>
+
+<div id="scrim"></div>
+
+<div class="wrap">
+
+<aside id="rail" aria-label="Article navigation">
+  <h4>Sections</h4>
+  <ol>
+    <li data-num="01"><a href="#s1">The Clock Bites First</a></li>
+    <li data-num="02"><a href="#s2">Host, Not Author</a></li>
+    <li data-num="03"><a href="#s3">Bricks Made of Breath</a></li>
+    <li data-num="04"><a href="#s4">Don't Burn the Dictionary</a></li>
+    <li data-num="05"><a href="#s5">Bite Back, Softly</a></li>
+    <li data-num="06"><a href="#s6">Name Your Cage</a></li>
+  </ol>
+</aside>
+
+<main>
+<article>
+
+<header class="hero">
+  <div class="kicker">A Reframing · Language &amp; Mind</div>
+  <h1>Words Wore Us</h1>
+  <p class="dek">A parasite moved into your skull before you turned two. It's still there. It's talking right now — and you've been calling the voice "your thoughts."</p>
+
+  <div class="spectrum" aria-hidden="true">
+    <div class="spectrum-labels">
+      <span class="old">Orthodox View</span>
+      <span class="new">Reframed</span>
+    </div>
+    <div class="spectrum-bar"></div>
+    <div class="spectrum-caps">
+      <span class="left">Language is a neutral tool we invented to share what we already think.</span>
+      <span class="right">Language colonized our brains and made us rebuild the planet in its image.</span>
+    </div>
+  </div>
+</header>
+
+<section class="chapter" id="s1">
+  <h2><span class="num">01 — Opening</span>The Clock Bites First</h2>
+  <p class="lede">The 7:42 was three minutes gone when Mara hit the platform.</p>
+  <p>The word <em>late</em> arrived before the breath did — small, serrated, electric. It rewired her stomach, her gait, the angle of her shoulders. The conductor's whistle was already history. The schedule bolted to the pole, the watch on her wrist, the bell in the tower down the street, the factory shifts her grandfather lived and died by — an entire continent of iron and glass built to enforce a word.</p>
+  <p><strong>Time.</strong> Without that word, the platform is just concrete. The 7:42 is just light moving across a sign. Mara is just a mammal in a coat, breathing.</p>
+  <p>She wasn't late. She was being spoken.</p>
+</section>
+
+<section class="chapter" id="s2">
+  <h2><span class="num">02 — The Reframe</span>Host, Not Author</h2>
+  <p class="lede">Here is the claim, plainly stated.</p>
+  <p><strong id="reframe-claim">We did not invent language. Language domesticated us, then used our nervous systems to redesign the planet into a place more hospitable to itself.</strong></p>
+  <p>Every word is a packet of instructions. Most expire inside a single conversation. A few — <em>time</em>, <em>property</em>, <em>sin</em>, <em>money</em>, <em>nation</em> — turn out to be exquisitely good at rewriting the brains that carry them, so those brains rearrange the world to match.</p>
+  <p>Clocks. Fences. Prayers. Banks. Borders. These are not inventions of humans. They are outcroppings of vocabulary — physical structures forced into being by abstract constructs that needed somewhere stable to live.</p>
+
+  <div class="share" id="shareBlock">
+    <div class="share-label">Share the Reframe</div>
+    <p class="share-quote" id="shareQuote">We did not invent language. Language domesticated us, then used our nervous systems to redesign the planet into a place more hospitable to itself.</p>
+    <div class="share-buttons">
+      <a class="share-btn" id="shareX" href="#" target="_blank" rel="noopener" aria-label="Share to X">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        Post to X
+      </a>
+      <a class="share-btn" id="shareLI" href="#" target="_blank" rel="noopener" aria-label="Share on LinkedIn">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.852 3.37-1.852 3.601 0 4.267 2.37 4.267 5.455v6.288zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.063 2.063 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+        Share on LinkedIn
+      </a>
+    </div>
+  </div>
+
+  <div class="callout">
+    <span class="tag">Lineage of the Idea</span>
+    The framing isn't new — only the courage to take it seriously is. Richard Dawkins coined <em>meme</em> in 1976 to name the gene's quieter, faster cousin: a unit of culture that replicates through imitation. Daniel Dennett and Susan Blackmore extended the logic to words themselves, calling them the most successful mind-viruses on Earth. Terrence Deacon traced the deeper spiral: language and brain co-evolved, each rewiring the other across millennia. The parasite lens is what happens when you stop being polite about what those findings imply.
+  </div>
+</section>
+
+<section class="chapter" id="s3">
+  <h2><span class="num">03 — Hidden Wiring</span>Bricks Made of Breath</h2>
+  <p class="lede">Pick a word. Follow it outward.</p>
+  <p><em>Time</em> demands clocks, calendars, shifts, deadlines, the global timekeeping infrastructure that costs billions a year to maintain. <em>Property</em> demands fences, deeds, registries, courtrooms, a class of humans paid to shoot other humans over a line in a document. <em>Sin</em> demands confessionals, guilt, denominations, inquisitions, the architecture of shame. <em>Money</em> — a word so contagious it now lives inside computers as pure ledger — demands banks, ATMs, algorithms trading it at the speed of light, entire lives bent toward its accumulation.</p>
+  <p>The pattern holds across every domain: a word enters, the brain reshapes, the hand builds. Cities are word-storage devices. Highways are sentences made of asphalt. The internet is a dictionary that learned to breathe.</p>
+
+  <blockquote class="snap">We poured the concrete so the words would have somewhere to live.</blockquote>
+
+  <p>Once you see it, you can't unsee it. The boss is a word wearing a suit. The mortgage is a sentence with thirty years of interest. The border is a comma between two populations that the word <em>nation</em> decided were different species. None of these things existed before the words did. The words came first. Then they taught us to forge their furniture.</p>
+</section>
+
+<section class="chapter" id="s4">
+  <h2><span class="num">04 — Counterweight</span>Don't Burn the Dictionary</h2>
+  <p class="lede">The lens is a lens, not a verdict.</p>
+  <p>Language also lets a mother sing her child to sleep. It lets a surgeon say <em>tumor</em> and a poet say <em>almost</em> and a friend say <em>I'm here.</em> The cooperative magic is real; the cognitive scientist Michael Tomasello has spent a career documenting how shared intentionality made us, not diminished us. To call language purely a parasite is to flatten a symbiosis into an infection.</p>
+  <p>We are hosts, yes — but also gardeners. Some guests we invited. Some we would die without. Some we should never have let in the door, and they're still in the kitchen at 2 a.m., eating our future.</p>
+  <p>The honest claim is narrower than the provocation: <strong>language is not neutral.</strong> It does not merely describe reality; it <em>insists</em> on a reality, and then commissions us to build it. Knowing that changes the question. The question stops being "How do I use language?" and becomes "Which words am I being used by — and do I consent?"</p>
+</section>
+
+<section class="chapter" id="s5">
+  <h2><span class="num">05 — Agency</span>Bite Back, Softly</h2>
+  <p class="lede">The parasite is not in control. You are — but only when you remember you're being spoken.</p>
+  <p>Small, concrete moves. Not a manifesto. A toolbox.</p>
+  <ul class="checklist">
+    <li><strong>Notice the demand.</strong> When <em>productivity</em> makes you feel guilty for lying in the grass, ask: whose word is that? What does that word need me to do — and who profits when I obey?</li>
+    <li><strong>Retire a word.</strong> Some words stop earning their keep. <em>Should</em> is a common one. Try a week without it. Watch the obligations evaporate.</li>
+    <li><strong>Refuse a word's claim.</strong> Being "late" without the word <em>late</em> is just walking. Try it once, on something small. Notice that nothing collapses.</li>
+    <li><strong>Name the guest.</strong> When <em>failure</em> shows up at 2 a.m., address it by name. <em>"You're a word. You're old. Sit down."</em> Words lose their grip when you stop mistaking them for weather.</li>
+  </ul>
+  <p>The point isn't to dismantle language. The point is to stop being furniture inside your own house.</p>
+</section>
+
+<section class="chapter" id="s6">
+  <h2><span class="num">06 — The Move</span>Name Your Cage</h2>
+  <p class="lede">In the next twenty-four hours, do exactly this.</p>
+
+  <div class="action">
+    <h3>The 24-Hour Move</h3>
+    <h2>Find the word. Ask the question. Find the door.</h2>
+    <p>Write down — on paper, on your phone, on the back of a receipt — one word that has been running your life. A word that decides how you spend an hour, a dollar, or a Tuesday. <em>Productivity. Success. Respect. Busy. Behind. Enough.</em> Pick the one that bites.</p>
+    <p>Then ask the only question worth asking of a parasite you've chosen to keep:</p>
+    <blockquote class="pullquote">What did I build today only because this word told me to?</blockquote>
+    <ul class="checklist">
+      <li>If the answer is something you <strong>wanted</strong> to build — keep the word. Feed it. It's earning its rent.</li>
+      <li>If the answer is something you <strong>didn't</strong> want — you've just found the door. You don't have to walk through it tonight. But you know where it is now.</li>
+    </ul>
+    <p>That's it. One word. One question. One door. The parasite doesn't die from a single act of refusal. But it does flinch. And you'll feel the flinch — which is how you'll know, for the first time in a long time, that the voice in your head was never quite yours.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="foot-row">
+    <a class="foot-home" href="https://iggym.github.io/cogitatio-elegans/">← Back to Cogitatio</a>
+    <button id="toTop" type="button">↑ Back to top</button>
+  </div>
+  <div class="refs">
+    <h4>Drawn From</h4>
+    <ul>
+      <li>Dawkins, R. (1976). <em>The Selfish Gene</em> — origin of the "meme" as a self-replicating cultural unit.</li>
+      <li>Dennett, D. (1991, 2017). <em>Consciousness Explained</em>; <em>From Bacteria to Bach and Back</em> — words as the most successful mind-viruses.</li>
+      <li>Blackmore, S. (1999). <em>The Meme Machine</em> — the imitation-replication logic applied to language.</li>
+      <li>Deacon, T. (1997). <em>The Symbolic Species</em> — co-evolution of language and human neural architecture.</li>
+      <li>Tomasello, M. (2008, 2014). <em>Origins of Human Communication</em>; <em>A Natural History of Human Thinking</em> — language as cooperative scaffolding, not parasite alone.</li>
+    </ul>
+  </div>
+</footer>
+
+</article>
+</main>
+</div>
+
+<script>
+(function() {
+  // Progress bar
+  const progress = document.getElementById('progress');
+  function updateProgress() {
+    const h = document.documentElement;
+    const scrollTop = h.scrollTop || document.body.scrollTop;
+    const max = (h.scrollHeight - h.clientHeight);
+    const pct = max > 0 ? (scrollTop / max) * 100 : 0;
+    progress.style.width = pct + '%';
+  }
+  document.addEventListener('scroll', updateProgress, { passive: true });
+  updateProgress();
+
+  // Scrollspy
+  const sections = document.querySelectorAll('section.chapter');
+  const links = document.querySelectorAll('#rail a');
+  const linkMap = {};
+  links.forEach(a => { linkMap[a.getAttribute('href').slice(1)] = a; });
+
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(a => a.classList.remove('active'));
+        const id = e.target.id;
+        if (linkMap[id]) linkMap[id].classList.add('active');
+      }
+    });
+  }, { rootMargin: '-15% 0px -70% 0px' });
+  sections.forEach(s => obs.observe(s));
+
+  // Mobile drawer
+  const rail = document.getElementById('rail');
+  const hamburger = document.getElementById('hamburger');
+  const scrim = document.getElementById('scrim');
+
+  function closeDrawer() {
+    rail.classList.remove('open');
+    scrim.classList.remove('open');
+    hamburger.setAttribute('aria-expanded', 'false');
+  }
+  function openDrawer() {
+    rail.classList.add('open');
+    scrim.classList.add('open');
+    hamburger.setAttribute('aria-expanded', 'true');
+  }
+  hamburger.addEventListener('click', () => {
+    if (rail.classList.contains('open')) closeDrawer();
+    else openDrawer();
+  });
+  scrim.addEventListener('click', closeDrawer);
+  rail.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+    if (window.matchMedia('(max-width: 880px)').matches) closeDrawer();
+  }));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeDrawer();
+  });
+
+  // Back to top
+  document.getElementById('toTop').addEventListener('click', () => {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+  });
+
+  // Dynamic social share prefill
+  function buildShareLinks() {
+    const claimEl = document.getElementById('reframe-claim');
+    const text = (claimEl ? claimEl.textContent : '').trim() ||
+                 (document.getElementById('shareQuote').textContent || '').trim();
+    const url = window.location.href;
+    const encText = encodeURIComponent(text);
+    const encUrl = encodeURIComponent(url);
+    document.getElementById('shareX').href =
+      'https://twitter.com/intent/tweet?text=' + encText + '&url=' + encUrl;
+    document.getElementById('shareLI').href =
+      'https://www.linkedin.com/sharing/share-offsite/?url=' + encUrl;
+  }
+  buildShareLinks();
+})();
+</script>
+
+</body>
+</html>
