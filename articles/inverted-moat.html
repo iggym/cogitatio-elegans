@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Inverted Moat — AI &amp; Labor</title>
+<style>
+  :root {
+    --bg: #f7f3ed;
+    --bg-alt: #efe9df;
+    --bg-card: #ffffff;
+    --ink: #1c1a17;
+    --ink-soft: #534d44;
+    --muted: #948b7e;
+    --accent: #b8552a;
+    --accent-soft: #d4764a;
+    --accent2: #2d5f8b;
+    --line: #ddd5c8;
+    --danger: #c0392b;
+    --safe: #2d8659;
+    --serif: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    --max: 660px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #131210;
+      --bg-alt: #1c1a17;
+      --bg-card: #221f1b;
+      --ink: #ede8dd;
+      --ink-soft: #b8b0a3;
+      --muted: #7a7367;
+      --accent: #e07a3e;
+      --accent-soft: #f0975f;
+      --accent2: #6ba3d0;
+      --line: #2e2a24;
+      --danger: #e55a4a;
+      --safe: #5cb88a;
+    }
+  }
+
+  *, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: var(--serif);
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.7;
+    font-size: 1.0625rem;
+    -webkit-font-smoothing: antialiased;
+    transition: background 0.3s ease;
+  }
+
+  a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  a:focus-visible,
+  button:focus-visible,
+  li:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  /* Progress Bar */
+  #progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    width: 0%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    z-index: 2000;
+    transition: width 0.08s linear;
+  }
+
+  /* Topbar */
+  #topbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0 1.25rem;
+    background: rgba(247, 243, 237, 0.72);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    z-index: 1500;
+    font-family: var(--sans);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    #topbar {
+      background: rgba(19, 18, 16, 0.78);
+    }
+  }
+
+  .hamburger {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    width: 36px;
+    height: 36px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 6px;
+  }
+
+  .hamburger span {
+    display: block;
+    width: 100%;
+    height: 2px;
+    background: var(--ink);
+    border-radius: 2px;
+    transition: transform 0.25s, opacity 0.2s;
+  }
+
+  body.nav-open .hamburger span:nth-child(1) {
+    transform: translateY(6px) rotate(45deg);
+  }
+  body.nav-open .hamburger span:nth-child(2) {
+    opacity: 0;
+  }
+  body.nav-open .hamburger span:nth-child(3) {
+    transform: translateY(-6px) rotate(-45deg);
+  }
+
+  .home-link {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--ink);
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+  }
+
+  .home-link:hover {
+    color: var(--accent);
+  }
+
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    color: var(--muted);
+    margin-left: 0.5rem;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .breadcrumb .sep {
+    opacity: 0.5;
+  }
+
+  .breadcrumb .current {
+    color: var(--ink-soft);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .readtime {
+    margin-left: auto;
+    font-size: 0.78rem;
+    color: var(--muted);
+    white-space: nowrap;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+
+  /* Scrim */
+  #scrim {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 900;
+    transition: opacity 0.3s ease;
+  }
+
+  body.nav-open #scrim {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Layout */
+  .wrap {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 40px;
+    max-width: calc(var(--max) + 260px);
+    margin: 0 auto;
+    padding: 64px 1.5rem 0;
+  }
+
+  /* Rail */
+  #rail {
+    position: sticky;
+    top: 100px;
+    height: fit-content;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    padding-top: 2.5rem;
+  }
+
+  #rail nav ol {
+    list-style: none;
+  }
+
+  #rail li {
+    position: relative;
+    padding-left: 2.75rem;
+    margin-bottom: 1.1rem;
+  }
+
+  #rail li::before {
+    content: attr(data-num);
+    position: absolute;
+    left: 0;
+    top: 0;
+    font-family: var(--sans);
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    line-height: 1.5;
+    transition: color 0.25s;
+  }
+
+  #rail a {
+    font-family: var(--sans);
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+    line-height: 1.45;
+    display: block;
+    transition: color 0.2s;
+  }
+
+  #rail a:hover {
+    color: var(--accent);
+  }
+
+  #rail li.active::before {
+    color: var(--accent);
+  }
+
+  #rail li.active a {
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* Main */
+  main {
+    padding-top: 2.5rem;
+    padding-bottom: 4rem;
+    max-width: var(--max);
+  }
+
+  /* Hero */
+  .hero {
+    margin-bottom: 3rem;
+  }
+
+  .kicker {
+    font-family: var(--sans);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--accent);
+    margin-bottom: 1rem;
+  }
+
+  .hero h1 {
+    font-family: var(--serif);
+    font-size: clamp(2.1rem, 5vw, 3.1rem);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-bottom: 1rem;
+  }
+
+  .dek {
+    font-size: 1.2rem;
+    color: var(--ink-soft);
+    line-height: 1.5;
+    font-style: italic;
+    margin-bottom: 2.5rem;
+  }
+
+  /* Spectrum Widget */
+  .spectrum {
+    background: var(--bg-alt);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 1.5rem 1.25rem 1.25rem;
+    margin-bottom: 1rem;
+  }
+
+  .spectrum-legend {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    font-family: var(--sans);
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    margin-bottom: 1.25rem;
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 0.15rem;
+  }
+
+  .assumed-dot {
+    background: linear-gradient(90deg, var(--danger), var(--safe));
+  }
+
+  .actual-dot {
+    background: linear-gradient(90deg, var(--safe), var(--danger));
+  }
+
+  .spectrum-legend span:nth-child(2) {
+    margin-right: 1rem;
+  }
+
+  .spectrum-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .spectrum-bar {
+    height: 52px;
+    border-radius: 8px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 0.85rem;
+  }
+
+  .assumed-bar {
+    background: linear-gradient(90deg, var(--danger), color-mix(in srgb, var(--danger) 30%, var(--safe)), var(--safe));
+  }
+
+  .actual-bar {
+    background: linear-gradient(90deg, var(--safe), color-mix(in srgb, var(--safe) 30%, var(--danger)), var(--danger));
+  }
+
+  .bar-end {
+    font-family: var(--sans);
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #fff;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    line-height: 1.3;
+  }
+
+  .bar-end small {
+    display: block;
+    font-weight: 400;
+    font-size: 0.65rem;
+    opacity: 0.9;
+  }
+
+  .spectrum-caption {
+    font-family: var(--sans);
+    font-size: 0.78rem;
+    color: var(--muted);
+    text-align: center;
+    margin-top: 0.75rem;
+    font-style: italic;
+  }
+
+  /* Chapters */
+  .chapter {
+    scroll-margin-top: 84px;
+    margin-bottom: 3rem;
+  }
+
+  .chapter h2 {
+    font-family: var(--serif);
+    font-size: 1.55rem;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    margin-bottom: 1.25rem;
+    color: var(--ink);
+  }
+
+  .lede {
+    font-size: 1.18rem;
+    line-height: 1.65;
+    color: var(--ink);
+    margin-bottom: 1.25rem;
+  }
+
+  .chapter p {
+    margin-bottom: 1.25rem;
+    color: var(--ink);
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--line);
+    margin: 2.5rem 0;
+  }
+
+  .divider-dot {
+    text-align: center;
+    color: var(--muted);
+    font-size: 1.5rem;
+    letter-spacing: 0.5rem;
+    margin: 2.5rem 0;
+    user-select: none;
+  }
+
+  /* Callout */
+  .callout {
+    background: var(--bg-alt);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 10px 10px 0;
+    padding: 1.25rem 1.5rem;
+    margin: 1.75rem 0;
+  }
+
+  .callout p {
+    margin-bottom: 0;
+    font-size: 0.98rem;
+    color: var(--ink-soft);
+  }
+
+  .callout-label {
+    font-family: var(--sans);
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+
+  /* Pullquote */
+  .pullquote {
+    border-left: 3px solid var(--accent2);
+    padding-left: 1.25rem;
+    margin: 1.75rem 0;
+    font-style: italic;
+    font-size: 1.05rem;
+    color: var(--ink-soft);
+  }
+
+  /* Perspective Snap */
+  .snap {
+    margin: 2.5rem 0;
+    padding: 2rem 1.5rem;
+    text-align: center;
+    position: relative;
+  }
+
+  .snap::before,
+  .snap::after {
+    content: "";
+    display: block;
+    width: 40px;
+    height: 2px;
+    background: var(--accent);
+    margin: 0 auto 1.25rem;
+  }
+
+  .snap::after {
+    margin: 1.25rem auto 0;
+  }
+
+  .snap-text {
+    font-family: var(--serif);
+    font-size: clamp(1.4rem, 3.2vw, 1.9rem);
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--accent);
+    letter-spacing: -0.01em;
+  }
+
+  /* Share Block */
+  .share-block {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: var(--bg-alt);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+  }
+
+  .share-label {
+    font-family: var(--sans);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 0.85rem;
+  }
+
+  .share-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .share-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 9px 18px;
+    border-radius: 8px;
+    font-family: var(--sans);
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #fff;
+    transition: transform 0.15s, opacity 0.15s;
+  }
+
+  .share-btn:hover {
+    transform: translateY(-1px);
+    opacity: 0.92;
+  }
+
+  .share-x {
+    background: #000;
+  }
+
+  .share-li {
+    background: #0a66c2;
+  }
+
+  /* Action Block */
+  .action {
+    margin: 2.5rem 0 2rem;
+    padding: 2rem 1.75rem;
+    border-radius: 16px;
+    background: linear-gradient(135deg, var(--bg-alt), color-mix(in srgb, var(--accent) 8%, var(--bg-alt)));
+    border: 1px solid var(--line);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .action::before {
+    content: "";
+    position: absolute;
+    top: -40px;
+    right: -40px;
+    width: 140px;
+    height: 140px;
+    background: radial-gradient(circle, color-mix(in srgb, var(--accent) 12%, transparent), transparent 70%);
+    pointer-events: none;
+  }
+
+  .action-sub {
+    font-family: var(--sans);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    margin-bottom: 0.6rem;
+  }
+
+  .action h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 1.25rem;
+    line-height: 1.3;
+  }
+
+  .checklist {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: 1.25rem;
+  }
+
+  .checklist li {
+    font-family: var(--sans);
+    font-size: 0.82rem;
+    padding: 0.55rem 1rem 0.55rem 2.1rem;
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 30px;
+    cursor: pointer;
+    position: relative;
+    transition: border-color 0.2s, background 0.2s;
+    user-select: none;
+    color: var(--ink-soft);
+    line-height: 1.4;
+  }
+
+  .checklist li::before {
+    content: "";
+    position: absolute;
+    left: 0.8rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid var(--muted);
+    transition: background 0.2s, border-color 0.2s;
+  }
+
+  .checklist li:hover {
+    border-color: var(--accent);
+  }
+
+  .checklist li.checked {
+    border-color: var(--safe);
+    background: color-mix(in srgb, var(--safe) 8%, var(--bg-card));
+    color: var(--ink);
+  }
+
+  .checklist li.checked::before {
+    background: var(--safe);
+    border-color: var(--safe);
+    box-shadow: inset 0 0 0 2px var(--bg-card);
+  }
+
+  .checklist li.checked::after {
+    content: "✓";
+    position: absolute;
+    left: 0.82rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.65rem;
+    color: #fff;
+    font-weight: 700;
+  }
+
+  /* Footer */
+  footer {
+    border-top: 1px solid var(--line);
+    padding: 2.5rem 1.5rem 3rem;
+    max-width: calc(var(--max) + 260px);
+    margin: 0 auto;
+  }
+
+  .footer-inner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem 2.5rem;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  .footer-col {
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .footer-col h4 {
+    font-family: var(--sans);
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 0.85rem;
+  }
+
+  .footer-col a {
+    font-family: var(--sans);
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    display: inline-block;
+  }
+
+  .footer-col a:hover {
+    color: var(--accent);
+  }
+
+  .refs {
+    list-style: none;
+  }
+
+  .refs li {
+    font-family: var(--sans);
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-bottom: 0.6rem;
+    line-height: 1.5;
+    padding-left: 0.85rem;
+    position: relative;
+  }
+
+  .refs li::before {
+    content: "▪";
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+  }
+
+  .back-to-top {
+    font-family: var(--sans);
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--accent);
+    cursor: pointer;
+    background: none;
+    border: 1px solid var(--accent);
+    padding: 0.5rem 1.1rem;
+    border-radius: 8px;
+    transition: background 0.2s, color 0.2s;
+    align-self: flex-start;
+  }
+
+  .back-to-top:hover {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  .footer-bottom {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--line);
+    font-family: var(--sans);
+    font-size: 0.75rem;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  /* Responsive */
+  @media (max-width: 880px) {
+    .wrap {
+      grid-template-columns: 1fr;
+      padding: 64px 1.25rem 0;
+    }
+
+    .hamburger {
+      display: flex;
+    }
+
+    .breadcrumb {
+      display: none;
+    }
+
+    #rail {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 82vw;
+      max-width: 320px;
+      height: 100vh;
+      max-height: 100vh;
+      background: var(--bg);
+      border-right: 1px solid var(--line);
+      padding: 5rem 1.5rem 2rem;
+      transform: translateX(-100%);
+      transition: transform 0.3s ease;
+      z-index: 1000;
+      overflow-y: auto;
+    }
+
+    body.nav-open #rail {
+      transform: translateX(0);
+    }
+
+    main {
+      padding-top: 2rem;
+    }
+
+    .readtime {
+      font-size: 0.72rem;
+    }
+
+    .hero h1 {
+      font-size: clamp(1.85rem, 6vw, 2.6rem);
+    }
+
+    .bar-end {
+      font-size: 0.65rem;
+    }
+
+    .bar-end small {
+      font-size: 0.58rem;
+    }
+
+    .spectrum-bar {
+      height: 48px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    body {
+      font-size: 1rem;
+    }
+
+    .bar-end small {
+      display: none;
+    }
+
+    .spectrum-bar {
+      height: 40px;
+    }
+  }
+
+  /* Reduced Motion */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+
+<header id="topbar">
+  <button class="hamburger" aria-label="Toggle navigation" aria-expanded="false" aria-controls="rail">
+    <span></span><span></span><span></span>
+  </button>
+  <a class="home-link" href="https://iggym.github.io/cogitatio-elegans/">Home</a>
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <span>AI &amp; Labor</span>
+    <span class="sep">›</span>
+    <span class="current">The Inverted Moat</span>
+  </nav>
+  <span class="readtime">5 min read</span>
+</header>
+
+<div id="scrim"></div>
+
+<div class="wrap">
+  <aside id="rail" aria-label="Table of contents">
+    <nav>
+      <ol>
+        <li data-num="01"><a href="#s1">The Plumber's Quiet Smirk</a></li>
+        <li data-num="02"><a href="#s2">White Collar, White Flag</a></li>
+        <li data-num="03"><a href="#s3">Moravec's Mismatch</a></li>
+        <li data-num="04"><a href="#s4">Hard Truths, Soft Hands</a></li>
+        <li data-num="05"><a href="#s5">Hands On, Heads Up</a></li>
+        <li data-num="06"><a href="#s6">Touch Something Real</a></li>
+      </ol>
+    </nav>
+  </aside>
+
+  <main>
+    <article>
+      <header class="hero">
+        <p class="kicker">AI &amp; Labor</p>
+        <h1>The Inverted Moat</h1>
+        <p class="dek">Why AI is coming for your degree before it comes for your plumber.</p>
+
+        <div class="spectrum" aria-label="Automation order comparison">
+          <div class="spectrum-legend">
+            <span class="legend-dot assumed-dot"></span>
+            <span>What we assumed</span>
+            <span class="legend-dot actual-dot"></span>
+            <span>What's happening</span>
+          </div>
+          <div class="spectrum-bars">
+            <div class="spectrum-bar assumed-bar">
+              <span class="bar-end">Physical<small>automated first</small></span>
+              <span class="bar-end">Intellectual<small>safe</small></span>
+            </div>
+            <div class="spectrum-bar actual-bar">
+              <span class="bar-end">Physical<small>hard to automate</small></span>
+              <span class="bar-end">Intellectual<small>automated first</small></span>
+            </div>
+          </div>
+          <p class="spectrum-caption">The automation timeline inverted.</p>
+        </div>
+      </header>
+
+      <section class="chapter" id="s1">
+        <h2>The Plumber's Quiet Smirk</h2>
+        <p class="lede">It's 9:47 on a Tuesday. Maya, a senior strategy analyst, watches a generative model draft in twelve seconds what would have taken her three days: a competitive synthesis across forty-seven sources, a clean executive summary, three scenario outlines.</p>
+        <p>She doesn't panic. She revises. She adds "nuance." By Thursday she realizes the revision is the only thing left that's genuinely hers — and her firm is already counting how many Mayas it actually needs.</p>
+        <p>Six miles away, Dante is elbow-deep under a kitchen sink in a building older than Maya's grandparents. The coupling is corroded in a way no schematic predicted. He feels the give before he sees it. He adjusts. He's been doing this for nineteen years, and nobody in Silicon Valley is seriously trying to replace him.</p>
+        <p>Two jobs. Two trajectories. One assumption — about which one is safe — that most people still have exactly backwards.</p>
+      </section>
+
+      <div class="divider-dot">· · ·</div>
+
+      <section class="chapter" id="s2">
+        <h2>White Collar, White Flag</h2>
+        <p class="lede">Here's the reframe: generative AI is inverse-automating the workforce.</p>
+        <p class="reframe-claim">It comes for the synthesis, the drafting, the summarizing, the email triage, the slide decks, the legal research, the boilerplate code — the white-collar intellectual labor we assumed required a degree and therefore a moat — long before it comes for the unstructured physical trades. Professional status is no longer a shield against displacement. The real labor security, in the near term, lives in physical-world context and tactile adaptability.</p>
+
+        <div class="share-block">
+          <p class="share-label">Share this reframe</p>
+          <div class="share-buttons">
+            <a class="share-btn share-x" href="#" target="_blank" rel="noopener noreferrer">Share on X</a>
+            <a class="share-btn share-li" href="#" target="_blank" rel="noopener noreferrer">Share on LinkedIn</a>
+          </div>
+        </div>
+      </section>
+
+      <div class="divider-dot">· · ·</div>
+
+      <section class="chapter" id="s3">
+        <h2>Moravec's Mismatch</h2>
+        <p class="lede">This isn't a glitch in the timeline. It's a structural feature of how intelligence works, and it has a name.</p>
+        <p>In the 1980s, the roboticist Hans Moravec observed that high-level reasoning — the kind that wins chess games, passes the bar, writes a passable memo — requires surprisingly little computation. But low-level sensorimotor skills — grasping a wet pipe, reading the mood of a confused patient, sensing when a floor joist is about to give — require enormous, deeply embedded computation honed over evolutionary timescales.</p>
+        <p>The result is an inversion. The work we culturally honored as "intellectual" turned out to be the compressible, pattern-shaped work. The work we culturally undervalued — manual, tactile, embodied — turned out to be stubbornly resistant to simulation.</p>
+
+        <blockquote class="snap">
+          <p class="snap-text">What you went to school to learn is what the machine learned on a weekend.</p>
+        </blockquote>
+
+        <p>Plumbing, HVAC, carpentry, elder care: these remain profoundly difficult to automate. Not because the technology isn't coming, but because the physical world is messy in ways that text and spreadsheets are not.</p>
+      </section>
+
+      <div class="divider-dot">· · ·</div>
+
+      <section class="chapter" id="s4">
+        <h2>Hard Truths, Soft Hands</h2>
+        <p class="lede">Let's be careful. This is not "blue-collar good, white-collar doomed."</p>
+        <p>Plenty of white-collar work involves judgment, relationships, and physical presence — the surgeon, the trial lawyer, the therapist, the field engineer — that doesn't compress into a prompt. And plenty of blue-collar work has routinized components that will absolutely be augmented or absorbed.</p>
+
+        <div class="callout">
+          <span class="callout-label">The sharper claim</span>
+          <p>The assumption that a degree is a fortress was always a story we told ourselves. The moat was never the credential — it was the difficulty of substitution. And substitution difficulty is not mapped to prestige or salary. It's mapped to how much unstructured physical context the task requires.</p>
+        </div>
+
+        <p>That reorders a hierarchy most of us have lived inside since elementary school: the kids who were "going somewhere" sat at desks; the kids who worked with their hands were "falling back." The labor market is quietly inverting that hierarchy, faster than the culture is prepared to admit.</p>
+      </section>
+
+      <div class="divider-dot">· · ·</div>
+
+      <section class="chapter" id="s5">
+        <h2>Hands On, Heads Up</h2>
+        <p class="lede">Here's where agency comes back in. You don't have to quit your job and apprentice to an electrician tomorrow — though some of you genuinely should.</p>
+        <p>The move is to stop measuring safety by how prestigious your work sounds and start measuring it by how much of it lives in unstructured physical context. None of this requires a dramatic reinvention. It requires a re-ranking.</p>
+
+        <div class="action">
+          <p class="action-sub">Start within your own orbit</p>
+          <h3>Three concrete moves you can make this week</h3>
+          <ul class="checklist">
+            <li role="button" tabindex="0">Audit your week for non-automatable hours</li>
+            <li role="button" tabindex="0">Weigh the trades as a front-line choice, not a fallback</li>
+            <li role="button" tabindex="0">Stop calling manual work a consolation prize</li>
+            <li role="button" tabindex="0">Rank your tasks by physical context, not prestige</li>
+          </ul>
+        </div>
+      </section>
+
+      <div class="divider-dot">· · ·</div>
+
+      <section class="chapter" id="s6">
+        <h2>Touch Something Real</h2>
+        <p class="lede">Within the next twenty-four hours, do one specific thing.</p>
+        <p>Walk into a space where someone is doing skilled physical work — a job site, a repair shop, a kitchen line — and watch for five minutes. Not to romanticize it. To notice how many real-time, unstructured, embodied decisions happen in those five minutes. Then ask yourself, honestly, how many of those decisions your own work actually requires.</p>
+        <p>That gap — between what you assumed was hard and what is actually hard to replace — is the most important career question of the next decade. Go measure it.</p>
+      </section>
+    </article>
+  </main>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-col">
+      <h4>Navigate</h4>
+      <a href="https://iggym.github.io/cogitatio-elegans/">Home</a>
+    </div>
+    <div class="footer-col">
+      <h4>Sources &amp; References</h4>
+      <ul class="refs">
+        <li>Moravec, H. (1988). <em>Mind Children: The Future of Robot and Human Intelligence.</em> Harvard University Press. — Origin of Moravec's Paradox: high-level reasoning requires little computation; sensorimotor skills require enormous computation.</li>
+        <li>Conceptual framework: Generative AI inverse-automates white-collar synthesis and administrative processing first; unstructured physical trades (plumbing, HVAC, carpentry, elder care) remain profoundly difficult to automate.</li>
+        <li>Core insight: Professional status is no longer a shield against displacement; real labor security lies in physical-world context and tactile adaptability.</li>
+      </ul>
+    </div>
+    <button class="back-to-top" type="button">Back to top ↑</button>
+  </div>
+  <div class="footer-bottom">
+    <span>Part of the Cogitatio Elegans series.</span>
+    <span>The Inverted Moat · AI &amp; Labor</span>
+  </div>
+</footer>
+
+<script>
+  (function() {
+    "use strict";
+
+    var prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+    /* ---- Scroll Progress ---- */
+    var progressEl = document.getElementById("progress");
+    function updateProgress() {
+      var scrollTop = window.scrollY;
+      var scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+      var pct = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+      progressEl.style.width = pct + "%";
+    }
+    window.addEventListener("scroll", updateProgress, { passive: true });
+    window.addEventListener("resize", updateProgress, { passive: true });
+    updateProgress();
+
+    /* ---- Scrollspy ---- */
+    var sections = document.querySelectorAll("section.chapter");
+    var railItems = document.querySelectorAll("#rail li");
+    var observer = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (entry.isIntersecting) {
+          var id = entry.target.id;
+          railItems.forEach(function(item) {
+            var link = item.querySelector("a");
+            item.classList.toggle("active", link && link.getAttribute("href") === "#" + id);
+          });
+        }
+      });
+    }, { rootMargin: "-15% 0px -70% 0px" });
+    sections.forEach(function(s) { observer.observe(s); });
+
+    /* ---- Mobile Menu ---- */
+    var hamburger = document.querySelector(".hamburger");
+    var body = document.body;
+
+    function toggleMenu(open) {
+      body.classList.toggle("nav-open", open);
+      hamburger.setAttribute("aria-expanded", open ? "true" : "false");
+    }
+
+    hamburger.addEventListener("click", function() {
+      toggleMenu(!body.classList.contains("nav-open"));
+    });
+
+    document.getElementById("scrim").addEventListener("click", function() {
+      toggleMenu(false);
+    });
+
+    /* ---- Smooth Scroll for in-page links ---- */
+    document.querySelectorAll('a[href^="#"]').forEach(function(a) {
+      a.addEventListener("click", function(e) {
+        var targetId = a.getAttribute("href");
+        if (targetId === "#") return;
+        var target = document.querySelector(targetId);
+        if (target) {
+          e.preventDefault();
+          var top = target.getBoundingClientRect().top + window.scrollY - 80;
+          window.scrollTo({ top: top, behavior: prefersReduced.matches ? "auto" : "smooth" });
+          toggleMenu(false);
+        }
+      });
+    });
+
+    /* ---- Dynamic Social Share Prefill ---- */
+    var reframeEl = document.querySelector(".reframe-claim");
+    var reframeText = reframeEl ? reframeEl.innerText.trim() : "";
+    var pageUrl = window.location.href;
+    var xBtn = document.querySelector(".share-x");
+    var liBtn = document.querySelector(".share-li");
+
+    if (xBtn && reframeText) {
+      var tweetText = reframeText + " — The Inverted Moat";
+      xBtn.href = "https://twitter.com/intent/tweet?text=" + encodeURIComponent(tweetText) + "&url=" + encodeURIComponent(pageUrl);
+    }
+    if (liBtn) {
+      liBtn.href = "https://www.linkedin.com/sharing/share-offsite/?url=" + encodeURIComponent(pageUrl);
+    }
+
+    /* ---- Checklist Interactivity ---- */
+    document.querySelectorAll(".checklist li").forEach(function(li) {
+      function toggle() {
+        li.classList.toggle("checked");
+      }
+      li.addEventListener("click", toggle);
+      li.addEventListener("keydown", function(e) {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          toggle();
+        }
+      });
+    });
+
+    /* ---- Back to Top ---- */
+    document.querySelector(".back-to-top").addEventListener("click", function() {
+      window.scrollTo({ top: 0, behavior: prefersReduced.matches ? "auto" : "smooth" });
+    });
+
+  })();
+</script>
+
+</body>
+</html>
