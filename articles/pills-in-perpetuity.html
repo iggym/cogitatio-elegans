@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pills in Perpetuity — Reframing Modern Medicine</title>
+<style>
+:root {
+  --bg: #fafaf7;
+  --bg-elev: #ffffff;
+  --ink: #1a1a1a;
+  --ink-soft: #4a4a4a;
+  --ink-muted: #8a8a8a;
+  --accent: #b8341c;
+  --accent-soft: #f0ddd6;
+  --line: #e4e0d8;
+  --max: 660px;
+  --rail-w: 220px;
+  --topbar-h: 64px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14130f;
+    --bg-elev: #1e1d19;
+    --ink: #f0ede5;
+    --ink-soft: #c4c0b6;
+    --ink-muted: #7a766c;
+    --accent: #e8654a;
+    --accent-soft: #3a221a;
+    --line: #2e2b25;
+  }
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, serif;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.65;
+  font-size: 18px;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+#progress {
+  position: fixed; top: 0; left: 0;
+  height: 3px; width: 0%;
+  background: linear-gradient(90deg, var(--accent), #d4a017);
+  z-index: 2000;
+  transition: width 0.1s linear;
+}
+
+#topbar {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: var(--topbar-h);
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line);
+  z-index: 1500;
+  display: flex; align-items: center;
+  padding: 0 20px; gap: 16px;
+}
+
+.topbar-home {
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-size: 14px; font-weight: 700;
+  text-decoration: none; color: var(--ink);
+  letter-spacing: 0.02em;
+  display: flex; align-items: center; gap: 6px;
+  white-space: nowrap;
+}
+.topbar-home::before { content: "◆"; color: var(--accent); font-size: 10px; }
+
+.crumb {
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-size: 12px; color: var(--ink-muted);
+  letter-spacing: 0.04em; text-transform: uppercase;
+}
+.crumb span { color: var(--ink-soft); }
+
+.read-time {
+  margin-left: auto;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-size: 12px; color: var(--ink-muted);
+  letter-spacing: 0.04em; white-space: nowrap;
+}
+
+.hamburger {
+  display: none;
+  background: none; border: 1px solid var(--line);
+  border-radius: 6px; width: 38px; height: 38px;
+  cursor: pointer; align-items: center; justify-content: center;
+  flex-direction: column; gap: 4px;
+}
+.hamburger span {
+  display: block; width: 18px; height: 2px;
+  background: var(--ink); transition: 0.3s;
+}
+.hamburger.open span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+.hamburger.open span:nth-child(2) { opacity: 0; }
+.hamburger.open span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+.wrap {
+  max-width: calc(var(--max) + 260px);
+  margin: 0 auto;
+  padding: calc(var(--topbar-h) + 40px) 24px 60px;
+  display: grid;
+  grid-template-columns: var(--rail-w) 1fr;
+  gap: 48px;
+  align-items: start;
+}
+
+#rail {
+  position: sticky;
+  top: calc(var(--topbar-h) + 28px);
+  align-self: start;
+}
+#rail h4 {
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-size: 11px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--ink-muted);
+  font-weight: 600; margin-bottom: 16px;
+}
+#rail ol { list-style: none; }
+#rail li { margin-bottom: 2px; position: relative; }
+#rail li::before {
+  content: attr(data-num);
+  position: absolute; left: 0; top: 8px;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-size: 10px; font-weight: 700;
+  color: var(--ink-muted); width: 22px;
+  letter-spacing: 0.05em;
+}
+#rail a {
+  display: block; padding: 8px 0 8px 28px;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-size: 13.5px; color: var(--ink-soft);
+  text-decoration: none; border-left: 1px solid transparent;
+  transition: color 0.2s, border-color 0.2s; line-height: 1.4;
+}
+#rail a:hover { color: var(--ink); }
+#rail a.active {
+  color: var(--accent); border-left-color: var(--accent); font-weight: 600;
+}
+
+main { max-width: var(--max); margin: 0 auto; min-width: 0; }
+
+.hero { margin-bottom: 48px; }
+
+.eyebrow {
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-size: 12px; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--accent);
+  font-weight: 600; margin-bottom: 18px;
+}
+
+h1 {
+  font-size: clamp(2.1rem, 5vw, 3.1rem);
+  line-height: 1.08; font-weight: 700;
+  letter-spacing: -0.015em; margin-bottom: 24px;
+  font-family: 'Iowan Old Style', Georgia, serif;
+}
+
+.hero p.deck {
+  font-size: 1.15rem; color: var(--ink-soft);
+  line-height: 1.5; font-style: italic;
+}
+
+.spectrum {
+  margin: 40px 0 8px; padding: 24px 0 8px;
+  border-top: 1px solid var(--line);
+}
+.spectrum-label {
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-size: 11px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--ink-muted);
+  margin-bottom: 14px; font-weight: 600;
+}
+.spectrum-bar {
+  position: relative; height: 10px; border-radius: 5px;
+  background: linear-gradient(90deg,
+    #2d8a4f 0%, #6aa84f 25%,
+    #d4a017 55%, #c4622e 80%, var(--accent) 100%);
+  margin-bottom: 18px;
+}
+.spectrum-marks {
+  display: flex; justify-content: space-between;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-size: 11px; color: var(--ink-muted); letter-spacing: 0.02em;
+}
+.spectrum-marks span { flex: 1; text-align: center; }
+.spectrum-marks span:first-child { text-align: left; color: #2d8a4f; font-weight: 600; }
+.spectrum-marks span:last-child { text-align: right; color: var(--accent); font-weight: 600; }
+@media (prefers-color-scheme: dark) {
+  .spectrum-marks span:first-child { color: #6fc97a; }
+}
+.spectrum-caption {
+  margin-top: 14px; font-size: 13px;
+  color: var(--ink-muted); font-style: italic; line-height: 1.5;
+}
+
+.chapter {
+  scroll-margin-top: calc(var(--topbar-h) + 24px);
+  padding: 40px 0 16px; border-top: 1px solid var(--line);
+}
+.chapter:first-of-type { border-top: none; padding-top: 8px; }
+
+.chapter h2 {
+  font-size: clamp(1.5rem, 3.5vw, 1.85rem);
+  font-weight: 700; line-height: 1.2;
+  margin-bottom: 20px; letter-spacing: -0.01em;
+}
+
+.lede {
+  font-size: 1.12rem; line-height: 1.6;
+  color: var(--ink); font-weight: 500; margin-bottom: 22px;
+}
+
+.chapter p {
+  margin-bottom: 20px; font-size: 1.02rem;
+  line-height: 1.7; color: var(--ink);
+}
+.chapter p strong { color: var(--ink); font-weight: 700; }
+
+.callout {
+  background: var(--bg-elev); border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  padding: 20px 22px; margin: 28px 0; border-radius: 2px;
+  font-size: 0.98rem; line-height: 1.65;
+}
+.callout-label {
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-size: 10px; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--accent);
+  font-weight: 700; display: block; margin-bottom: 8px;
+}
+
+.pullquote {
+  margin: 32px 0; padding: 0 0 0 24px;
+  border-left: 3px solid var(--accent);
+  font-size: 1.18rem; line-height: 1.5;
+  font-style: italic; color: var(--ink); font-weight: 500;
+}
+
+.snap {
+  margin: 44px 0; padding: 40px 24px;
+  text-align: center;
+  background: linear-gradient(135deg, var(--accent-soft), transparent);
+  border-top: 2px solid var(--accent);
+  border-bottom: 2px solid var(--accent);
+}
+.snap p {
+  font-size: clamp(1.4rem, 4vw, 1.85rem);
+  line-height: 1.3; font-weight: 700;
+  color: var(--ink); letter-spacing: -0.01em;
+  font-style: normal; margin: 0;
+}
+.snap-label {
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-size: 10px; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--accent);
+  font-weight: 700; display: block; margin-bottom: 16px;
+}
+
+.share {
+  margin: 32px 0; padding: 24px;
+  background: var(--bg-elev); border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.share-label {
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-size: 11px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--ink-muted);
+  font-weight: 600; margin-bottom: 12px;
+}
+.share-claim {
+  font-size: 1rem; font-style: italic;
+  color: var(--ink-soft); line-height: 1.55;
+  margin-bottom: 18px; padding-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+}
+.share-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+.share-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 16px;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-size: 13px; font-weight: 600;
+  text-decoration: none; border-radius: 4px;
+  transition: transform 0.15s, opacity 0.15s;
+}
+.share-btn.x { background: #000; color: #fff; }
+.share-btn.linkedin { background: #0a66c2; color: #fff; }
+.share-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+
+.action {
+  margin: 48px 0 32px; padding: 36px 28px;
+  background: linear-gradient(135deg, var(--accent-soft) 0%, var(--bg-elev) 60%);
+  border: 1px solid var(--line); border-radius: 8px;
+}
+.action h2 {
+  font-size: clamp(1.5rem, 3.5vw, 1.85rem); margin-bottom: 14px;
+}
+.action-sub {
+  font-size: 0.95rem; color: var(--ink-soft);
+  margin-bottom: 24px;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+}
+.checklist { list-style: none; margin: 0; padding: 0; }
+.checklist li {
+  padding: 14px 0 14px 36px; position: relative;
+  font-size: 0.98rem; line-height: 1.55;
+  border-bottom: 1px solid var(--line);
+}
+.checklist li:last-child { border-bottom: none; }
+.checklist li::before {
+  content: "✓"; position: absolute; left: 0; top: 14px;
+  width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--accent); color: #fff;
+  border-radius: 50%; font-size: 11px; font-weight: 700;
+}
+
+footer {
+  margin-top: 60px; padding-top: 32px;
+  border-top: 1px solid var(--line);
+  display: flex; flex-direction: column; gap: 20px;
+}
+.footer-row {
+  display: flex; justify-content: space-between;
+  align-items: flex-start; flex-wrap: wrap; gap: 20px;
+}
+.footer-home {
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-size: 13px; font-weight: 600;
+  color: var(--accent); text-decoration: none;
+}
+.footer-home::before { content: "◆ "; font-size: 9px; }
+.footer-cite {
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-size: 12px; color: var(--ink-muted);
+  line-height: 1.6; max-width: 420px;
+}
+.footer-cite strong {
+  display: block; font-size: 10px;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--ink-soft); margin-bottom: 6px; font-weight: 700;
+}
+.back-top {
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-size: 13px; font-weight: 600; color: var(--ink);
+  background: none; border: 1px solid var(--line);
+  padding: 8px 16px; border-radius: 4px; cursor: pointer;
+  transition: background 0.2s;
+}
+.back-top:hover { background: var(--bg-elev); }
+
+a:focus-visible, button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px; border-radius: 2px;
+}
+
+#scrim {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.4);
+  opacity: 0; pointer-events: none;
+  z-index: 999; transition: opacity 0.25s;
+}
+#scrim.show { opacity: 1; pointer-events: auto; }
+
+@media (max-width: 880px) {
+  .wrap {
+    grid-template-columns: 1fr;
+    padding-left: 20px; padding-right: 20px; gap: 0;
+  }
+  .crumb, .read-time { display: none; }
+  .hamburger { display: flex; }
+  #rail {
+    position: fixed; top: 0; left: 0;
+    width: 82vw; max-width: 340px; height: 100vh;
+    background: var(--bg-elev); border-right: 1px solid var(--line);
+    padding: calc(var(--topbar-h) + 24px) 24px 24px;
+    transform: translateX(-100%);
+    transition: transform 0.28s ease;
+    z-index: 1000; overflow-y: auto;
+  }
+  #rail.open { transform: translateX(0); }
+  #rail h4 { margin-bottom: 20px; }
+  main { max-width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+
+<header id="topbar">
+  <a class="topbar-home" href="https://iggym.github.io/cogitatio-elegans/">Cogitatio</a>
+  <span class="crumb"><span>Perspectives</span> / Healthcare &amp; Biotech</span>
+  <span class="read-time">6 min read</span>
+  <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+    <span></span><span></span><span></span>
+  </button>
+</header>
+
+<div id="scrim"></div>
+
+<div class="wrap">
+
+<nav id="rail" aria-label="Article sections">
+  <h4>In This Piece</h4>
+  <ol>
+    <li data-num="01"><a href="#s1">Counterfeit Compassion</a></li>
+    <li data-num="02"><a href="#s2">Reading the Receipt</a></li>
+    <li data-num="03"><a href="#s3">Following the Money</a></li>
+    <li data-num="04"><a href="#s4">The Lifelong Ledger</a></li>
+    <li data-num="05"><a href="#s5">Pilot Light, Not Bonfire</a></li>
+    <li data-num="06"><a href="#s6">Ask the Hard Question</a></li>
+  </ol>
+</nav>
+
+<main>
+<article>
+
+<header class="hero">
+  <div class="eyebrow">Healthcare &amp; Biotechnology</div>
+  <h1>Pills in Perpetuity</h1>
+  <p class="deck">Modern medicine isn't failing to cure chronic disease. It's succeeding at managing it — because that's what it was built to do.</p>
+
+  <div class="spectrum" aria-label="Conceptual spectrum of medical incentive">
+    <div class="spectrum-label">The Spectrum of Medical Incentive</div>
+    <div class="spectrum-bar"></div>
+    <div class="spectrum-marks">
+      <span>Cure</span>
+      <span>Manage</span>
+      <span>Maintain</span>
+      <span>Depend</span>
+    </div>
+    <p class="spectrum-caption">Where capital concentrates: leftward is rare and uneconomic. Rightward is where quarterly earnings live.</p>
+  </div>
+</header>
+
+<section class="chapter" id="s1">
+  <h2>Counterfeit Compassion</h2>
+  <p class="lede">Margaret stands at the pharmacy counter on a Tuesday in March. Seven white bags slide across the counter.</p>
+  <p>Metformin for her blood sugar. Lisinopril for her blood pressure. Atorvastatin for her cholesterol. Escitalopram for the anxiety she developed the year her husband died. Omeprazole for the reflux that started when the anxiety did. Levothyroxine for her thyroid. A low-dose aspirin because her doctor said it couldn't hurt.</p>
+  <p>"See you next month," the pharmacist says, smiling the same smile he's smiled for eleven years.</p>
+  <p>Margaret is sixty-eight. She has been on this exact regimen for eleven years. No one — not her primary care doctor, not her cardiologist, not her endocrinologist — has ever sat her down and said: <em>here is the path off these medications.</em></p>
+  <p>Not because they don't care. Because the path doesn't exist in the system they were trained inside.</p>
+</section>
+
+<section class="chapter" id="s2">
+  <h2>Reading the Receipt</h2>
+  <p class="lede">The medical-industrial complex — the triad of pharmaceutical manufacturers, insurance payers, and hospital systems — is economically optimized for chronic management, not cures.</p>
+  <p>Lifelong pharmaceutical dependence generates exponentially more lifetime capital and predictable recurring revenue than a one-time curative treatment. Healthcare systems are engineered around financial models of disease maintenance, making true preventative wellness economically counter-incentivized.</p>
+  <p><strong>This isn't a conspiracy. It's a spreadsheet.</strong></p>
+
+  <div class="share" id="shareBlock">
+    <div class="share-label">Share the Reframe</div>
+    <p class="share-claim" id="reframeClaim">The medical-industrial complex is economically optimized for chronic management, not cures. Lifelong pharmaceutical dependence generates exponentially more lifetime capital and predictable recurring revenue than a one-time curative treatment.</p>
+    <div class="share-btns">
+      <a class="share-btn x" id="shareX" href="#" target="_blank" rel="noopener">Post to X</a>
+      <a class="share-btn linkedin" id="shareLI" href="#" target="_blank" rel="noopener">Share on LinkedIn</a>
+    </div>
+  </div>
+</section>
+
+<section class="chapter" id="s3">
+  <h2>Following the Money</h2>
+  <p class="lede">Start with the arithmetic. Curing and managing aren't just different strategies — they're opposing business models.</p>
+  <p>Compare two hypotheticals from the manufacturer's side: a one-time gene therapy that permanently reverses Type 1 diabetes, priced at $500,000 — versus daily insulin for forty years at $3,000 per year, totaling $120,000.</p>
+  <p>The cure nets more per patient, once. The management nets less per year but compounds across millions of patients, every year, forever. Wall Street doesn't value the one-time sale. It values the recurring revenue stream. That's why insulin has had sixty different patent extensions and zero curative competitors.</p>
+
+  <div class="callout">
+    <span class="callout-label">Where Capital Goes</span>
+    Antibiotic research — drugs you take for ten days and stop — has been starved to the point of crisis. Of the eighteen largest pharmaceutical companies, fifteen have abandoned antibiotic R&amp;D entirely. Meanwhile, oncology and immunology pipelines swell with drugs designed to be taken indefinitely, drugs that extend life by months rather than years, priced at six figures annually.
+  </div>
+
+  <p>The system isn't broken. The system is doing exactly what it was incentivized to do.</p>
+
+  <div class="snap">
+    <span class="snap-label">Perspective Snap</span>
+    <p>Every cure is a cancelled subscription.</p>
+  </div>
+</section>
+
+<section class="chapter" id="s4">
+  <h2>The Lifelong Ledger</h2>
+  <p class="lede">This is not a claim about individual doctors.</p>
+  <p>The physician who refills Margaret's metformin is not venal. She went into medicine to heal. She refills the prescription because the system she works inside gives her eleven minutes per patient, no time for root-cause investigation, and a billing code that pays for the prescription, not the conversation that might prevent it.</p>
+  <p>Nor is this a claim that every chronic disease has a cure waiting in a vault somewhere. Type 1 diabetes is genuinely hard. Alzheimer's is genuinely hard. Autoimmune disease is genuinely hard. The point is not that cures exist and are being hidden. The point is that the economic engine of medicine has no reason to look for them aggressively — and every reason to extend the runway of management.</p>
+
+  <blockquote class="pullquote">The system resists cures even when they arrive.</blockquote>
+
+  <p>Yes, there are exceptions. Vertex Pharmaceuticals pursued a functional cure for sickle cell disease. Some biotech firms pursue one-time gene therapies. But note what happens when they succeed: the curative therapy is priced at $2.2 million per patient, insurers balk, and adoption crawls. The cure exists. The system has no idea what to do with it.</p>
+</section>
+
+<section class="chapter" id="s5">
+  <h2>Pilot Light, Not Bonfire</h2>
+  <p class="lede">You are not powerless inside this system. You are a participant who can ask different questions.</p>
+  <p>Concrete moves:</p>
+  <ul style="list-style:none; padding-left:0; margin: 8px 0 24px;">
+    <li style="padding: 12px 0 12px 24px; position:relative; border-bottom:1px solid var(--line);">
+      <strong style="position:absolute; left:0; color:var(--accent);">→</strong>
+      For every medication you take indefinitely, ask your doctor: <em>"What would it take to get me off this?"</em> Not confrontationally. Curiously. Watch what happens to the conversation.
+    </li>
+    <li style="padding: 12px 0 12px 24px; position:relative; border-bottom:1px solid var(--line);">
+      <strong style="position:absolute; left:0; color:var(--accent);">→</strong>
+      When offered a new prescription, ask: <em>"Is this treating the cause or managing the symptom?"</em> Both are legitimate. You should know which one you're paying for.
+    </li>
+    <li style="padding: 12px 0 12px 24px; position:relative; border-bottom:1px solid var(--line);">
+      <strong style="position:absolute; left:0; color:var(--accent);">→</strong>
+      If you have a chronic condition, search clinicaltrials.gov for curative rather than management trials. They exist. They're under-enrolled because no one told patients to look.
+    </li>
+    <li style="padding: 12px 0 12px 24px; position:relative;">
+      <strong style="position:absolute; left:0; color:var(--accent);">→</strong>
+      Track your own data. Blood pressure, glucose, sleep, mood. Bring patterns to your doctor. The system gives her eleven minutes — bring her the conclusion, not the puzzle.
+    </li>
+  </ul>
+  <p>None of this dismantles the medical-industrial complex. But each move reclaims a sliver of agency the system was designed to absorb.</p>
+</section>
+
+<section class="chapter" id="s6">
+  <div class="action">
+    <h2>Ask the Hard Question</h2>
+    <p class="action-sub">Within the next 24 hours — one specific move.</p>
+    <ul class="checklist">
+      <li>Open your medicine cabinet tonight.</li>
+      <li>For every bottle marked "refill as needed" or "refill indefinitely," write on a sticky note: <em>What would cure what this treats?</em></li>
+      <li>Stick it to your bathroom mirror.</li>
+      <li>Tomorrow, call your doctor's office and ask for fifteen minutes to discuss the answers — not to demand a cure, but to find out whether your doctor has ever asked the question herself.</li>
+    </ul>
+    <p style="margin-top: 20px; font-size: 0.95rem; color: var(--ink-soft); font-style: italic;">That's the shift. The system is not going to ask it for you.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-row">
+    <a class="footer-home" href="https://iggym.github.io/cogitatio-elegans/">Back to Cogitatio</a>
+    <button class="back-top" id="backTop">↑ Top</button>
+  </div>
+  <div class="footer-cite">
+    <strong>Source Framing</strong>
+    Healthcare &amp; Biotechnology. The Misunderstanding: Modern medicine is a progressive march toward preventative health, longevity, and the eradication of chronic disease. The Reframing: The medical-industrial complex is economically optimized for chronic management rather than cures. Lifelong pharmaceutical dependence generates exponentially more lifetime capital and predictable recurring revenue than a one-time curative treatment. The Insight: Healthcare systems are engineered around financial models of disease maintenance, making true preventative wellness economically counter-incentivized.
+  </div>
+</footer>
+
+</article>
+</main>
+</div>
+
+<script>
+(function(){
+  // --- Reading progress bar ---
+  const progress = document.getElementById('progress');
+  function updateProgress(){
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    const pct = max > 0 ? (h.scrollTop / max) * 100 : 0;
+    progress.style.width = pct + '%';
+  }
+  window.addEventListener('scroll', updateProgress, { passive: true });
+  updateProgress();
+
+  // --- Scrollspy ---
+  const sections = document.querySelectorAll('section.chapter');
+  const links = document.querySelectorAll('#rail a');
+  const linkMap = {};
+  links.forEach(l => { linkMap[l.getAttribute('href').slice(1)] = l; });
+
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        const id = e.target.id;
+        if (linkMap[id]) linkMap[id].classList.add('active');
+      }
+    });
+  }, { rootMargin: '-15% 0px -70% 0px' });
+
+  sections.forEach(s => obs.observe(s));
+
+  // --- Mobile menu + scrim ---
+  const ham = document.getElementById('hamburger');
+  const rail = document.getElementById('rail');
+  const scrim = document.getElementById('scrim');
+
+  function closeMenu(){
+    rail.classList.remove('open');
+    scrim.classList.remove('show');
+    ham.classList.remove('open');
+    ham.setAttribute('aria-expanded', 'false');
+  }
+  function openMenu(){
+    rail.classList.add('open');
+    scrim.classList.add('show');
+    ham.classList.add('open');
+    ham.setAttribute('aria-expanded', 'true');
+  }
+  ham.addEventListener('click', () => {
+    rail.classList.contains('open') ? closeMenu() : openMenu();
+  });
+  scrim.addEventListener('click', closeMenu);
+  rail.addEventListener('click', (e) => {
+    if (e.target.tagName === 'A') closeMenu();
+  });
+
+  // --- Back to top ---
+  document.getElementById('backTop').addEventListener('click', () => {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+  });
+
+  // --- Dynamic social share prefill ---
+  const claimEl = document.getElementById('reframeClaim');
+  const shareX = document.getElementById('shareX');
+  const shareLI = document.getElementById('shareLI');
+
+  function buildShare(){
+    const text = (claimEl.textContent || '').trim();
+    const url = window.location.href;
+    const xUrl = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(text) + '&url=' + encodeURIComponent(url);
+    const liUrl = 'https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(url);
+    shareX.setAttribute('href', xUrl);
+    shareLI.setAttribute('href', liUrl);
+  }
+  buildShare();
+})();
+</script>
+
+</body>
+</html>
