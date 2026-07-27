@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Great Shell Game — Progress as Illusion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F5F0E8;
+    --fg: #2C2C2E;
+    --muted: #8A8580;
+    --accent: #C8952E;
+    --accent-hover: #A87A1F;
+    --card: #EDE8DF;
+    --border: #D8D2C8;
+    --surface: #F0EBE3;
+    --snap-bg: #3B2E1A;
+    --snap-fg: #F5ECD7;
+    --cta-grad-1: #C8952E;
+    --cta-grad-2: #8B5E1A;
+    --topbar-bg: rgba(245, 240, 232, 0.82);
+    --progress-grad: linear-gradient(90deg, #C8952E, #D4A843, #E8C46A);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1A1A1E;
+      --fg: #E8E2D6;
+      --muted: #9A9590;
+      --accent: #D4A843;
+      --accent-hover: #E8C46A;
+      --card: #252529;
+      --border: #3A3A3E;
+      --surface: #202024;
+      --snap-bg: #2A2418;
+      --snap-fg: #F0E6CC;
+      --cta-grad-1: #D4A843;
+      --cta-grad-2: #A87A1F;
+      --topbar-bg: rgba(26, 26, 30, 0.82);
+      --progress-grad: linear-gradient(90deg, #D4A843, #E8C46A, #F0D87A);
+    }
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Lora', Georgia, serif;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.72;
+    font-size: 1.0625rem;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* ── Progress Bar ── */
+  #progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    width: 0%;
+    background: var(--progress-grad);
+    z-index: 9999;
+    transition: width 0.12s linear;
+  }
+
+  /* ── Topbar ── */
+  #topbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 900;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    background: var(--topbar-bg);
+    border-bottom: 1px solid var(--border);
+    padding: 0 1.25rem;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.8125rem;
+  }
+
+  #topbar .home-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: var(--fg);
+    text-decoration: none;
+    font-weight: 600;
+    white-space: nowrap;
+    font-family: 'DM Serif Display', serif;
+    font-size: 0.9rem;
+    letter-spacing: -0.01em;
+  }
+
+  #topbar .home-link svg { flex-shrink: 0; }
+
+  #topbar .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  #topbar .breadcrumb a {
+    color: var(--muted);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  #topbar .breadcrumb a:hover { color: var(--accent); }
+
+  #topbar .breadcrumb .sep { opacity: 0.4; }
+
+  #topbar .reading-time {
+    margin-left: auto;
+    color: var(--muted);
+    white-space: nowrap;
+    font-style: italic;
+    font-size: 0.75rem;
+  }
+
+  #topbar .hamburger {
+    display: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    color: var(--fg);
+    margin-left: 0.5rem;
+  }
+
+  #topbar .hamburger svg { display: block; }
+
+  /* ── Layout ── */
+  .wrap {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    max-width: calc(660px + 260px);
+    margin: 0 auto;
+    min-height: 100vh;
+  }
+
+  /* ── Rail ── */
+  #rail {
+    position: sticky;
+    top: 100px;
+    align-self: start;
+    padding: 2rem 1.25rem 2rem 1.5rem;
+    height: fit-content;
+  }
+
+  #rail ol {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  #rail li {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    position: relative;
+  }
+
+  #rail li::before {
+    content: attr(data-num);
+    font-family: 'DM Serif Display', serif;
+    font-size: 0.7rem;
+    color: var(--muted);
+    min-width: 1.4rem;
+    text-align: right;
+    opacity: 0.5;
+    transition: opacity 0.3s, color 0.3s;
+  }
+
+  #rail li.active::before {
+    opacity: 1;
+    color: var(--accent);
+  }
+
+  #rail a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    transition: color 0.25s;
+  }
+
+  #rail a:hover { color: var(--fg); }
+
+  #rail li.active a {
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* ── Main Content ── */
+  main {
+    max-width: 660px;
+    padding: 0 2rem 4rem;
+  }
+
+  /* ── Hero ── */
+  .hero {
+    padding: 6.5rem 0 2.5rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2.5rem;
+  }
+
+  .hero-category {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 1rem;
+  }
+
+  .hero h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(2.1rem, 5vw, 3.1rem);
+    line-height: 1.12;
+    letter-spacing: -0.02em;
+    color: var(--fg);
+    margin-bottom: 1rem;
+  }
+
+  .hero .subtitle {
+    font-size: 1.125rem;
+    color: var(--muted);
+    line-height: 1.5;
+    max-width: 520px;
+  }
+
+  /* ── Spectrum Widget ── */
+  .spectrum {
+    margin: 2.5rem 0 0.5rem;
+  }
+
+  .spectrum-bar {
+    height: 6px;
+    border-radius: 3px;
+    background: linear-gradient(90deg,
+      #5B8C6A 0%, #6B9C7A 25%,
+      #B8A44A 40%, #C8952E 50%,
+      #C8783A 60%, #B85A3A 75%, #8B2E3A 100%);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .spectrum-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg,
+      transparent 0%, transparent 40%,
+      rgba(255,255,255,0.12) 50%,
+      transparent 60%, transparent 100%);
+    animation: spectrumShimmer 4s ease-in-out infinite;
+  }
+
+  @keyframes spectrumShimmer {
+    0%, 100% { opacity: 0; }
+    50% { opacity: 1; }
+  }
+
+  .spectrum-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.6rem;
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .spectrum-labels .sl-left { color: #5B8C6A; }
+  .spectrum-labels .sl-right { color: #8B2E3A; }
+
+  @media (prefers-color-scheme: dark) {
+    .spectrum-labels .sl-left { color: #7BAC8A; }
+    .spectrum-labels .sl-right { color: #C85A5A; }
+  }
+
+  /* ── Chapter Sections ── */
+  .chapter {
+    scroll-margin-top: 80px;
+    padding-bottom: 2.5rem;
+    margin-bottom: 2.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .chapter:last-of-type { border-bottom: none; }
+
+  .chapter h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.6rem;
+    line-height: 1.2;
+    margin-bottom: 1.25rem;
+    letter-spacing: -0.01em;
+    color: var(--fg);
+  }
+
+  .chapter h2 .num {
+    color: var(--accent);
+    font-size: 0.85rem;
+    margin-right: 0.4rem;
+    vertical-align: super;
+    font-family: 'Lora', serif;
+  }
+
+  /* ── Lede ── */
+  .lede {
+    font-size: 1.125rem;
+    line-height: 1.7;
+    color: var(--fg);
+    margin-bottom: 1.25rem;
+  }
+
+  /* ── Paragraphs ── */
+  .chapter p {
+    margin-bottom: 1.15rem;
+    color: var(--fg);
+  }
+
+  .chapter p:last-child { margin-bottom: 0; }
+
+  /* ── Callout ── */
+  .callout {
+    background: var(--card);
+    border-left: 3px solid var(--accent);
+    padding: 1.15rem 1.25rem;
+    margin: 1.5rem 0;
+    border-radius: 0 4px 4px 0;
+    font-size: 0.95rem;
+    line-height: 1.65;
+  }
+
+  .callout strong { color: var(--accent); }
+
+  /* ── Pullquote ── */
+  .pullquote {
+    border-left: 3px solid var(--accent);
+    padding: 1rem 1.5rem;
+    margin: 2rem 0;
+    font-style: italic;
+    font-size: 1.05rem;
+    line-height: 1.6;
+    color: var(--muted);
+  }
+
+  /* ── Perspective Snap ── */
+  .snap {
+    background: var(--snap-bg);
+    color: var(--snap-fg);
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(1.35rem, 3.2vw, 2rem);
+    text-align: center;
+    padding: 2.5rem 2rem;
+    margin: 2.5rem 0;
+    border-radius: 6px;
+    line-height: 1.35;
+    position: relative;
+  }
+
+  .snap::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--accent);
+  }
+
+  /* ── Share Block ── */
+  .share-block {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 1.75rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .share-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    font-weight: 600;
+  }
+
+  .share-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--fg);
+    text-decoration: none;
+    transition: background 0.2s, border-color 0.2s, transform 0.15s;
+  }
+
+  .share-btn:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    transform: scale(1.08);
+  }
+
+  .share-btn svg { width: 16px; height: 16px; }
+
+  /* ── CTA Block ── */
+  .action {
+    background: linear-gradient(135deg, var(--cta-grad-1), var(--cta-grad-2));
+    color: #fff;
+    border-radius: 8px;
+    padding: 2.5rem 2rem;
+    margin: 2.5rem 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .action::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -30%;
+    width: 60%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .action h3 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.35rem;
+    margin-bottom: 0.75rem;
+    line-height: 1.25;
+  }
+
+  .action p {
+    opacity: 0.9;
+    margin-bottom: 1.25rem;
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+
+  .checklist {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .checklist li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    cursor: pointer;
+    padding: 0.5rem 0.75rem;
+    border-radius: 5px;
+    transition: background 0.2s;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    user-select: none;
+  }
+
+  .checklist li:hover { background: rgba(255,255,255,0.1); }
+
+  .checklist li .check-box {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255,255,255,0.5);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 2px;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .checklist li.checked .check-box {
+    border-color: #fff;
+    background: rgba(255,255,255,0.25);
+  }
+
+  .checklist li .check-box svg {
+    width: 12px;
+    height: 12px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    color: #fff;
+  }
+
+  .checklist li.checked .check-box svg { opacity: 1; }
+
+  .checklist li.checked .check-text {
+    text-decoration: line-through;
+    opacity: 0.6;
+  }
+
+  /* ── Footer ── */
+  article > footer {
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    font-size: 0.8125rem;
+    color: var(--muted);
+  }
+
+  .footer-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .footer-home {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: var(--fg);
+    text-decoration: none;
+    font-family: 'DM Serif Display', serif;
+    font-size: 0.9rem;
+  }
+
+  .footer-home:hover { color: var(--accent); }
+
+  .back-to-top {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.8rem;
+    transition: color 0.2s;
+    cursor: pointer;
+    background: none;
+    border: none;
+    font-family: inherit;
+  }
+
+  .back-to-top:hover { color: var(--accent); }
+
+  .sources h4 {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.5rem;
+    color: var(--muted);
+  }
+
+  .sources ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .sources li {
+    padding-left: 0.75rem;
+    border-left: 2px solid var(--border);
+    font-size: 0.78rem;
+    line-height: 1.5;
+  }
+
+  /* ── Scrim ── */
+  #scrim {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 950;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+
+  #scrim.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* ── Focus States ── */
+  a:focus-visible,
+  button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 3px;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 880px) {
+    .wrap {
+      grid-template-columns: 1fr;
+    }
+
+    #topbar .breadcrumb { display: none; }
+    #topbar .hamburger { display: flex; }
+
+    #rail {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 82vw;
+      max-width: 320px;
+      height: 100vh;
+      background: var(--bg);
+      z-index: 1000;
+      padding: 5rem 1.5rem 2rem;
+      transform: translateX(-100%);
+      transition: transform 0.3s ease;
+      overflow-y: auto;
+      border-right: 1px solid var(--border);
+    }
+
+    #rail.open {
+      transform: translateX(0);
+    }
+
+    main {
+      max-width: 100%;
+      padding: 0 1.25rem 3rem;
+    }
+
+    .hero { padding: 5.5rem 0 2rem; }
+
+    .snap { padding: 2rem 1.25rem; }
+
+    .action { padding: 2rem 1.25rem; }
+  }
+
+  @media (max-width: 480px) {
+    body { font-size: 1rem; }
+    .hero h1 { font-size: 1.85rem; }
+    .hero .subtitle { font-size: 1rem; }
+    .chapter h2 { font-size: 1.35rem; }
+    main { padding: 0 1rem 2.5rem; }
+  }
+
+  /* ── Reduced Motion ── */
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+    #progress { transition: none; }
+    .spectrum-bar::after { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Reading Progress Bar -->
+<div id="progress" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+
+<!-- Topbar -->
+<header id="topbar">
+  <a href="https://iggym.github.io/cogitatio-elegans/" class="home-link" aria-label="Home">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    Home
+  </a>
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <span class="sep">/</span>
+    <a href="https://iggym.github.io/cogitatio-elegans/">Time &amp; History</a>
+    <span class="sep">/</span>
+    <span>Progress as Illusion</span>
+  </nav>
+  <span class="reading-time">5 min read</span>
+  <button class="hamburger" id="menuBtn" aria-label="Open navigation menu" aria-expanded="false">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+</header>
+
+<!-- Scrim Overlay -->
+<div id="scrim" aria-hidden="true"></div>
+
+<!-- Main Layout -->
+<div class="wrap">
+
+  <!-- Navigation Rail -->
+  <nav id="rail" aria-label="Article sections">
+    <ol>
+      <li data-num="01"><a href="#s1">When Manure Hit Fan</a></li>
+      <li data-num="02"><a href="#s2">The Great Shell Game</a></li>
+      <li data-num="03"><a href="#s3">Risk's Relay Race</a></li>
+      <li data-num="04"><a href="#s4">The Debt We Owe</a></li>
+      <li data-num="05"><a href="#s5">Off the Treadmill</a></li>
+      <li data-num="06"><a href="#s6">Name Your Nemesis</a></li>
+    </ol>
+  </nav>
+
+  <!-- Main Content -->
+  <main>
+    <article>
+
+      <!-- Hero -->
+      <header class="hero">
+        <div class="hero-category">Time &amp; History</div>
+        <h1>The Great Shell Game</h1>
+        <p class="subtitle">Technology doesn't solve problems. It moves them — into domains where they're harder to see, harder to name, and harder to contain.</p>
+        <div class="spectrum">
+          <div class="spectrum-bar" role="img" aria-label="Spectrum from Directional Progress to Risk Transfer"></div>
+          <div class="spectrum-labels">
+            <span class="sl-left">Directional Progress</span>
+            <span class="sl-right">Risk Transfer</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Section 1: Opening Scene -->
+      <section class="chapter" id="s1">
+        <h2><span class="num">01</span> When Manure Hit Fan</h2>
+        <p class="lede">1894. New York City. The urban planning crisis of the era isn't housing or transit — it's manure. A hundred thousand horses pull the city's carts, cabs, and carriages, and each one drops roughly twenty pounds of waste per day.</p>
+        <p>That's 2.5 million pounds of manure on the streets every morning. The smell is staggering. The flies are biblical. When it rains, the streets become rivers of slurry. When it's dry, the dust chokes the air. The <em>New York Times</em> predicts that by 1930, manure will reach the second-floor windows of Manhattan buildings.</p>
+        <p>A conference is convened. Urban planners from around the world gather in New York to solve the horse manure crisis. They leave without a solution. The problem seems intractable — an unavoidable consequence of the city's lifeblood.</p>
+        <p>Then, within a single generation, the horses are gone. The automobile arrives — first as a curiosity, then as a savior. By 1912, there are fewer horses on Fifth Avenue than there had been in decades. The manure disappears. The streets are clean. The city breathes.</p>
+        <div class="callout">
+          <strong>Progress.</strong> The orthodox narrative writes itself: human ingenuity encounters a problem, invents a solution, and moves forward. The arrow of history points upward. The manure crisis became a footnote — proof that technology always finds a way.
+        </div>
+      </section>
+
+      <!-- Section 2: Bold Reframe -->
+      <section class="chapter" id="s2">
+        <h2><span class="num">02</span> The Great Shell Game</h2>
+        <p class="lede">Here is the claim that changes how you see every headline about innovation:</p>
+        <blockquote class="pullquote" id="reframe-claim">
+          Technology does not "solve" human problems; it merely transfers systemic risk into higher-energy, more brittle, and harder-to-contain domains.
+        </blockquote>
+        <p>The automobile didn't solve the manure problem. It transferred it. The waste that once piled on cobblestones now piles in the atmosphere as carbon dioxide. The congestion that once clogged streets now clogs the entire climate system. The horses killed a few people with kicks and bites. Cars kill 1.35 million people per year. The manure was visible, local, and biodegradable. The carbon is invisible, global, and persistent.</p>
+        <p>This is not an accident. It is the pattern.</p>
+        <p>Every technological "solution" operates like a shell game: you watch the pea disappear from under one cup, and while you're celebrating, it's already under another — one you're not watching, one you might not even know exists. The risk doesn't vanish. It migrates. It changes shape, scale, and domain. And because humans are exquisitely tuned to visible, local, immediate threats, the transferred risk is almost always harder to perceive, harder to mobilize against, and harder to contain.</p>
+        <!-- Share Block -->
+        <div class="share-block">
+          <span class="share-label">Share this reframe</span>
+          <a href="#" class="share-btn" id="shareX" target="_blank" rel="noopener" aria-label="Share on X">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          </a>
+          <a href="#" class="share-btn" id="shareLinkedIn" target="_blank" rel="noopener" aria-label="Share on LinkedIn">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+          </a>
+        </div>
+      </section>
+
+      <!-- Section 3: Hidden Connections -->
+      <section class="chapter" id="s3">
+        <h2><span class="num">03</span> Risk's Relay Race</h2>
+        <p class="lede">Once you see the pattern, you see it everywhere. The automobile solved horse manure but created climate change and suburban isolation. Antibiotics solved bacterial deaths but created superbugs and decimated gut microbiomes.</p>
+        <p>Agriculture solved famine but created population bombs and soil depletion. The internet solved information scarcity but created attention economies and epidemic loneliness. Fertilizer solved crop yields but created oceanic dead zones. Air conditioning solved heat discomfort but created energy grids that fail during the very heat waves they're needed for.</p>
+        <p>Each of these looks like progress when you measure only what was gained. Each looks like a lateral move — or a net loss — when you measure what was transferred.</p>
+
+        <!-- Perspective Snap -->
+        <div class="snap" role="presentation">
+          Every solution is just a problem in exile.
+        </div>
+
+        <p>The risk doesn't disappear. It migrates from the visible to the invisible, from the local to the global, from the immediate to the delayed. From manure you can shovel to carbon you can't see. From infections you can treat to resistance you can't. From isolation you can name to loneliness you can't quite explain.</p>
+        <p>This is why each new era feels both miraculous and unsteady. We keep solving the problems we can see, and the problems we create are, by the structural logic of the transfer, always harder to see than the ones we solved. The shell game is self-reinforcing.</p>
+      </section>
+
+      <!-- Section 4: Credibility and Nuance -->
+      <section class="chapter" id="s4">
+        <h2><span class="num">04</span> The Debt We Owe</h2>
+        <p class="lede">None of this is an argument against antibiotics or agriculture or the internet. Infant mortality has plummeted. Famine is rarer than it has been in recorded history. You are reading this article on a device that would have been unimaginable to a nineteenth-century New Yorker drowning in horse waste.</p>
+        <p>The material gains are real. The orthodox view measures them correctly.</p>
+        <p>But the orthodox view measures only one side of the ledger. It counts the benefits and leaves the costs for a future accounting. Antibiotics saved hundreds of millions of lives — and now antimicrobial resistance kills 1.27 million people per year, a number projected to reach 10 million by 2050. The internet connected billions — and now loneliness has reached epidemic levels across every industrialized nation. The automobile gave us mobility — and now particulate pollution kills 4.2 million people annually.</p>
+        <div class="callout">
+          The question isn't whether progress happened. The question is whether the accounting system that calls it <strong>"progress"</strong> is honest about what it leaves off the balance sheet. A ledger that only records income is not a ledger — it's a fairy tale.
+        </div>
+        <p>The counterargument is fair: we're better off than our ancestors. Life expectancy is higher, violence is lower, more people have clean water. But these gains are not irreversible. They are maintained by systems of increasing complexity and brittleness — systems that transfer risk into domains where our institutions have no jurisdiction and our attention has no reach.</p>
+        <p>The claim is not that technology is bad. The claim is that the word "solution" is a misnomer. What we call solutions are transfers. And transfers accrue interest.</p>
+      </section>
+
+      <!-- Section 5: Narrative Agency -->
+      <section class="chapter" id="s5">
+        <h2><span class="num">05</span> Off the Treadmill</h2>
+        <p class="lede">You don't have to opt out of technology. You don't have to become a hermit. But you can refuse to be a passive recipient of the escalation ladder — and that refusal starts with a single, inconvenient question: <em>Where is the risk going?</em></p>
+        <p>When you adopt a new tool, you're not just solving a problem — you're accepting a new class of vulnerability. The question is whether you're choosing it with eyes open. Most people don't. Most people never ask where the risk went. They just notice, years later, that something feels wrong — something they can't quite name — and they're right. The risk was transferred. The problem is in exile. And it's coming home.</p>
+        <p>But here's the thing about agency: you can opt out of specific transfers without opting out of everything. You can choose which risks you're willing to carry and which you're not. The moves are small, concrete, and available right now:</p>
+        <ul style="list-style:none; margin:1.5rem 0; display:flex; flex-direction:column; gap:0.75rem;">
+          <li style="padding-left:1.25rem; border-left:2px solid var(--accent);"><strong>Choose a bicycle over a car</strong> for one short trip this week. You're not solving transportation — you're opting out of the carbon transfer chain for that trip.</li>
+          <li style="padding-left:1.25rem; border-left:2px solid var(--accent);"><strong>Keep a phone-free room</strong> in your house. You're not rejecting connectivity — you're refusing the attention economy's claim on your silence.</li>
+          <li style="padding-left:1.25rem; border-left:2px solid var(--accent);"><strong>Cook a meal from raw ingredients.</strong> You're not rejecting convenience — you're refusing the industrial food system's transfer of health risk onto your body.</li>
+          <li style="padding-left:1.25rem; border-left:2px solid var(--accent);"><strong>Plant something. Anything.</strong> You're not solving agriculture — you're re-entering a relationship with biological time instead of technological time.</li>
+        </ul>
+        <p>These aren't Luddite gestures. They're strategic withdrawals from the risk-transfer chain. They're acts of noticing where the risk went — and deciding, consciously, that you'd rather carry a visible, manageable burden than an invisible, compounding one.</p>
+      </section>
+
+      <!-- Section 6: CTA -->
+      <section class="chapter" id="s6">
+        <h2><span class="num">06</span> Name Your Nemesis</h2>
+        <p class="lede">The first step toward seeing the shell game is naming it. Not in the abstract — in your own life. The specific technology you adopted that solved Problem A and quietly created Problem B.</p>
+        <div class="action">
+          <h3>Your 24-Hour Assignment</h3>
+          <p>Identify one technology in your life that "solved" a problem but created a new one you're now managing. Name both — the solved problem and the new one. Write it down. That single act of naming is the first step toward seeing the shell game for what it is.</p>
+          <ul class="checklist" id="ctaChecklist">
+            <li>
+              <span class="check-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+              <span class="check-text">Name the technology you adopted as a "solution"</span>
+            </li>
+            <li>
+              <span class="check-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+              <span class="check-text">Write down the problem it solved</span>
+            </li>
+            <li>
+              <span class="check-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+              <span class="check-text">Write down the new problem it created</span>
+            </li>
+            <li>
+              <span class="check-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+              <span class="check-text">Ask: where is the risk going next?</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Footer -->
+      <footer>
+        <div class="footer-top">
+          <a href="https://iggym.github.io/cogitatio-elegans/" class="footer-home">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            Home
+          </a>
+          <button class="back-to-top" id="backToTop" aria-label="Back to top">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+            Back to top
+          </button>
+        </div>
+        <div class="sources">
+          <h4>References</h4>
+          <ul>
+            <li>The automobile solved horse manure pollution but created climate change and suburban isolation.</li>
+            <li>Antibiotics solved bacterial deaths but created superbugs and decimated gut microbiomes.</li>
+            <li>Technology does not "solve" human problems; it merely transfers systemic risk into higher-energy, more brittle, and harder-to-contain domains.</li>
+          </ul>
+        </div>
+      </footer>
+
+    </article>
+  </main>
+</div>
+
+<script>
+  // ── Scroll Progress Bar ──
+  const progressBar = document.getElementById('progress');
+  function updateProgress() {
+    const scrollTop = window.scrollY;
+    const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+    const pct = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+    progressBar.style.width = pct + '%';
+    progressBar.setAttribute('aria-valuenow', Math.round(pct));
+  }
+  window.addEventListener('scroll', updateProgress, { passive: true });
+  updateProgress();
+
+  // ── Scrollspy ──
+  const sections = document.querySelectorAll('section.chapter');
+  const railLinks = document.querySelectorAll('#rail li');
+  const observerOptions = {
+    root: null,
+    rootMargin: '-15% 0px -70% 0px',
+    threshold: 0
+  };
+
+  const scrollSpy = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        railLinks.forEach(li => {
+          li.classList.toggle('active', li.querySelector('a').getAttribute('href') === '#' + id);
+        });
+      }
+    });
+  }, observerOptions);
+
+  sections.forEach(section => scrollSpy.observe(section));
+
+  // ── Mobile Menu ──
+  const menuBtn = document.getElementById('menuBtn');
+  const rail = document.getElementById('rail');
+  const scrim = document.getElementById('scrim');
+
+  function openMenu() {
+    rail.classList.add('open');
+    scrim.classList.add('visible');
+    menuBtn.setAttribute('aria-expanded', 'true');
+  }
+
+  function closeMenu() {
+    rail.classList.remove('open');
+    scrim.classList.remove('visible');
+    menuBtn.setAttribute('aria-expanded', 'false');
+  }
+
+  menuBtn.addEventListener('click', () => {
+    if (rail.classList.contains('open')) {
+      closeMenu();
+    } else {
+      openMenu();
+    }
+  });
+
+  scrim.addEventListener('click', closeMenu);
+
+  // Close drawer when a rail link is clicked (mobile)
+  rail.querySelectorAll('a').forEach(link => {
+    link.addEventListener('click', () => {
+      if (window.innerWidth <= 880) {
+        closeMenu();
+      }
+    });
+  });
+
+  // ── Dynamic Social Share ──
+  const reframeEl = document.getElementById('reframe-claim');
+  const shareXBtn = document.getElementById('shareX');
+  const shareLinkedInBtn = document.getElementById('shareLinkedIn');
+
+  function buildShareURLs() {
+    const text = reframeEl ? reframeEl.textContent.trim() : '';
+    const pageUrl = window.location.href;
+    const encodedText = encodeURIComponent(text);
+    const encodedUrl = encodeURIComponent(pageUrl);
+
+    shareXBtn.href = 'https://twitter.com/intent/tweet?text=' + encodedText + '&url=' + encodedUrl;
+    shareLinkedInBtn.href = 'https://www.linkedin.com/sharing/share-offsite/?url=' + encodedUrl;
+  }
+
+  buildShareURLs();
+
+  // ── Checklist Interactivity ──
+  const checklist = document.getElementById('ctaChecklist');
+  if (checklist) {
+    checklist.querySelectorAll('li').forEach(li => {
+      li.addEventListener('click', () => {
+        li.classList.toggle('checked');
+      });
+      li.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          li.classList.toggle('checked');
+        }
+      });
+      li.setAttribute('tabindex', '0');
+      li.setAttribute('role', 'checkbox');
+      li.setAttribute('aria-checked', 'false');
+    });
+  }
+
+  // ── Back to Top ──
+  const backToTopBtn = document.getElementById('backToTop');
+  if (backToTopBtn) {
+    backToTopBtn.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+</script>
+
+</body>
+</html>
