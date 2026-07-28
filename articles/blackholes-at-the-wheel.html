@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Black Holes, Not Biographies — A Cosmological Reframe</title>
+<style>
+:root {
+  --bg: #0b0b14;
+  --bg-elev: #14141f;
+  --bg-elev-2: #1a1a28;
+  --text: #e8e4dc;
+  --text-muted: #9a96a8;
+  --text-dim: #6a6678;
+  --accent-gold: #e8a838;
+  --accent-violet: #8b5cf6;
+  --accent-glow: rgba(232, 168, 56, 0.12);
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.18);
+  --max: 660px;
+  --serif: Georgia, "Iowan Old Style", "Times New Roman", serif;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background:
+    radial-gradient(ellipse 80% 50% at 15% -5%, rgba(139, 92, 246, 0.05), transparent 60%),
+    radial-gradient(ellipse 70% 40% at 85% 105%, rgba(232, 168, 56, 0.04), transparent 60%),
+    var(--bg);
+  color: var(--text);
+  font-family: var(--serif);
+  line-height: 1.72;
+  font-size: 1.0625rem;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  min-height: 100vh;
+}
+
+/* ---------- Progress Bar ---------- */
+#progress {
+  position: fixed;
+  top: 0; left: 0;
+  height: 3px;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent-gold), var(--accent-violet));
+  z-index: 2000;
+  transition: width 0.08s linear;
+  box-shadow: 0 0 10px rgba(232, 168, 56, 0.4);
+}
+
+/* ---------- Topbar ---------- */
+#topbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 60px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  background: rgba(11, 11, 20, 0.72);
+  border-bottom: 1px solid var(--border);
+  z-index: 1500;
+  display: flex;
+  align-items: center;
+  padding: 0 1.25rem;
+  gap: 1rem;
+}
+
+.home-link {
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  color: var(--accent-gold);
+  text-decoration: none;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.crumbs {
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.crumbs .sep { color: var(--text-dim); }
+
+.meta {
+  margin-left: auto;
+  font-family: var(--sans);
+  font-size: 0.74rem;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+#hamburger {
+  display: none;
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  width: 38px; height: 38px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+/* ---------- Layout ---------- */
+.wrap {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  max-width: calc(var(--max) + 260px);
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  gap: 2rem;
+}
+
+/* ---------- Rail ---------- */
+#rail {
+  position: sticky;
+  top: 100px;
+  height: fit-content;
+  padding-top: 2.5rem;
+}
+
+#rail .rail-label {
+  font-family: var(--sans);
+  font-size: 0.66rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 1rem;
+  padding-left: 1.5rem;
+}
+
+#rail nav ol { list-style: none; }
+
+#rail nav li {
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+#rail nav li::before {
+  content: attr(data-num);
+  font-family: var(--sans);
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  min-width: 1.5rem;
+}
+
+#rail nav a {
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.2s, opacity 0.2s;
+  line-height: 1.35;
+}
+#rail nav a:hover { color: var(--text); }
+#rail nav a.active {
+  color: var(--accent-gold);
+  font-weight: 600;
+}
+
+/* ---------- Main ---------- */
+main {
+  max-width: var(--max);
+  padding-top: 5rem;
+  padding-bottom: 5rem;
+}
+
+/* ---------- Hero ---------- */
+header.hero {
+  padding-top: 2rem;
+  margin-bottom: 1rem;
+}
+
+.eyebrow {
+  font-family: var(--sans);
+  font-size: 0.7rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent-gold);
+  margin-bottom: 1.1rem;
+}
+
+header.hero h1 {
+  font-family: var(--sans);
+  font-size: clamp(2.1rem, 5vw, 3.1rem);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+  margin-bottom: 1rem;
+}
+
+header.hero .sub {
+  font-family: var(--serif);
+  font-size: 1.18rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  font-style: italic;
+}
+
+/* ---------- Spectrum Widget ---------- */
+.spectrum {
+  margin: 2.5rem 0 0.5rem;
+  padding: 1.4rem 1.5rem;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.spectrum-label {
+  font-family: var(--sans);
+  font-size: 0.66rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 1rem;
+}
+
+.spectrum-bar {
+  position: relative;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--accent-gold) 0%, #c97a3e 45%, #7d4ca8 75%, var(--accent-violet) 100%);
+  margin-bottom: 0.9rem;
+}
+
+.spectrum-marker {
+  position: absolute;
+  top: -5px;
+  left: 80%;
+  transform: translateX(-50%);
+  width: 3px;
+  height: 18px;
+  background: var(--text);
+  border-radius: 2px;
+  box-shadow: 0 0 10px rgba(255,255,255,0.5);
+}
+.spectrum-marker::after {
+  content: "reframe";
+  position: absolute;
+  top: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--sans);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.spectrum-ends {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--sans);
+  font-size: 0.73rem;
+  margin-top: 1.8rem;
+}
+.spectrum-ends .left { color: var(--accent-gold); }
+.spectrum-ends .right { color: var(--accent-violet); }
+
+/* ---------- Chapters ---------- */
+section.chapter {
+  scroll-margin-top: 90px;
+  padding: 2.8rem 0;
+  border-top: 1px solid var(--border);
+}
+section.chapter:first-of-type { border-top: none; padding-top: 2rem; }
+
+section.chapter h2 {
+  font-family: var(--sans);
+  font-size: 1.55rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  margin-bottom: 1.4rem;
+  color: var(--text);
+}
+
+.lede {
+  font-size: 1.16rem;
+  line-height: 1.62;
+  color: var(--text);
+  margin-bottom: 1.25rem;
+  font-weight: 400;
+}
+
+p { margin-bottom: 1.15rem; }
+p:last-child { margin-bottom: 0; }
+
+/* ---------- Callout ---------- */
+.callout {
+  background: rgba(232, 168, 56, 0.06);
+  border-left: 3px solid var(--accent-gold);
+  padding: 1.25rem 1.4rem;
+  border-radius: 0 10px 10px 0;
+  margin: 1.75rem 0;
+  font-size: 0.98rem;
+  color: var(--text);
+}
+.callout .label {
+  font-family: var(--sans);
+  font-size: 0.66rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent-gold);
+  margin-bottom: 0.5rem;
+  display: block;
+  font-weight: 600;
+}
+.callout p { margin-bottom: 0; }
+
+/* ---------- Pullquote ---------- */
+blockquote.pullquote {
+  margin: 2.2rem 0;
+  padding: 0.5rem 0 0.5rem 1.6rem;
+  border-left: 3px solid var(--accent-violet);
+  font-style: italic;
+  font-size: 1.16rem;
+  color: var(--text);
+  line-height: 1.55;
+}
+
+/* ---------- Perspective Snap ---------- */
+.snap {
+  margin: 3rem 0 2.5rem;
+  padding: 2.8rem 1.5rem 2.5rem;
+  text-align: center;
+  border-top: 1px solid var(--border-strong);
+  border-bottom: 1px solid var(--border-strong);
+  background: radial-gradient(ellipse 60% 80% at center, rgba(139, 92, 246, 0.09), transparent 75%);
+  position: relative;
+}
+.snap .snap-label {
+  font-family: var(--sans);
+  font-size: 0.64rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--accent-violet);
+  margin-bottom: 1.1rem;
+  display: block;
+  font-weight: 600;
+}
+.snap .snap-text {
+  font-family: var(--sans);
+  font-size: clamp(1.45rem, 4.2vw, 2.05rem);
+  font-weight: 700;
+  line-height: 1.22;
+  letter-spacing: -0.015em;
+  color: var(--text);
+}
+
+/* ---------- Share Block ---------- */
+.share {
+  margin: 2.2rem 0 0.5rem;
+  padding: 1.4rem 1.5rem;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+.share .share-label {
+  font-family: var(--sans);
+  font-size: 0.66rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.9rem;
+  font-weight: 600;
+}
+.share .share-buttons {
+  display: flex;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+.share a {
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.62rem 1.15rem;
+  border-radius: 8px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  transition: transform 0.15s, opacity 0.15s;
+  border: 1px solid var(--border-strong);
+}
+.share a:hover { transform: translateY(-1px); opacity: 0.92; }
+.share a.x { background: #000; color: #fff; border-color: #333; }
+.share a.linkedin { background: #0a66c2; color: #fff; border-color: #0a66c2; }
+
+/* ---------- Action Block ---------- */
+.action {
+  margin: 2.8rem 0 2rem;
+  padding: 2rem 1.8rem 2.2rem;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(232, 168, 56, 0.08), rgba(139, 92, 246, 0.09));
+  border: 1px solid var(--border-strong);
+}
+.action h3 {
+  font-family: var(--sans);
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+  letter-spacing: -0.01em;
+}
+.action .action-sub {
+  font-family: var(--sans);
+  font-size: 0.84rem;
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+}
+
+.checklist {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.checklist li {
+  font-family: var(--sans);
+  font-size: 0.9rem;
+  color: var(--text);
+  padding: 0.75rem 0.95rem;
+  background: rgba(0,0,0,0.28);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  user-select: none;
+}
+.checklist li:hover { background: rgba(0,0,0,0.42); border-color: var(--border-strong); }
+.checklist li .box {
+  width: 19px; height: 19px;
+  border: 1.5px solid var(--text-muted);
+  border-radius: 5px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  color: transparent;
+  font-weight: 700;
+  transition: all 0.15s;
+}
+.checklist li.done .box {
+  background: var(--accent-gold);
+  border-color: var(--accent-gold);
+  color: #1a1a22;
+}
+.checklist li.done {
+  color: var(--text-muted);
+  text-decoration: line-through;
+  text-decoration-color: var(--text-dim);
+}
+
+/* ---------- Footer ---------- */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 2.5rem 0 3rem;
+  margin-top: 2.5rem;
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+.footer-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 1.6rem;
+}
+.footer-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.footer-home {
+  color: var(--accent-gold);
+  text-decoration: none;
+  font-weight: 600;
+}
+.refs {
+  font-size: 0.76rem;
+  color: var(--text-dim);
+  line-height: 1.7;
+}
+.refs strong {
+  color: var(--text-muted);
+  font-weight: 600;
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.refs em { color: var(--text-muted); font-style: italic; }
+
+.back-top {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  padding: 0.55rem 1.1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: background 0.15s, border-color 0.15s;
+}
+.back-top:hover { background: var(--bg-elev); border-color: var(--accent-gold); }
+
+/* ---------- Scrim ---------- */
+#scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 999;
+  transition: opacity 0.25s;
+}
+#scrim.open { opacity: 1; pointer-events: auto; }
+
+/* ---------- Focus ---------- */
+a:focus-visible, button:focus-visible, .checklist li:focus-visible {
+  outline: 2px solid var(--accent-gold);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* ---------- Selection ---------- */
+::selection { background: rgba(232, 168, 56, 0.3); color: var(--text); }
+
+/* ---------- Light Mode ---------- */
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #faf9f5;
+    --bg-elev: #f1efe7;
+    --bg-elev-2: #e8e5db;
+    --text: #1a1a22;
+    --text-muted: #54545f;
+    --text-dim: #8c8c98;
+    --border: rgba(0, 0, 0, 0.1);
+    --border-strong: rgba(0, 0, 0, 0.22);
+  }
+  #topbar { background: rgba(250, 249, 245, 0.78); }
+  .callout { background: rgba(232, 168, 56, 0.1); }
+  .snap { background: radial-gradient(ellipse 60% 80% at center, rgba(139, 92, 246, 0.07), transparent 75%); }
+  .action { background: linear-gradient(135deg, rgba(232, 168, 56, 0.12), rgba(139, 92, 246, 0.08)); }
+  .checklist li { background: rgba(0,0,0,0.04); }
+  .checklist li:hover { background: rgba(0,0,0,0.08); }
+  .share { background: var(--bg-elev); }
+  .spectrum { background: var(--bg-elev); }
+  body {
+    background:
+      radial-gradient(ellipse 80% 50% at 15% -5%, rgba(139, 92, 246, 0.04), transparent 60%),
+      radial-gradient(ellipse 70% 40% at 85% 105%, rgba(232, 168, 56, 0.04), transparent 60%),
+      var(--bg);
+  }
+}
+
+/* ---------- Mobile ---------- */
+@media (max-width: 880px) {
+  .wrap {
+    grid-template-columns: 1fr;
+    padding: 0 1.15rem;
+    gap: 0;
+  }
+  #hamburger { display: inline-flex; }
+  .crumbs { display: none; }
+  #rail {
+    position: fixed;
+    top: 0; left: 0;
+    width: 82vw;
+    max-width: 320px;
+    height: 100vh;
+    background: var(--bg-elev);
+    border-right: 1px solid var(--border);
+    padding: 5rem 1.5rem 2rem;
+    transform: translateX(-100%);
+    transition: transform 0.28s ease;
+    z-index: 1000;
+    overflow-y: auto;
+  }
+  #rail.open { transform: translateX(0); }
+  #rail .rail-label { padding-left: 0; }
+  main { padding-top: 4.5rem; }
+  .meta { font-size: 0.7rem; }
+}
+
+/* ---------- Reduced Motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+</style>
+</head>
+<body>
+
+<div id="progress" aria-hidden="true"></div>
+
+<header id="topbar">
+  <button id="hamburger" aria-label="Toggle navigation menu" aria-expanded="false">☰</button>
+  <a class="home-link" href="https://iggym.github.io/cogitatio-elegans/">Home</a>
+  <nav class="crumbs" aria-label="Breadcrumb">
+    <span>Cosmology</span>
+    <span class="sep">/</span>
+    <span>Anthropic Reframed</span>
+  </nav>
+  <span class="meta">5 min read</span>
+</header>
+
+<div id="scrim" aria-hidden="true"></div>
+
+<div class="wrap">
+
+  <aside id="rail" aria-label="Section navigation">
+    <div class="rail-label">Chapters</div>
+    <nav>
+      <ol>
+        <li data-num="01"><a href="#s1">Starstruck by Ourselves</a></li>
+        <li data-num="02"><a href="#s2">Mistaking the Mold</a></li>
+        <li data-num="03"><a href="#s3">Cosmic Conveyor Belt</a></li>
+        <li data-num="04"><a href="#s4">A Theory in Tension</a></li>
+        <li data-num="05"><a href="#s5">Humble in a Foundry</a></li>
+        <li data-num="06"><a href="#s6">Tonight, Look Up</a></li>
+      </ol>
+    </nav>
+  </aside>
+
+  <main>
+    <article>
+      <header class="hero">
+        <div class="eyebrow">Cosmology · The Reframe</div>
+        <h1>Black Holes, Not Biographies</h1>
+        <p class="sub">The universe wasn't fine-tuned for you. You're the residue of a much older ambition.</p>
+
+        <div class="spectrum" aria-label="Conceptual spectrum from life-tuned to black-hole-tuned">
+          <div class="spectrum-label">Where the reframe sits</div>
+          <div class="spectrum-bar">
+            <div class="spectrum-marker" aria-hidden="true"></div>
+          </div>
+          <div class="spectrum-ends">
+            <span class="left">Tuned for life</span>
+            <span class="right">Tuned for black holes</span>
+          </div>
+        </div>
+      </header>
+
+      <section class="chapter" id="s1">
+        <h2>Starstruck by Ourselves</h2>
+        <p class="lede">You're lying back in a planetarium chair, neck craned, watching the dome darken. A warm voice explains the tuning: gravity a hair weaker and galaxies never form; the strong nuclear force a fraction off and carbon never cooks in stellar cores; the cosmological constant a shade larger and the cosmos tears itself open before the first star ignites.</p>
+        <p>The implication settles over the room like a benediction. Someone built this house for us. The lights come up and you walk out feeling — quietly, almost religiously — that the universe wanted you here.</p>
+        <p>It's a beautiful feeling. It's also, almost certainly, a misreading.</p>
+      </section>
+
+      <section class="chapter" id="s2">
+        <h2>Mistaking the Mold</h2>
+        <div id="boldReframe">
+          <p class="lede">Here's the reframe: the physical constants aren't tuned for life. They're tuned for black holes. Life is a microscopic side-effect — interesting to us, irrelevant to the architecture.</p>
+          <p>The theory has a name. Cosmological Natural Selection, proposed by physicist Lee Smolin in the 1990s. The claim: universes reproduce. Black holes are the reproductive seeds. When a black hole forms, it may spawn a child universe with slightly mutated physical constants. Universes that produce more black holes have more offspring. Over cosmic generations, the constants drift toward whatever maximizes black hole production.</p>
+          <p>And what does that look like? It looks like stars. Lots of stars. Stars that fuse carbon and oxygen and iron, then collapse. Stars that, given enough mass, punch through to become black holes. The same tuning that allows stars — and therefore carbon, and therefore us — is the tuning that maximizes black hole density. We're downstream of the real product line. Humanity claiming the universe was fine-tuned for life is like mold on a factory floor claiming the factory was built to grow fungi.</p>
+        </div>
+
+        <div class="share" id="shareBlock">
+          <div class="share-label">Share the reframe</div>
+          <div class="share-buttons">
+            <a class="x" id="shareX" href="#" target="_blank" rel="noopener noreferrer">Post to X</a>
+            <a class="linkedin" id="shareLI" href="#" target="_blank" rel="noopener noreferrer">Share on LinkedIn</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="chapter" id="s3">
+        <h2>Cosmic Conveyor Belt</h2>
+        <p class="lede">Follow the constants and they all point the same way.</p>
+        <p>Gravity: strong enough to pull matter into stars, weak enough to let stars burn for billions of years before collapsing. Too strong and everything becomes a black hole immediately; too weak and nothing coalesces. The sweet spot is the one that produces the most stars of the right mass to eventually collapse.</p>
+        <p>Nuclear forces: tuned so stars forge heavy elements — the elements you're made of — and so those same stars can, at the end, compress past the neutron-degenerate limit into singularity.</p>
+        <p>The cosmological constant: small enough that structures form, large enough that the universe doesn't immediately recollapse. The result is a cosmos with room for trillions of stars across billions of galaxies — almost all of them destined, eventually, to feed black holes.</p>
+        <p>You were taught to see stars as furnaces that cooked your atoms. That's true. But it's the smaller truth. The larger one is that stars are the conveyor belt, and black holes are the product.</p>
+
+        <div class="snap" role="note" aria-label="Perspective shift">
+          <span class="snap-label">Perspective Snap</span>
+          <div class="snap-text">Every star is a black hole practicing.</div>
+        </div>
+      </section>
+
+      <section class="chapter" id="s4">
+        <h2>A Theory in Tension</h2>
+        <p class="lede">Smolin's hypothesis isn't proven. It's a hypothesis — and a controversial one.</p>
+        <div class="callout">
+          <span class="label">Honest caveat</span>
+          <p>Critics point out that we lack a working theory of quantum gravity, so we can't model what happens inside a black hole, let alone whether it spawns a universe. Some physicists argue the tuning for life and the tuning for black holes aren't independent: maybe anything that makes stars makes both, and the question of "purpose" is meaningless.</p>
+        </div>
+        <p>Fair. But notice what the anthropic principle — the orthodox view — actually claims. It says: the universe must be compatible with observers, because here we are observing. That's a tautology wearing a tuxedo. Of course the universe is compatible with us. We're in it. That tells you nothing about why the constants are what they are.</p>
+        <p>Cosmological Natural Selection, by contrast, makes a testable claim. It predicts that the constants should be tuned to maximize black hole production — and that any tweak would reduce that count. Some of those predictions (about neutron star mass upper bounds, for instance) are being actively tested. The theory could be wrong. But it's the kind of wrong that makes predictions, which is more than the anthropic principle manages.</p>
+        <blockquote class="pullquote">
+          The universe produces black holes by the trillions. It produces life, so far as we know, on one planet. To claim the constants are tuned for the rare thing rather than the abundant thing is to mistake the residue for the product.
+        </blockquote>
+      </section>
+
+      <section class="chapter" id="s5">
+        <h2>Humble in a Foundry</h2>
+        <p class="lede">Here's what changes when you stop reading the night sky as a love letter to humanity.</p>
+        <p>The carbon in your cells was forged inside a star that will, on a long enough timeline, collapse into a black hole. You are borrowing the exhaust of a process whose destination is singularity. The oxygen you're breathing, the iron in your blood — all of it is intermediary. The star isn't making these things for you. It's making them on the way to somewhere else.</p>
+        <p>That sounds bleak. It isn't. It's clarifying.</p>
+        <p>You don't have to feel small in a defeating way. You can feel small in the way you feel small walking through a cathedral or a foundry — aware that you're inside something whose purpose is not you, and that this is fine. The foundry doesn't need to love you to be beautiful. The fact that you briefly exist inside it, made of its byproducts, conscious enough to notice — that's the miracle. The purpose is optional.</p>
+        <p>The agency here is small and concrete. When you look at the night sky, you can choose what you're looking at. You can see ancestors (true) or you can see future singularities (also true). You can hold both. But the second one is the one most people forget, and it's the one that corrects the narcissism.</p>
+      </section>
+
+      <section class="chapter" id="s6">
+        <h2>Tonight, Look Up</h2>
+        <p class="lede">The reframe is not abstract. It's a lens you can put on tonight, with your eyes, in under a minute.</p>
+        <p>Go outside after dark. Find one star — any star. Say its name if you know it, or just point. Then say this out loud: "Eventually, a black hole."</p>
+        <p>That's it. That's the exercise. Notice what shifts.</p>
+        <p>The star is no longer a symbol of you, or of life, or of cosmic hospitality. It's a working machine on a long shift, headed somewhere that has nothing to do with you. You're watching it from the factory floor, made of its exhaust, lucky to be conscious.</p>
+
+        <div class="action">
+          <h3>Your next 24 hours</h3>
+          <p class="action-sub">Five small moves to wear the new lens.</p>
+          <ul class="checklist" role="list">
+            <li role="button" tabindex="0"><span class="box" aria-hidden="true">✓</span>Go outside tonight and find one star</li>
+            <li role="button" tabindex="0"><span class="box" aria-hidden="true">✓</span>Name it, out loud, as a future black hole</li>
+            <li role="button" tabindex="0"><span class="box" aria-hidden="true">✓</span>Reread one fine-tuning argument; ask: tuned for what?</li>
+            <li role="button" tabindex="0"><span class="box" aria-hidden="true">✓</span>Tell one person: the universe is a foundry, not a house</li>
+            <li role="button" tabindex="0"><span class="box" aria-hidden="true">✓</span>Notice one way you mistake byproduct for purpose today</li>
+          </ul>
+        </div>
+
+        <p>The universe doesn't owe you a purpose. The fact that you get to witness it — briefly, made of residue, on the way to nowhere in particular — is enough.</p>
+      </section>
+    </article>
+
+    <footer>
+      <div class="footer-inner">
+        <div class="footer-top">
+          <a class="footer-home" href="https://iggym.github.io/cogitatio-elegans/">← Back to Cogitatio Elegans</a>
+          <button class="back-top" id="backTop">Back to top ↑</button>
+        </div>
+        <div class="refs">
+          <strong>References &amp; further reading</strong>
+          Smolin, L. (1997). <em>The Life of the Cosmos.</em> Oxford University Press. — Original proposal of Cosmological Natural Selection.<br>
+          Carter, B. (1973). "Large number coincidences and the anthropic principle in cosmology." <em>IAU Symposium 63.</em><br>
+          Rees, M. (1999). <em>Just Six Numbers.</em> Basic Books. — Survey of fine-tuning arguments.<br>
+          The mold-on-a-factory-floor analogy is the author's framing of the reframe's intuition, drawn from the source prompt.
+        </div>
+      </div>
+    </footer>
+  </main>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  /* ---------- Scroll Progress ---------- */
+  const progress = document.getElementById('progress');
+  function updateProgress() {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    const pct = max > 0 ? (h.scrollTop / max) * 100 : 0;
+    progress.style.width = pct + '%';
+  }
+  window.addEventListener('scroll', updateProgress, { passive: true });
+  window.addEventListener('resize', updateProgress, { passive: true });
+  updateProgress();
+
+  /* ---------- Scrollspy ---------- */
+  const sections = document.querySelectorAll('section.chapter');
+  const links = document.querySelectorAll('#rail nav a');
+  const observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        links.forEach(function(link) {
+          link.classList.toggle('active', link.getAttribute('href') === '#' + id);
+        });
+      }
+    });
+  }, { rootMargin: '-15% 0px -70% 0px' });
+  sections.forEach(function(s) { observer.observe(s); });
+
+  /* ---------- Mobile Menu ---------- */
+  const rail = document.getElementById('rail');
+  const hamburger = document.getElementById('hamburger');
+  const scrim = document.getElementById('scrim');
+
+  function toggleRail(open) {
+    if (typeof open === 'undefined') open = !rail.classList.contains('open');
+    rail.classList.toggle('open', open);
+    scrim.classList.toggle('open', open);
+    hamburger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    document.body.style.overflow = open ? 'hidden' : '';
+  }
+
+  hamburger.addEventListener('click', function() { toggleRail(); });
+  scrim.addEventListener('click', function() { toggleRail(false); });
+  links.forEach(function(l) {
+    l.addEventListener('click', function() {
+      if (window.innerWidth <= 880) toggleRail(false);
+    });
+  });
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && rail.classList.contains('open')) toggleRail(false);
+  });
+
+  /* ---------- Back to Top ---------- */
+  const backTop = document.getElementById('backTop');
+  backTop.addEventListener('click', function() {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+  });
+
+  /* ---------- Dynamic Social Share Prefill ---------- */
+  const reframeContainer = document.getElementById('boldReframe');
+  const shareX = document.getElementById('shareX');
+  const shareLI = document.getElementById('shareLI');
+
+  if (reframeContainer && shareX && shareLI) {
+    // Extract the first paragraph (the bold claim) as the share text
+    const firstP = reframeContainer.querySelector('p.lede') || reframeContainer.querySelector('p');
+    let shareText = '';
+    if (firstP) {
+      shareText = firstP.textContent.trim().replace(/\s+/g, ' ');
+    } else {
+      shareText = reframeContainer.textContent.trim().replace(/\s+/g, ' ');
+    }
+
+    // Truncate for tweet safety (leave room for URL)
+    if (shareText.length > 240) {
+      shareText = shareText.slice(0, 237) + '...';
+    }
+
+    const pageUrl = window.location.href;
+
+    const xUrl = 'https://twitter.com/intent/tweet?text=' +
+                  encodeURIComponent(shareText) +
+                  '&url=' + encodeURIComponent(pageUrl);
+
+    const liUrl = 'https://www.linkedin.com/sharing/share-offsite/?url=' +
+                  encodeURIComponent(pageUrl);
+
+    shareX.href = xUrl;
+    shareLI.href = liUrl;
+  }
+
+  /* ---------- Checklist Toggle ---------- */
+  const checklistItems = document.querySelectorAll('.checklist li');
+  checklistItems.forEach(function(li) {
+    function toggle() { li.classList.toggle('done'); }
+    li.addEventListener('click', toggle);
+    li.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggle();
+      }
+    });
+  });
+
+})();
+</script>
+</body>
+</html>
