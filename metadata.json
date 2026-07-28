@@ -192,7 +192,35 @@
     "title": "The Earth Still Wins",
     "description": "High technology didn't escape geography. It married it — and built a house on a fault line.",
     "category": "geography",
-    "date": "2026-05-02",
+    "date": "2026-05-04",
     "slug": "earth-still-wins.html"
+  },
+  {
+    "title": "Ignorance Engine",
+    "description": "Why the smartest systems are the ones that know what to throw away.",
+    "category": "geography",
+    "date": "2026-05-02",
+    "slug": "ignorance-engine-still-wins.html"
+  },
+  {
+    "title": "Phantom at the Wheel",
+    "description": "Consciousness isn't the driver of the vehicle; it's the check-engine light dashboard that falsely believes it is steering.",
+    "category": "geography",
+    "date": "2026-05-02",
+    "slug": "phanton-at-the-wheel.html"
+  },
+  {
+    "title": "Black Holes, Not Biographies",
+    "description": "The universe wasn't fine-tuned for you. You're the residue of a much older ambition.",
+    "category": "geography",
+    "date": "2026-05-28",
+    "slug": "blackholes-at-the-wheel.html"
+  },
+  {
+    "title": "The Amputation We Chose",
+    "description": "We celebrate every new tool as an upgrade. We never notice what stopped working inside us the moment we started relying on it.",
+    "category": "geography",
+    "date": "2026-07-28",
+    "slug": "amputation-choice.html"
   }
 ]
