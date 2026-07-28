@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phantom at the Wheel</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --surface: #1a1d24;
+    --text: #e2e5ea;
+    --muted: #8b919e;
+    --accent: #ff4b2b;
+    --accent-2: #39b54a;
+    --border: rgba(255,255,255,0.1);
+    --max: 660px;
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f8f9fa;
+      --surface: #ffffff;
+      --text: #1a1d24;
+      --muted: #5c6370;
+      --border: rgba(0,0,0,0.1);
+    }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: Georgia, 'Times New Roman', serif;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Progress Bar */
+  #progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0%;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    z-index: 1001;
+    transition: width 0.1s ease-out;
+  }
+
+  /* Top Bar */
+  #topbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(15, 17, 21, 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+    z-index: 1000;
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  
+  @media (prefers-color-scheme: light) {
+    #topbar { background: rgba(248, 249, 250, 0.7); }
+  }
+
+  .topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .home-link {
+    color: var(--text);
+    text-decoration: none;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-weight: 600;
+    font-size: 0.95rem;
+    border: 1px solid var(--border);
+    padding: 0.3rem 0.7rem;
+    border-radius: 4px;
+  }
+
+  .home-link:hover { border-color: var(--accent); color: var(--accent); }
+
+  .breadcrumb {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+
+  .meta {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+
+  .hamburger {
+    display: none;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.4rem 0.6rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+  }
+
+  /* Layout */
+  .wrap {
+    max-width: calc(var(--max) + 260px);
+    margin: 0 auto;
+    padding: 6rem 1.5rem 4rem;
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 3rem;
+  }
+
+  /* Navigation Rail */
+  #rail {
+    position: sticky;
+    top: 100px;
+    align-self: start;
+    height: fit-content;
+  }
+
+  #rail ul {
+    list-style: none;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+
+  #rail li {
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+
+  #rail li::before {
+    content: attr(data-num);
+    font-size: 0.75rem;
+    color: var(--muted);
+    font-weight: bold;
+  }
+
+  #rail a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.2s ease;
+  }
+
+  #rail a:hover, #rail a.active {
+    color: var(--accent);
+  }
+
+  /* Main Content */
+  main {
+    max-width: var(--max);
+    margin: 0 auto;
+  }
+
+  /* Hero & Spectrum */
+  .hero { margin-bottom: 4rem; }
+
+  h1 {
+    font-size: clamp(2.1rem, 5vw, 3.1rem);
+    line-height: 1.1;
+    margin-bottom: 2rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  .spectrum {
+    margin-top: 2rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+
+  .spectrum-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .spectrum-bar {
+    height: 8px;
+    background: linear-gradient(90deg, var(--accent) 0%, #d2732c 35%, #a89938 65%, var(--accent-2) 100%);
+    border-radius: 4px;
+    position: relative;
+  }
+
+  .spectrum-indicator {
+    position: absolute;
+    top: -6px;
+    right: 5%;
+    width: 4px;
+    height: 20px;
+    background: var(--text);
+    border-radius: 2px;
+    box-shadow: 0 0 8px var(--accent-2);
+  }
+
+  .spectrum-captions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.75rem;
+    font-size: 0.85rem;
+  }
+
+  .caption-old { color: var(--accent); }
+  .caption-new { color: var(--accent-2); font-weight: 600; }
+
+  /* Chapters */
+  .chapter {
+    margin-bottom: 4rem;
+    scroll-margin-top: 100px;
+  }
+
+  h2 {
+    font-size: 1.8rem;
+    margin-bottom: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  p { margin-bottom: 1.5rem; font-size: 1.1rem; }
+  
+  .lede {
+    font-size: 1.2rem;
+    color: var(--text);
+    font-style: italic;
+    border-left: 3px solid var(--accent);
+    padding-left: 1rem;
+  }
+
+  .callout {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin: 2rem 0;
+  }
+
+  .pullquote {
+    border: none;
+    text-align: center;
+    font-size: clamp(1.5rem, 3.5vw, 2.2rem);
+    font-weight: 700;
+    line-height: 1.3;
+    margin: 3rem 0;
+    padding: 2rem 1rem;
+    color: var(--text);
+    position: relative;
+  }
+
+  .pullquote::before, .pullquote::after {
+    content: '"';
+    font-size: 3rem;
+    color: var(--accent);
+    position: absolute;
+    opacity: 0.5;
+  }
+  .pullquote::before { top: -10px; left: 0; }
+  .pullquote::after { bottom: -40px; right: 0; }
+
+  /* Share Block */
+  .share-block {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+  }
+
+  .share-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .share-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1rem;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-weight: 600;
+    transition: transform 0.2s ease;
+  }
+
+  .share-btn:hover { transform: translateY(-2px); }
+  .share-twitter { background: #000; color: #fff; }
+  .share-linkedin { background: #0a66c2; color: #fff; }
+
+  /* Action Block */
+  .action {
+    background: linear-gradient(135deg, var(--surface) 0%, rgba(57, 181, 74, 0.1) 100%);
+    border: 1px solid var(--accent-2);
+    padding: 2rem;
+    border-radius: 12px;
+    scroll-margin-top: 100px;
+  }
+
+  .action h2 { color: var(--accent-2); }
+
+  .checklist {
+    list-style: none;
+    margin-top: 1.5rem;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+
+  .checklist li {
+    background: rgba(255,255,255,0.03);
+    margin-bottom: 0.75rem;
+    padding: 1rem;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+  
+  .checklist li:hover { background: rgba(255,255,255,0.06); }
+
+  .checklist input { width: 20px; height: 20px; accent-color: var(--accent-2); }
+  .checklist label { font-size: 1rem; cursor: pointer; flex: 1; }
+
+  /* Footer */
+  footer {
+    margin-top: 4rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+
+  .footer-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .sources {
+    font-size: 0.8rem;
+    color: var(--muted);
+    max-width: 100%;
+    word-break: break-word;
+  }
+
+  .back-to-top {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.6rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    align-self: flex-start;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  /* Mobile & Focus States */
+  a:focus-visible, button:focus-visible, input:focus-visible {
+    outline: 2px solid var(--accent-2);
+    outline-offset: 2px;
+  }
+
+  #scrim {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.6);
+    z-index: 999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  @media (max-width: 880px) {
+    .wrap {
+      grid-template-columns: 1fr;
+      padding-top: 5rem;
+      gap: 0;
+    }
+    .hamburger { display: block; }
+    .breadcrumb, .meta { display: none; }
+    
+    #rail {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 82vw;
+      height: 100vh;
+      background: var(--bg);
+      border-right: 1px solid var(--border);
+      z-index: 1000;
+      padding: 5rem 2rem 2rem;
+      transform: translateX(-100%);
+      transition: transform 0.3s ease;
+    }
+    
+    #rail.open { transform: translateX(0); }
+    #scrim.open { display: block; opacity: 1; pointer-events: auto; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      transition: none !important;
+      animation: none !important;
+      scroll-behavior: auto !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+<div id="scrim"></div>
+
+<header id="topbar">
+  <div class="topbar-left">
+    <a href="https://iggym.github.io/cogitatio-elegans/" class="home-link">Home</a>
+    <span class="breadcrumb">Cognition & The Self</span>
+  </div>
+  <div class="meta">4 min read</div>
+  <button class="hamburger" id="hamburger" aria-label="Toggle navigation">☰</button>
+</header>
+
+<div class="wrap">
+  <aside id="rail">
+    <nav>
+      <ul>
+        <li data-num="01"><a href="#s1">Sip of the Illusion</a></li>
+        <li data-num="02"><a href="#s2">The PR Department</a></li>
+        <li data-num="03"><a href="#s3">Wires Behind Walls</a></li>
+        <li data-num="04"><a href="#s4">Grains of Salt</a></li>
+        <li data-num="05"><a href="#s5">Steering Shadows</a></li>
+        <li data-num="06"><a href="#s6">Rearrange Deck</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <main>
+    <article>
+      <header class="hero">
+        <h1>Phantom at the Wheel</h1>
+        <div class="spectrum">
+          <div class="spectrum-labels">
+            <span>Old Model</span>
+            <span>New Model</span>
+          </div>
+          <div class="spectrum-bar">
+            <div class="spectrum-indicator"></div>
+          </div>
+          <div class="spectrum-captions">
+            <span class="caption-old">Central Command</span>
+            <span class="caption-new">Diagnostic Error Log</span>
+          </div>
+        </div>
+      </header>
+
+      <section class="chapter" id="s1">
+        <h2>Sip of the Illusion</h2>
+        <p class="lede">Your hand closes around the coffee mug. You feel the ceramic, warm and solid. A thought bubbles up: "I need a sip of coffee."</p>
+        <p>It feels like <em>you</em> made a decision. The orthodox view insists that self-awareness is the central command center of the human mind, directing your thoughts, decisions, and actions in real time. You are the captain; the body is the ship. But the neurological reality is far stranger. Your motor cortex actually fired the signals to move your arm hundreds of milliseconds before that conscious thought ever surfaced. You didn't decide to drink. You just took credit for it.</p>
+      </section>
+
+      <section class="chapter" id="s2">
+        <h2>The PR Department</h2>
+        <p class="lede">What if the "I" you feel right now is just an afterthought?</p>
+        <p>The bold reframe is this: the experience of a unified "I" is just a delayed post-hoc error log generated by non-conscious neurological subroutines when they encounter a prediction mismatch. Your brain makes decisions hundreds of milliseconds before your conscious mind receives the signal; "you" are simply the internal PR department tasked with constructing a coherent retro-active narrative for actions already executed by autonomous physical processes.</p>
+        
+        <div class="share-block">
+          <strong>Share this reframe:</strong>
+          <div class="share-buttons">
+            <a href="#" class="share-btn share-twitter" id="share-twitter" target="_blank" rel="noopener">Post to X</a>
+            <a href="#" class="share-btn share-linkedin" id="share-linkedin" target="_blank" rel="noopener">Share on LinkedIn</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="chapter" id="s3">
+        <h2>Wires Behind Walls</h2>
+        <p>We like to think of the brain as a corporate hierarchy, with the conscious mind sitting in the corner office, issuing directives. But the architecture is inverted. The real work—the heavy lifting of perception, reaction, and movement—is done by autonomous physical processes running quietly in the basement.</p>
+        <p>Consciousness only boots up when something goes wrong. When the brain's prediction engine encounters a mismatch between what it expected and what actually happened, it generates a log. That log is your conscious experience. It isn't proactive; it is strictly reactive. The subroutines act, hit an error, and ping the conscious mind to make sense of the discrepancy.</p>
+        
+        <blockquote class="pullquote">
+          Consciousness isn't the driver of the vehicle; it's the check-engine light dashboard that falsely believes it is steering.
+        </blockquote>
+      </section>
+
+      <section class="chapter" id="s4">
+        <h2>Grains of Salt</h2>
+        <p>This isn't a metaphor drawn from speculation. Decades of neurological research demonstrate this delay. When you decide to flick your wrist, the readiness potential in your brain spikes before you are consciously aware of the choice.</p>
+        <div class="callout">
+          Acknowledging this doesn't strip us of humanity; it clarifies our actual role in the machinery. The orthodox view—that self-awareness is the central command center directing thoughts in real time—is a comforting illusion, but it leaves out the reality of non-conscious subroutines doing the actual driving.
+        </div>
+      </section>
+
+      <section class="chapter" id="s5">
+        <h2>Steering Shadows</h2>
+        <p>If you are just the PR department, can you actually change anything? Yes. You can't dictate the CEO's orders, but you can curate the environment the CEO operates in.</p>
+        <p>Since the non-conscious subroutines react to your physical surroundings, altering those surroundings changes the inputs. Place a book on your desk instead of a phone. When the autonomous system reaches for a dopamine hit, it encounters the book instead. The subroutines adapt, and the error log eventually quiets down. You aren't directly controlling the steering wheel, but you are paving the road.</p>
+      </section>
+
+      <section class="action chapter" id="s6">
+        <h2>Rearrange Deck</h2>
+        <p>Within the next 24 hours, change one physical cue in your environment to guide an autonomous routine. Let the machinery do the work.</p>
+        <ul class="checklist">
+          <li>
+            <input type="checkbox" id="c1">
+            <label for="c1">Move your phone to another room while working</label>
+          </li>
+          <li>
+            <input type="checkbox" id="c2">
+            <label for="c2">Place a glass of water directly on your desk</label>
+          </li>
+          <li>
+            <input type="checkbox" id="c3">
+            <label for="c3">Leave your running shoes by the bedroom door</label>
+          </li>
+        </ul>
+      </section>
+
+      <footer>
+        <div class="footer-row">
+          <a href="https://iggym.github.io/cogitatio-elegans/" class="home-link">Home</a>
+          <button class="back-to-top" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">Back to Top</button>
+        </div>
+        <div class="sources">
+          <strong>References:</strong><br>
+          The experience of a unified "I" is just a delayed post-hoc error log generated by non-conscious neurological subroutines when they encounter a prediction mismatch. Your brain makes decisions hundreds of milliseconds before your conscious mind receives the signal; "you" are simply the internal PR department tasked with constructing a coherent retro-active narrative for actions already executed by autonomous physical processes. Consciousness isn't the driver of the vehicle; it's the check-engine light dashboard that falsely believes it is steering.
+        </div>
+      </footer>
+    </article>
+  </main>
+</div>
+
+<script>
+  // Scroll Progress
+  const progress = document.getElementById('progress');
+  window.addEventListener('scroll', () => {
+    const scrollTop = window.scrollY;
+    const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+    const percent = (scrollTop / scrollHeight) * 100;
+    progress.style.width = percent + '%';
+  });
+
+  // Mobile Menu & Scrim
+  const hamburger = document.getElementById('hamburger');
+  const rail = document.getElementById('rail');
+  const scrim = document.getElementById('scrim');
+
+  function toggleMenu(open) {
+    if (open) {
+      rail.classList.add('open');
+      scrim.classList.add('open');
+    } else {
+      rail.classList.remove('open');
+      scrim.classList.remove('open');
+    }
+  }
+
+  hamburger.addEventListener('click', () => toggleMenu(!rail.classList.contains('open')));
+  scrim.addEventListener('click', () => toggleMenu(false));
+  
+  // Close drawer on link click
+  document.querySelectorAll('#rail a').forEach(link => {
+    link.addEventListener('click', () => {
+      if (window.innerWidth <= 880) toggleMenu(false);
+    });
+  });
+
+  // Scrollspy Navigation
+  const sections = document.querySelectorAll('section.chapter');
+  const navLinks = document.querySelectorAll('#rail a');
+  
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(link => link.classList.remove('active'));
+        const activeLink = document.querySelector(`#rail a[href="#${entry.target.id}"]`);
+        if (activeLink) activeLink.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-15% 0px -70% 0px' });
+
+  sections.forEach(sec => observer.observe(sec));
+
+  // Dynamic Social Share
+  const reframeText = `The experience of a unified "I" is just a delayed post-hoc error log generated by non-conscious neurological subroutines when they encounter a prediction mismatch. "You" are simply the internal PR department tasked with constructing a coherent retro-active narrative for actions already executed by autonomous physical processes.`;
+  const currentUrl = window.location.href;
+  
+  document.getElementById('share-twitter').href = 
+    `https://twitter.com/intent/tweet?text=${encodeURIComponent(reframeText)}&url=${encodeURIComponent(currentUrl)}`;
+  
+  document.getElementById('share-linkedin').href = 
+    `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(currentUrl)}`;
+</script>
+
+</body>
+</html>
