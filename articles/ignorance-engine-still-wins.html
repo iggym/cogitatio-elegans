@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ignorance Engine — Cogitatio Elegans</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Lora:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FAF7F2;
+    --fg: #2A2520;
+    --muted: #8A8279;
+    --accent: #C45D2C;
+    --accent-glow: rgba(196,93,44,0.12);
+    --card: #F0EBE3;
+    --border: #DDD6CC;
+    --glass: rgba(250,247,242,0.82);
+    --rail-link: #6B6560;
+    --max: 660px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1A1714;
+      --fg: #E8E2D8;
+      --muted: #9B9389;
+      --accent: #E87A3E;
+      --accent-glow: rgba(232,122,62,0.10);
+      --card: #252220;
+      --border: #3A3530;
+      --glass: rgba(26,23,20,0.86);
+      --rail-link: #A89E94;
+    }
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+  body {
+    font-family: 'Lora', Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    background-image: radial-gradient(ellipse at 15% 0%, var(--accent-glow) 0%, transparent 55%);
+    color: var(--fg);
+    line-height: 1.75;
+    font-size: 1.05rem;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Progress Bar ── */
+  #progress {
+    position: fixed; top: 0; left: 0; height: 3px; width: 0%; z-index: 10001;
+    background: linear-gradient(90deg, var(--accent), #E8A84C);
+    transition: width 0.08s linear;
+  }
+
+  /* ── Topbar ── */
+  #topbar {
+    position: fixed; top: 0; left: 0; right: 0; height: 54px; z-index: 9999;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    background: var(--glass); border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px; padding: 0 16px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.85rem;
+  }
+  #topbar a { color: var(--accent); text-decoration: none; font-weight: 600; white-space: nowrap; }
+  #topbar a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+  .breadcrumb { color: var(--muted); display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; overflow: hidden; }
+  .breadcrumb span { color: var(--border); }
+  .read-time { color: var(--muted); margin-left: auto; white-space: nowrap; }
+  #menu-btn {
+    display: none; background: none; border: 1px solid var(--border); border-radius: 6px;
+    width: 36px; height: 36px; cursor: pointer; padding: 6px; flex-shrink: 0;
+  }
+  #menu-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  #menu-btn svg { display: block; width: 100%; height: 100%; }
+
+  /* ── Scrim ── */
+  #scrim {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 9998;
+    opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+  }
+  #scrim.open { opacity: 1; pointer-events: auto; }
+
+  /* ── Layout Grid ── */
+  .wrap {
+    display: grid; grid-template-columns: 220px 1fr;
+    max-width: calc(var(--max) + 260px); margin: 0 auto;
+    padding-top: 72px; min-height: 100vh;
+  }
+
+  /* ── Rail ── */
+  #rail {
+    position: sticky; top: 100px; height: fit-content;
+    padding: 0 0 0 16px; align-self: start;
+  }
+  #rail ol { list-style: none; }
+  #rail li {
+    padding: 0; margin-bottom: 4px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.82rem;
+    display: flex; align-items: baseline; gap: 8px;
+  }
+  #rail li::before {
+    content: attr(data-num); font-weight: 700; color: var(--accent);
+    font-size: 0.75rem; min-width: 14px; text-align: right;
+    opacity: 0.6; transition: opacity 0.2s;
+  }
+  #rail a {
+    color: var(--rail-link); text-decoration: none; transition: color 0.2s;
+    line-height: 1.4;
+  }
+  #rail a:hover { color: var(--fg); }
+  #rail a.active { color: var(--accent); font-weight: 700; }
+  #rail a.active + li::before,
+  #rail li:has(> a.active)::before { opacity: 1; }
+  #rail a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+
+  /* ── Main Content ── */
+  main {
+    max-width: var(--max); padding: 0 24px 4rem;
+    min-width: 0;
+  }
+
+  /* ── Hero ── */
+  .hero { margin-bottom: 3rem; }
+  .hero h1 {
+    font-size: clamp(2.1rem, 5vw, 3.1rem); font-weight: 700;
+    line-height: 1.1; letter-spacing: -0.02em; margin-bottom: 1rem;
+  }
+  .hero .subtitle {
+    font-size: 1.15rem; color: var(--muted); line-height: 1.6;
+    font-style: italic; max-width: 520px;
+  }
+
+  /* ── Spectrum Widget ── */
+  .spectrum { margin: 2rem 0 1rem; }
+  .spectrum-labels {
+    display: flex; justify-content: space-between; margin-bottom: 8px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.78rem; color: var(--muted);
+  }
+  .spectrum-labels small { display: block; font-size: 0.72rem; opacity: 0.7; margin-top: 2px; }
+  .spectrum-bar {
+    height: 6px; border-radius: 3px;
+    background: linear-gradient(90deg, var(--border) 0%, var(--muted) 50%, var(--accent) 100%);
+    position: relative;
+  }
+  .spectrum-bar::after {
+    content: ''; position: absolute; left: 50%; top: -5px;
+    width: 2px; height: 16px; background: var(--fg); border-radius: 1px;
+    transform: translateX(-50%);
+  }
+
+  /* ── Chapters ── */
+  .chapter {
+    scroll-margin-top: 80px; margin-bottom: 3rem;
+    opacity: 0; transform: translateY(18px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .chapter.visible { opacity: 1; transform: translateY(0); }
+  @media (prefers-reduced-motion: reduce) {
+    .chapter { opacity: 1; transform: none; transition: none; }
+  }
+  .chapter h2 {
+    font-family: 'DM Sans', sans-serif; font-weight: 700;
+    font-size: 1.4rem; margin-bottom: 1rem; color: var(--fg);
+    letter-spacing: -0.01em;
+  }
+  .chapter-divider {
+    border: none; height: 1px; background: var(--border); margin: 3rem 0;
+  }
+  .lede {
+    font-size: 1.1rem; line-height: 1.8; color: var(--fg);
+  }
+
+  /* ── Callout ── */
+  .callout {
+    border-left: 3px solid var(--accent); padding: 1rem 1.25rem;
+    background: var(--card); border-radius: 0 8px 8px 0;
+    margin: 1.5rem 0; font-size: 0.95rem;
+  }
+
+  /* ── Pullquote ── */
+  .pullquote {
+    font-size: clamp(1.2rem, 2.8vw, 1.55rem); font-style: italic;
+    text-align: center; margin: 2.5rem -1rem; padding: 1.5rem 1rem;
+    color: var(--accent); line-height: 1.5; position: relative;
+  }
+  .pullquote::before {
+    content: '\201C'; position: absolute; top: -0.2rem; left: 50%;
+    transform: translateX(-50%); font-size: 4rem; opacity: 0.2;
+    font-style: normal; line-height: 1; color: var(--accent);
+  }
+  .snap {
+    font-size: clamp(1.35rem, 3.5vw, 1.8rem); font-weight: 700;
+    font-style: normal; color: var(--fg); text-align: center;
+    margin: 3rem 0; padding: 2rem 1rem; line-height: 1.4;
+    border-top: 2px solid var(--accent); border-bottom: 2px solid var(--accent);
+    background: var(--accent-glow);
+  }
+  .snap::before { display: none; }
+
+  /* ── Share Block ── */
+  .share-block {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    margin: 1.5rem 0; font-family: 'DM Sans', sans-serif; font-size: 0.82rem; color: var(--muted);
+  }
+  .share-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 14px; border-radius: 20px; font-size: 0.8rem;
+    font-weight: 600; text-decoration: none; color: #fff;
+    transition: opacity 0.15s; border: none; cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .share-btn:hover { opacity: 0.85; }
+  .share-btn:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+  .share-btn.x { background: #1A1A1A; }
+  .share-btn.li { background: #0A66C2; }
+
+  /* ── Action Block ── */
+  .action {
+    background: linear-gradient(135deg, var(--card) 0%, var(--accent-glow) 100%);
+    border: 1px solid var(--border); border-radius: 12px;
+    padding: 2rem 2rem 1.5rem; margin: 2rem 0;
+  }
+  .action h2 {
+    font-family: 'DM Sans', sans-serif; font-weight: 700;
+    font-size: 1.3rem; margin-bottom: 0.5rem;
+  }
+  .action .action-sub {
+    color: var(--muted); font-size: 0.9rem; margin-bottom: 1.25rem; line-height: 1.6;
+  }
+  .checklist { list-style: none; }
+  .checklist li {
+    padding: 0.55rem 0 0.55rem 2rem; position: relative;
+    cursor: pointer; user-select: none; font-size: 0.95rem;
+    border-radius: 6px; transition: background 0.15s;
+  }
+  .checklist li:hover { background: var(--accent-glow); }
+  .checklist li::before {
+    content: ''; position: absolute; left: 0; top: 0.7rem;
+    width: 1.15rem; height: 1.15rem; border: 2px solid var(--accent);
+    border-radius: 50%; transition: background 0.15s;
+  }
+  .checklist li.checked::before { background: var(--accent); }
+  .checklist li.checked::after {
+    content: '\2713'; position: absolute; left: 0.22rem; top: 0.48rem;
+    color: #fff; font-size: 0.78rem; font-weight: 700;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .checklist li:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+
+  /* ── Footer ── */
+  footer {
+    max-width: calc(var(--max) + 260px); margin: 0 auto;
+    padding: 2rem 24px 3rem; display: flex; flex-wrap: wrap;
+    gap: 1.5rem; align-items: flex-start;
+    border-top: 1px solid var(--border);
+    font-family: 'DM Sans', sans-serif; font-size: 0.82rem; color: var(--muted);
+  }
+  footer a { color: var(--accent); text-decoration: none; font-weight: 600; }
+  footer a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+  .footer-home { flex-shrink: 0; }
+  .footer-sources { flex: 1; min-width: 200px; }
+  .footer-sources h3 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.4rem; color: var(--fg); }
+  .footer-sources ul { list-style: none; }
+  .footer-sources li { margin-bottom: 0.25rem; }
+  #btt {
+    flex-shrink: 0; align-self: center; background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 14px; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; font-size: 0.8rem; color: var(--fg);
+    transition: background 0.15s, border-color 0.15s; display: flex; align-items: center; gap: 6px;
+  }
+  #btt:hover { background: var(--border); }
+  #btt:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  #btt svg { width: 14px; height: 14px; }
+
+  /* ── Responsive ── */
+  @media (max-width: 880px) {
+    #menu-btn { display: flex; align-items: center; justify-content: center; }
+    .read-time { display: none; }
+    .wrap { grid-template-columns: 1fr; padding-top: 62px; }
+    #rail {
+      position: fixed; left: -82vw; top: 0; bottom: 0; width: 82vw;
+      z-index: 10000; background: var(--bg); padding: 70px 20px 20px;
+      border-right: 1px solid var(--border); overflow-y: auto;
+      transition: left 0.3s ease;
+    }
+    #rail.open { left: 0; }
+    main { padding: 0 18px 3rem; }
+    .hero h1 { margin-bottom: 0.75rem; }
+    .pullquote { margin: 2rem -0.5rem; padding: 1.25rem 0.5rem; }
+    footer { padding: 1.5rem 18px 2.5rem; }
+  }
+
+  /* ── Paragraph spacing ── */
+  .chapter p + p { margin-top: 1.15rem; }
+  .chapter p { max-width: 100%; }
+
+  /* ── Misc ── */
+  strong { font-weight: 700; }
+  em { font-style: italic; }
+</style>
+</head>
+<body>
+
+<!-- Reading Progress -->
+<div id="progress" role="progressbar" aria-label="Reading progress" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+
+<!-- Sticky Top Bar -->
+<header id="topbar">
+  <a href="https://iggym.github.io/cogitatio-elegans/">Home</a>
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <span aria-hidden="true">/</span>
+    <a href="https://iggym.github.io/cogitatio-elegans/">Articles</a>
+    <span aria-hidden="true">/</span>
+    <em style="color:var(--fg);font-style:normal;">Ignorance Engine</em>
+  </nav>
+  <span class="read-time" aria-label="Estimated reading time">5 min read</span>
+  <button id="menu-btn" aria-label="Open navigation" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+</header>
+
+<!-- Mobile Scrim -->
+<div id="scrim" aria-hidden="true"></div>
+
+<!-- Main Layout -->
+<div class="wrap">
+
+  <!-- Navigation Rail -->
+  <nav id="rail" aria-label="Section navigation">
+    <ol>
+      <li data-num="01"><a href="#s1">The Vanishing Thought</a></li>
+      <li data-num="02"><a href="#s2">Burn to Learn</a></li>
+      <li data-num="03"><a href="#s3">Same Strange River</a></li>
+      <li data-num="04"><a href="#s4">The Fine Print</a></li>
+      <li data-num="05"><a href="#s5">Drop the Weight</a></li>
+      <li data-num="06"><a href="#s6">One Thing Tomorrow</a></li>
+    </ol>
+  </nav>
+
+  <!-- Article Content -->
+  <main>
+    <article>
+
+      <!-- Hero -->
+      <header class="hero">
+        <h1>Ignorance Engine</h1>
+        <p class="subtitle">Why the smartest systems are the ones that know what to throw away.</p>
+        <div class="spectrum" aria-label="Conceptual shift from perfect information to strategic loss">
+          <div class="spectrum-labels">
+            <span>Perfect Information<small>Stasis</small></span>
+            <span>Strategic Loss<small>Adaptation</small></span>
+          </div>
+          <div class="spectrum-bar"></div>
+        </div>
+      </header>
+
+      <!-- Chapter 1: Opening Scene -->
+      <section class="chapter" id="s1">
+        <h2>The Vanishing Thought</h2>
+        <p class="lede">You're standing in your kitchen, staring at the open fridge. You came in for something. Salt? Butter? The thought was there a second ago&mdash;bright, clear, fully formed&mdash;and then it wasn't. Your brain just deleted it. Not buried it under layers of distraction. <strong>Deleted it.</strong> Like it never existed.</p>
+        <p>We treat that moment as a glitch. A bug. Evidence that our minds are imperfect machines losing data they should have kept. We build apps to capture every fleeting thought, every bookmark, every half-formed idea&mdash;because surely the ideal mind would remember everything.</p>
+        <p>But what if that deletion was the most intelligent thing your brain did all day?</p>
+      </section>
+
+      <hr class="chapter-divider">
+
+      <!-- Chapter 2: The Bold Reframe -->
+      <section class="chapter" id="s2">
+        <h2>Burn to Learn</h2>
+        <p class="lede" id="reframe-text">Perfect information leads to total stasis. Strategic loss of information&mdash;erasure, forgetting, and noise&mdash;is the sole reason complex systems can adapt or learn.</p>
+
+        <div class="share-block">
+          <span>Share this reframe:</span>
+          <a href="#" class="share-btn x" id="share-x" target="_blank" rel="noopener" aria-label="Share on X">X</a>
+          <a href="#" class="share-btn li" id="share-li" target="_blank" rel="noopener" aria-label="Share on LinkedIn">LinkedIn</a>
+        </div>
+
+        <p>This is not a metaphor. It is a structural fact about how intelligence works at every scale we've been able to measure. We've spent centuries building a culture that treats knowledge accumulation as the gold standard of cognition. More data, better memory, fuller records&mdash;surely that's what makes a system smart.</p>
+        <p>It isn't.</p>
+        <div class="callout">
+          Intelligence is not the capacity to store information, but the structural ability to selectively discard noise so a pattern can emerge.
+        </div>
+      </section>
+
+      <hr class="chapter-divider">
+
+      <!-- Chapter 3: Hidden Connections -->
+      <section class="chapter" id="s3">
+        <h2>Same Strange River</h2>
+        <p>Consider two systems that learn. A neural network trains on millions of images. But it doesn't store them. It runs them through <strong>loss functions</strong> that aggressively compress and discard data, keeping only the faintest ghost of a pattern. If you tried to reconstruct the original images from the network's weights, you'd get nothing recognizable. The data is gone. That's the point.</p>
+        <p>A biological species reproduces across generations. If DNA copied perfectly every time&mdash;zero errors, zero mutations&mdash;nothing would change. Ever. The species would freeze in place, perfectly preserved, perfectly dead in evolutionary terms. It's the <strong>copy errors</strong>, the corruptions of genetic storage, that create variation. And variation is the only raw material natural selection can work with.</p>
+        <p>Different systems. Different substrates. Silicon and carbon. Same mechanism: intelligence emerges not from what you keep, but from what you lose.</p>
+
+        <blockquote class="pullquote snap">
+          Your smartest moments are the ones where your brain knew what to throw away.
+        </blockquote>
+      </section>
+
+      <hr class="chapter-divider">
+
+      <!-- Chapter 4: Credibility & Nuance -->
+      <section class="chapter" id="s4">
+        <h2>The Fine Print</h2>
+        <p>Now, the obvious objection: not all forgetting is strategic. Dementia is not enlightenment. Data loss from a crashed hard drive doesn't produce insight. The claim here isn't that ignorance is inherently good&mdash;it's that <strong>without the capacity for selective information loss, no adaptive system can function at all.</strong></p>
+        <p>A neural network's loss function is precisely tuned. Too much compression and the model underfits&mdash;loses the pattern along with the noise. Too little and it overfits&mdash;memorizes the training data but can't generalize to anything new. The intelligence lives in the calibration of what gets dropped.</p>
+        <p>Similarly, mutations are mostly harmful. The vast majority of genetic copy errors are neutral or deleterious. But without that error rate&mdash;without that systematic corruption&mdash;there is no evolution. Period.</p>
+        <p>The insight isn't that loss is magical. It's that loss is mechanical, necessary, and&mdash;when properly structured&mdash;productive.</p>
+      </section>
+
+      <hr class="chapter-divider">
+
+      <!-- Chapter 5: Narrative Agency -->
+      <section class="chapter" id="s5">
+        <h2>Drop the Weight</h2>
+        <p>This reframing changes what you can do about your own information overload. Most advice about productivity and learning still orbits the old model: store more, organize better, remember longer. Build a second brain. Take better notes. Never forget.</p>
+        <p>Try the opposite.</p>
+        <p>Close a browser tab without reading it. Not because you decided it wasn't valuable&mdash;because the act of deliberately losing access to it creates space for something else to surface. Delete a note you've been hoarding for months. You won't need it. If the pattern matters, it'll come back through a different channel.</p>
+        <p>These aren't hacks. They're the same mechanism your visual cortex uses every second, throwing away roughly 99% of the photons hitting your retina so you can see a face instead of raw light data. Your eyes don't capture the world. They <em>edit</em> it, relentlessly, and you call the result vision.</p>
+      </section>
+
+      <hr class="chapter-divider">
+
+      <!-- Chapter 6: CTA -->
+      <section class="chapter" id="s6">
+        <div class="action">
+          <h2>One Thing Tomorrow</h2>
+          <p class="action-sub">Within the next 24 hours, deliberately erase one piece of stored information from your life. Pick one thing below. Do it. Then notice what surfaces in the space it left.</p>
+          <ul class="checklist" role="list">
+            <li tabindex="0" role="checkbox" aria-checked="false">Close every browser tab you haven't touched in two hours</li>
+            <li tabindex="0" role="checkbox" aria-checked="false">Delete one note or file you've been &ldquo;meaning to get to&rdquo; for over a month</li>
+            <li tabindex="0" role="checkbox" aria-checked="false">Unsubscribe from one newsletter you skim but never read</li>
+            <li tabindex="0" role="checkbox" aria-checked="false">Clear your notification history without reading it&mdash;all of it</li>
+            <li tabindex="0" role="checkbox" aria-checked="false">Write down one assumption you're carrying that has no evidence behind it, then throw the paper away</li>
+          </ul>
+        </div>
+      </section>
+
+    </article>
+  </main>
+</div>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-home">
+    <a href="https://iggym.github.io/cogitatio-elegans/">Home</a>
+  </div>
+  <div class="footer-sources">
+    <h3>Referenced Concepts</h3>
+    <ul>
+      <li>Information Theory: Ignorance as the Engine of Complexity</li>
+      <li>Neural network loss functions and data compression</li>
+      <li>Genetic mutation as copy error in evolutionary biology</li>
+    </ul>
+  </div>
+  <button id="btt" aria-label="Back to top">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+    Top
+  </button>
+</footer>
+
+<script>
+(function() {
+  'use strict';
+
+  /* ── Reading Progress ── */
+  var progressBar = document.getElementById('progress');
+  function updateProgress() {
+    var scrollTop = window.scrollY || document.documentElement.scrollTop;
+    var scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+    var pct = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+    progressBar.style.width = pct + '%';
+    progressBar.setAttribute('aria-valuenow', Math.round(pct));
+  }
+  window.addEventListener('scroll', updateProgress, { passive: true });
+  updateProgress();
+
+  /* ── Scrollspy ── */
+  var railLinks = document.querySelectorAll('#rail a');
+  var chapters = document.querySelectorAll('.chapter');
+  var spyRootMargin = '-15% 0px -70% 0px';
+
+  if ('IntersectionObserver' in window) {
+    var spyObserver = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (entry.isIntersecting) {
+          railLinks.forEach(function(link) { link.classList.remove('active'); });
+          var match = document.querySelector('#rail a[href="#' + entry.target.id + '"]');
+          if (match) match.classList.add('active');
+        }
+      });
+    }, { rootMargin: spyRootMargin });
+    chapters.forEach(function(ch) { spyObserver.observe(ch); });
+  }
+
+  /* ── Fade-in Chapters ── */
+  var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reducedMotion) {
+    chapters.forEach(function(ch) { ch.classList.add('visible'); });
+  } else if ('IntersectionObserver' in window) {
+    var fadeObserver = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          fadeObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.08 });
+    chapters.forEach(function(ch) { fadeObserver.observe(ch); });
+  } else {
+    chapters.forEach(function(ch) { ch.classList.add('visible'); });
+  }
+
+  /* ── Mobile Menu ── */
+  var menuBtn = document.getElementById('menu-btn');
+  var rail = document.getElementById('rail');
+  var scrim = document.getElementById('scrim');
+  var railOpen = false;
+
+  function toggleMenu() {
+    railOpen = !railOpen;
+    rail.classList.toggle('open', railOpen);
+    scrim.classList.toggle('open', railOpen);
+    menuBtn.setAttribute('aria-expanded', railOpen ? 'true' : 'false');
+  }
+  menuBtn.addEventListener('click', toggleMenu);
+  scrim.addEventListener('click', function() {
+    if (railOpen) toggleMenu();
+  });
+
+  /* Close rail on link click (mobile) */
+  railLinks.forEach(function(link) {
+    link.addEventListener('click', function() {
+      if (window.innerWidth <= 880 && railOpen) toggleMenu();
+    });
+  });
+
+  /* ── Dynamic Social Share ── */
+  var reframeEl = document.getElementById('reframe-text');
+  var reframeText = reframeEl ? reframeEl.innerText.trim() : '';
+  var pageUrl = encodeURIComponent(window.location.href);
+
+  var shareX = document.getElementById('share-x');
+  var shareLi = document.getElementById('share-li');
+
+  if (shareX) {
+    shareX.href = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(reframeText) + '&url=' + pageUrl;
+  }
+  if (shareLi) {
+    shareLi.href = 'https://www.linkedin.com/sharing/share-offsite/?url=' + pageUrl;
+  }
+
+  /* ── Checklist Interaction ── */
+  document.querySelectorAll('.checklist li').forEach(function(li) {
+    function toggle() {
+      li.classList.toggle('checked');
+      var isChecked = li.classList.contains('checked');
+      li.setAttribute('aria-checked', isChecked ? 'true' : 'false');
+    }
+    li.addEventListener('click', toggle);
+    li.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggle();
+      }
+    });
+  });
+
+  /* ── Back to Top ── */
+  var bttBtn = document.getElementById('btt');
+  if (bttBtn) {
+    bttBtn.addEventListener('click', function() {
+      if (reducedMotion) {
+        window.scrollTo(0, 0);
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    });
+  }
+
+})();
+</script>
+</body>
+</html>
