@@ -222,5 +222,19 @@
     "category": "technology",
     "date": "2026-07-28",
     "slug": "amputation-choice.html"
+  },
+  {
+    "title": "The Heat of Forgetting",
+    "description": "Why your phone warms when you delete a photo — and why that small warmth is the most honest clue physics has ever given us about what matter actually is.",
+    "category": "AI",
+    "date": "2026-04-25",
+    "slug": "heat-forget.html"
+  },
+  {
+    "title": "Life Is a Macro-Quantum Coherence Maintenance Engine",
+    "description": "For decades we assumed biology was classical chemistry—molecules bumping in the dark. The evidence says otherwise.",
+    "category": "technology",
+    "date": "2026-04-28",
+    "slug": "macro-quantum-engine.html"
   }
 ]
