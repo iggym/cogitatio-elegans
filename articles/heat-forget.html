@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Heat of Forgetting — Bits Before Atoms</title>
+<style>
+:root {
+  --bg: #14111a;
+  --bg-2: #1c1822;
+  --surface: #241f2c;
+  --text: #e9e3d4;
+  --muted: #9a8f7d;
+  --accent: #e8a04a;
+  --accent-2: #7c9eff;
+  --accent-soft: rgba(232, 160, 74, 0.13);
+  --border: rgba(233, 227, 212, 0.1);
+  --max: 660px;
+  --topbar-h: 56px;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
+  line-height: 1.68;
+  font-size: 18px;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Progress bar */
+#progress {
+  position: fixed;
+  top: 0; left: 0;
+  height: 3px;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent-2), var(--accent));
+  z-index: 1100;
+  transition: width 0.1s linear;
+}
+
+/* Topbar */
+#topbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--topbar-h);
+  background: rgba(20, 17, 26, 0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 14px;
+}
+
+#topbar .home {
+  color: var(--accent);
+  text-decoration: none;
+  font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+#topbar .crumb {
+  color: var(--muted);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 13px;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#topbar .meta {
+  color: var(--muted);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+#topbar .hamburger {
+  display: none;
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text);
+  width: 38px; height: 38px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Layout */
+.wrap {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 48px;
+  max-width: calc(var(--max) + 260px);
+  margin: 0 auto;
+  padding: 0 24px;
+  padding-top: calc(var(--topbar-h) + 40px);
+}
+
+/* Rail */
+#rail {
+  position: sticky;
+  top: 100px;
+  align-self: start;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+}
+
+#rail .rail-label {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 14px;
+  padding-left: 28px;
+}
+
+#rail ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+#rail li { margin: 0; }
+
+#rail a {
+  display: block;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 13.5px;
+  padding: 9px 0 9px 28px;
+  margin-left: -28px;
+  border-left: 2px solid transparent;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+  line-height: 1.35;
+  position: relative;
+}
+
+#rail a::before {
+  content: attr(data-num);
+  position: absolute;
+  left: 0;
+  color: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  top: 11px;
+  width: 24px;
+}
+
+#rail a:hover { color: var(--text); }
+#rail a.active {
+  color: var(--accent);
+  border-left-color: var(--accent);
+}
+
+/* Main */
+main {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding-bottom: 80px;
+  width: 100%;
+}
+
+/* Hero */
+header.hero {
+  margin-bottom: 56px;
+  padding-top: 8px;
+}
+
+header.hero .eyebrow {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent-2);
+  margin-bottom: 18px;
+  font-weight: 600;
+}
+
+header.hero h1 {
+  font-size: clamp(2.1rem, 5vw, 3.1rem);
+  line-height: 1.08;
+  font-weight: 700;
+  margin: 0 0 18px;
+  letter-spacing: -0.015em;
+}
+
+header.hero .sub {
+  font-size: 1.08rem;
+  color: var(--muted);
+  font-style: italic;
+  max-width: 560px;
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* Spectrum widget */
+.spectrum {
+  margin: 36px 0 0;
+  padding: 0;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+}
+
+.spectrum .labels {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  font-size: 12.5px;
+  line-height: 1.4;
+  margin-bottom: 14px;
+}
+
+.spectrum .labels span {
+  flex: 1;
+  max-width: 46%;
+}
+
+.spectrum .labels .left { color: var(--muted); text-align: left; }
+.spectrum .labels .right { color: var(--accent); text-align: right; }
+
+.spectrum .axis {
+  position: relative;
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--accent-2) 0%, #5a5470 50%, var(--accent) 100%);
+}
+
+.spectrum .axis::before, .spectrum .axis::after {
+  content: '';
+  position: absolute;
+  top: -5px;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 2px solid var(--accent-2);
+}
+.spectrum .axis::before { left: -2px; }
+.spectrum .axis::after { right: -2px; border-color: var(--accent); }
+
+/* Chapters */
+section.chapter {
+  margin: 0 0 60px;
+  scroll-margin-top: 84px;
+}
+
+section.chapter h2 {
+  font-size: clamp(1.5rem, 3.2vw, 1.95rem);
+  margin: 0 0 20px;
+  font-weight: 700;
+  letter-spacing: -0.012em;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.lede {
+  font-size: 1.14rem;
+  line-height: 1.55;
+  color: var(--text);
+  margin: 0 0 22px;
+  font-weight: 400;
+}
+
+p {
+  margin: 0 0 20px;
+}
+
+/* Callout */
+.callout {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent-2);
+  padding: 20px 22px;
+  border-radius: 6px;
+  margin: 26px 0;
+  font-size: 0.98rem;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  line-height: 1.58;
+}
+
+.callout strong.label {
+  color: var(--accent-2);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 0.74rem;
+  display: block;
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+/* Pullquote */
+.pullquote {
+  margin: 30px 0;
+  padding: 4px 0 4px 22px;
+  border-left: 3px solid var(--accent);
+  font-size: 1.12rem;
+  line-height: 1.5;
+  color: var(--text);
+  font-style: italic;
+}
+
+/* Perspective snap */
+.snap {
+  display: block;
+  margin: 44px auto;
+  padding: 34px 20px;
+  text-align: center;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  font-size: clamp(1.35rem, 3.4vw, 1.78rem);
+  line-height: 1.32;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+  font-style: normal;
+  color: var(--accent);
+  position: relative;
+}
+
+.snap::before {
+  content: '';
+  display: block;
+  width: 32px; height: 2px;
+  background: var(--accent);
+  margin: 0 auto 22px;
+}
+
+/* Bold reframe share */
+.share-block {
+  margin: 30px 0 8px;
+  padding: 22px;
+  background: linear-gradient(135deg, var(--accent-soft), transparent);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.share-block .share-label {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.74rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 14px;
+  font-weight: 600;
+}
+
+.share-block .share-btns {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.share-btn {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 18px;
+  border-radius: 6px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  transition: transform 0.15s, background 0.15s, opacity 0.15s;
+}
+
+.share-btn:hover { transform: translateY(-1px); }
+.share-btn.x { background: #000; color: #fff; border-color: #000; }
+.share-btn.x:hover { background: #1a1a1a; }
+.share-btn.li { background: #0a66c2; color: #fff; border-color: #0a66c2; }
+.share-btn.li:hover { background: #0a4fa0; }
+
+/* Action block */
+.action {
+  margin: 48px 0 32px;
+  padding: 38px 30px;
+  background: linear-gradient(160deg, var(--surface), var(--bg-2));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.action::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent-2), var(--accent));
+}
+
+.action .sub {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.74rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+.action h2 {
+  font-size: clamp(1.5rem, 3.2vw, 1.95rem);
+  margin: 0 0 14px;
+  line-height: 1.2;
+}
+
+.action p {
+  font-size: 1rem;
+  margin-bottom: 8px;
+}
+
+.checklist {
+  list-style: none;
+  padding: 0;
+  margin: 22px 0 0;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+}
+
+.checklist li {
+  padding: 13px 0 13px 34px;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.checklist li::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 14px;
+  width: 18px; height: 18px;
+  border: 1.5px solid var(--accent);
+  border-radius: 4px;
+  background: transparent;
+}
+
+.checklist li::after {
+  content: '✓';
+  position: absolute;
+  left: 4px; top: 12px;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.checklist li:last-child { border-bottom: none; }
+
+/* Divider */
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 48px 0 0;
+  border: none;
+}
+
+/* Footer */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 36px 24px;
+  max-width: calc(var(--max) + 260px);
+  margin: 0 auto;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 13px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 28px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+footer .col { flex: 1; min-width: 220px; }
+
+footer .footer-home {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 14px;
+  font-size: 14px;
+}
+
+footer .refs { color: var(--muted); line-height: 1.7; }
+
+footer .refs strong {
+  display: block;
+  color: var(--text);
+  margin-bottom: 8px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+footer .top-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  align-self: flex-start;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+footer .top-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Scrim */
+#scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 999;
+  transition: opacity 0.25s;
+}
+
+#scrim.open { opacity: 1; pointer-events: auto; }
+
+/* Focus */
+a:focus-visible, button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+/* Mobile */
+@media (max-width: 880px) {
+  #topbar .hamburger { display: flex; }
+  #topbar .meta { display: none; }
+  #topbar .crumb { font-size: 12px; }
+
+  .wrap {
+    grid-template-columns: 1fr;
+    gap: 0;
+    padding: 0 22px;
+    padding-top: calc(var(--topbar-h) + 28px);
+  }
+
+  #rail {
+    position: fixed;
+    top: 0; left: 0;
+    width: 82vw;
+    max-width: 320px;
+    height: 100vh;
+    background: var(--bg-2);
+    padding: calc(var(--topbar-h) + 28px) 24px 24px;
+    transform: translateX(-100%);
+    transition: transform 0.28s ease;
+    z-index: 1000;
+    overflow-y: auto;
+    border-right: 1px solid var(--border);
+  }
+
+  #rail.open { transform: translateX(0); }
+
+  #rail .rail-label { padding-left: 0; }
+
+  #rail a {
+    font-size: 15px;
+    padding: 14px 0 14px 32px;
+    margin-left: 0;
+  }
+
+  #rail a::before { top: 16px; }
+
+  main { padding-bottom: 60px; }
+
+  footer { flex-direction: column; }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+
+<header id="topbar">
+  <a class="home" href="https://iggym.github.io/cogitatio-elegans/">⌂ Home</a>
+  <span class="crumb">The Heat of Forgetting</span>
+  <span class="meta" id="readtime">5 min read</span>
+  <button class="hamburger" aria-label="Open navigation" id="burger" aria-expanded="false">☰</button>
+</header>
+
+<div id="scrim"></div>
+
+<div class="wrap">
+
+<nav id="rail" aria-label="Article sections">
+  <div class="rail-label">In this essay</div>
+  <ol>
+    <li><a href="#s1" data-num="01">A Phone Full of Ghosts</a></li>
+    <li><a href="#s2" data-num="02">Bits Before Atoms</a></li>
+    <li><a href="#s3" data-num="03">The Black Hole's Ledger</a></li>
+    <li><a href="#s4" data-num="04">The Skeptic's Seat</a></li>
+    <li><a href="#s5" data-num="05">Skin in the Game</a></li>
+    <li><a href="#s6" data-num="06">Pen to Paper</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<article>
+
+<header class="hero">
+  <div class="eyebrow">It From Bit</div>
+  <h1>The Heat of Forgetting</h1>
+  <p class="sub">Why your phone warms when you delete a photo — and why that small warmth is the most honest clue physics has ever given us about what matter actually is.</p>
+
+  <div class="spectrum" aria-label="Conceptual spectrum: orthodox view vs informational view">
+    <div class="labels">
+      <span class="left">Matter is real.<br>Information describes it.</span>
+      <span class="right">Information is real.<br>Matter renders it.</span>
+    </div>
+    <div class="axis"></div>
+  </div>
+</header>
+
+<section class="chapter" id="s1">
+  <h2>A Phone Full of Ghosts</h2>
+  <p class="lede">You're on the couch at midnight, scrolling through three years of photos. Your daughter at four. The dog, dead six months now. The kitchen before the renovation. You decide to make room. You select all. You delete.</p>
+  <p>The phone warms in your hand.</p>
+  <p>Not much. A degree, maybe less. But it warms. And that warmth is not a side effect — it's the receipt. The universe just charged you a small, exact amount of heat for every memory you erased.</p>
+  <p>This is not poetry. It's physics.</p>
+</section>
+
+<section class="chapter" id="s2">
+  <h2>Bits Before Atoms</h2>
+  <p class="lede">Here is the claim, plain: Information is not something minds invent to describe matter. Information is what matter <em>is made of</em>. Mass and energy are what information looks like when it gets dense enough to push back.</p>
+
+  <div class="callout" id="bold-reframe-box">
+    <strong class="label">The Bold Reframe</strong>
+    <span id="bold-reframe-claim">Information is not something minds invent to describe matter. Information is what matter is made of. Mass and energy are what information looks like when it gets dense enough to push back.</span>
+  </div>
+
+  <p>The orthodox view runs the other way. Matter first, description later. Atoms are real; a bit is a story we tell about atoms. But this view has been quietly bleeding out for fifty years, and two unambiguous facts are holding the knife.</p>
+
+  <p>The first is <strong>Landauer's Principle</strong>. Rolf Landauer proved in 1961 that erasing one bit of information — not measuring it, not copying it, just destroying it — releases a discrete, countable amount of heat into the universe. Not approximately. Exactly: <em>kT</em>&nbsp;ln(2). Information, it turns out, has a thermodynamic price. You can hold it in your hand.</p>
+
+  <p>The second is <strong>black hole thermodynamics</strong>. The Bekenstein bound and the holographic principle show that the maximum mass-energy you can pack into a region of space is bounded — not by its volume, but by its surface area, measured in fundamental Planck units. Planck units of information. A black hole's mass is, quite literally, a count of bits on its skin.</p>
+
+  <p>Matter isn't the substrate. Matter is the rendering.</p>
+
+  <div class="share-block">
+    <div class="share-label">Share the reframe</div>
+    <div class="share-btns">
+      <a class="share-btn x" id="share-x" href="#" target="_blank" rel="noopener">Post to X</a>
+      <a class="share-btn li" id="share-li" href="#" target="_blank" rel="noopener">Share on LinkedIn</a>
+    </div>
+  </div>
+</section>
+
+<section class="chapter" id="s3">
+  <h2>The Black Hole's Ledger</h2>
+  <p class="lede">Stay with the black hole for a moment, because it's where the old picture breaks clean in half.</p>
+
+  <p>Under the orthodox view, the mass of a black hole should be a fact about the stuff inside it — about the volume, the matter, the energy crammed in. It isn't. The mass is fully determined by the area of the event horizon, and that area, in Planck units, is a count of bits. One bit per four Planck areas, give or take. The interior, in the deepest sense we have, is not where the information lives. The skin is.</p>
+
+  <p>This is strange. It's also the most well-tested strangeness in theoretical physics — it survived Hawking, it survived Susskind and 't Hooft, it survives every calculation we throw at it.</p>
+
+  <p>Now snap the lens.</p>
+
+  <blockquote class="snap">Mass is just information that got crowded enough to weigh something.</blockquote>
+
+  <p>Landauer told us information has a heat cost. Bekenstein told us mass is bounded by an information count. Put them together and the arrow flips: it is not that matter <em>has</em> information, but that information <em>is</em> matter, condensed.</p>
+
+  <blockquote class="pullquote">The coffee in your cup is hot because the molecules are agitated. The molecules are agitated because the underlying bits are computing. Heat, mass, energy — these are not the engine. They are the exhaust.</blockquote>
+</section>
+
+<section class="chapter" id="s4">
+  <h2>The Skeptic's Seat</h2>
+  <p class="lede">Let me be honest about the soft spots.</p>
+
+  <p>"It from bit" — Wheeler's phrase — is a thesis, not a settled fact. Landauer's Principle is real and measured, but it says information has a thermodynamic cost. It does not, by itself, say information is ontologically primary. The orthodox view can absorb Landauer by saying "yes, of course physical states have thermodynamic consequences, that's trivially true." A reasonable physicist can hold that line without contradiction.</p>
+
+  <div class="callout">
+    <strong class="label">The honest caveat</strong>
+    The black hole argument is stronger but also contested. The holographic principle is mathematically rigorous in specific regimes; whether it generalizes to your kitchen is an open question. We do not have a working theory of quantum gravity. We have very strong hints.
+  </div>
+
+  <p>So the claim here is not "science has proven matter is fake." The claim is narrower and more honest: the deepest, most conservative tools we have — thermodynamics, general relativity, quantum information — have spent fifty years quietly demoting matter from substrate to symptom. The orthodox view is no longer the default. It is a choice, and an increasingly expensive one.</p>
+</section>
+
+<section class="chapter" id="s5">
+  <h2>Skin in the Game</h2>
+  <p class="lede">If information is primary, then so are you.</p>
+
+  <p>This is where the abstraction turns personal. Your thoughts are not ghostly. They have a thermodynamic cost — your brain burns roughly twenty watts, and a measurable slice of that is the cost of maintaining and erasing the bits that constitute a memory. When you decide to forget something, you pay Landauer's toll in heat leaving your skull.</p>
+
+  <blockquote class="pullquote">What you choose to remember, and what you choose to let go, is not a moral abstraction. It is a physical act with a physical cost.</blockquote>
+
+  <p>You are spending the universe's currency every time you think. Agency, in this picture, is not a philosophical luxury. It is the literal capacity to write bits into the world — to choose, concretely, which configurations survive. The universe does not care what you meant to remember. It only counts what you kept.</p>
+</section>
+
+<section class="chapter" id="s6">
+  <h2>Pen to Paper</h2>
+  <p class="lede">Within the next twenty-four hours, do this one thing.</p>
+
+  <div class="action">
+    <div class="sub">Your move</div>
+    <h2>Ink, Not Pixels</h2>
+    <p>Write one thing down — by hand, on paper, not in a phone — that you do not want the universe to forget. A name. A promise. A small fact about someone you love. Date it. Put it somewhere you'll see again.</p>
+
+    <ul class="checklist">
+      <li>Pick something specific — not "my family," but "the way Dad pronounced 'tomato.'"</li>
+      <li>Use paper, not your phone. The point is to make the bit physical in a way you can't bulk-erase.</li>
+      <li>Date it. The timestamp is part of the information; it ties the bit to a moment.</li>
+      <li>Put it where you'll find it again in a year. A book, a drawer, a wallet.</li>
+    </ul>
+  </div>
+
+  <p>Why this, and why now? Because your phone will warm in your hand either way — the bits you erase will pay their toll whether you intend it or not. The only question is which configurations you choose to keep. Memory is not free. Forgetting is not free. The only free thing is the choice of what survives.</p>
+
+  <p>Make it on purpose.</p>
+</section>
+
+<hr class="divider">
+
+</article>
+
+</main>
+
+</div>
+
+<footer>
+  <div class="col">
+    <a class="footer-home" href="https://iggym.github.io/cogitatio-elegans/">⌂ Home</a>
+    <div class="refs">
+      <strong>References</strong>
+      Landauer, R. (1961). <em>Irreversibility and Heat Generation in the Computing Process.</em> IBM Journal of Research and Development, 5(3), 183–191.<br><br>
+      Bekenstein, J. D. (1973). <em>Black Holes and Entropy.</em> Physical Review D, 7(8), 2333.<br><br>
+      Wheeler, J. A. (1990). <em>Information, Physics, Quantum: The Search for Links.</em> In Complexity, Entropy, and the Physics of Information.<br><br>
+      't Hooft, G. (1993); Susskind, L. (1994). The Holographic Principle.
+    </div>
+  </div>
+  <button class="top-btn" id="totop" aria-label="Back to top">↑ Back to top</button>
+</footer>
+
+<script>
+(function(){
+  'use strict';
+
+  // ---- Reading time (computed) ----
+  const article = document.querySelector('article');
+  const metaEl = document.getElementById('readtime');
+  if (article && metaEl) {
+    const words = article.textContent.trim().split(/\s+/).length;
+    const mins = Math.max(1, Math.round(words / 220));
+    metaEl.textContent = mins + ' min read';
+  }
+
+  // ---- Scroll progress ----
+  const progress = document.getElementById('progress');
+  function updateProgress(){
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    const pct = max > 0 ? (h.scrollTop / max) * 100 : 0;
+    progress.style.width = pct + '%';
+  }
+  window.addEventListener('scroll', updateProgress, { passive: true });
+  window.addEventListener('resize', updateProgress);
+  updateProgress();
+
+  // ---- Scrollspy ----
+  const sections = document.querySelectorAll('section.chapter');
+  const links = document.querySelectorAll('#rail a');
+  let activeId = null;
+
+  const observer = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if (e.isIntersecting) {
+        const id = e.target.id;
+        if (id !== activeId) {
+          activeId = id;
+          links.forEach(function(l){
+            l.classList.toggle('active', l.getAttribute('href') === '#' + id);
+          });
+        }
+      }
+    });
+  }, { rootMargin: '-15% 0px -70% 0px', threshold: 0 });
+  sections.forEach(function(s){ observer.observe(s); });
+
+  // ---- Mobile menu ----
+  const rail = document.getElementById('rail');
+  const scrim = document.getElementById('scrim');
+  const burger = document.getElementById('burger');
+
+  function openMenu(){
+    rail.classList.add('open');
+    scrim.classList.add('open');
+    burger.setAttribute('aria-expanded', 'true');
+    burger.setAttribute('aria-label', 'Close navigation');
+    burger.textContent = '✕';
+  }
+  function closeMenu(){
+    rail.classList.remove('open');
+    scrim.classList.remove('open');
+    burger.setAttribute('aria-expanded', 'false');
+    burger.setAttribute('aria-label', 'Open navigation');
+    burger.textContent = '☰';
+  }
+  burger.addEventListener('click', function(){
+    if (rail.classList.contains('open')) closeMenu(); else openMenu();
+  });
+  scrim.addEventListener('click', closeMenu);
+  links.forEach(function(l){
+    l.addEventListener('click', function(){
+      if (window.innerWidth <= 880) closeMenu();
+    });
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && rail.classList.contains('open')) closeMenu();
+  });
+
+  // ---- Social share prefill ----
+  const claimEl = document.getElementById('bold-reframe-claim');
+  const shareX = document.getElementById('share-x');
+  const shareLi = document.getElementById('share-li');
+
+  if (claimEl && shareX && shareLi) {
+    const claimText = claimEl.textContent.trim();
+    const pageUrl = window.location.href;
+
+    // X / Twitter: text + url params — Twitter appends the link cleanly
+    const xUrl = 'https://twitter.com/intent/tweet?text=' +
+      encodeURIComponent(claimText) +
+      '&url=' + encodeURIComponent(pageUrl);
+    shareX.href = xUrl;
+
+    // LinkedIn offsite share: supports url param (text prefill not supported by this endpoint)
+    const liUrl = 'https://www.linkedin.com/sharing/share-offsite/?url=' +
+      encodeURIComponent(pageUrl);
+    shareLi.href = liUrl;
+  }
+
+  // ---- Back to top ----
+  const totop = document.getElementById('totop');
+  if (totop) {
+    totop.addEventListener('click', function(){
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+    });
+  }
+
+  // ---- Smooth-scroll with topbar offset (native smooth-scroll otherwise overshoots) ----
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  links.forEach(function(l){
+    l.addEventListener('click', function(e){
+      const href = l.getAttribute('href');
+      if (href && href.charAt(0) === '#') {
+        const target = document.getElementById(href.slice(1));
+        if (target) {
+          e.preventDefault();
+          const top = target.getBoundingClientRect().top + window.scrollY - 76;
+          window.scrollTo({ top: top, behavior: reduceMotion ? 'auto' : 'smooth' });
+        }
+      }
+    });
+  });
+
+})();
+</script>
+
+</body>
+</html>
