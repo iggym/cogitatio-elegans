@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cold Comfort — Industrial Refrigeration and the Centralized Food Chain</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,200;0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#f7f3ed;--bg-alt:#efe9e0;--fg:#1c1917;--fg-muted:#78716c;
+  --accent:#c2410c;--accent-light:#ea580c;--accent-glow:rgba(194,65,12,.12);
+  --card:#ffffff;--border:#d6d3d1;--rail-bg:#f5f0e8;
+  --cool:#0f766e;--cool-light:#14b8a6;--cool-glow:rgba(15,118,110,.12);
+  --warm:#d97706;--warm-light:#fbbf24;
+  --font-display:'Instrument Serif',serif;--font-body:'DM Sans',sans-serif;
+  --text-scale:1;
+}
+[data-theme="dark"]{
+  --bg:#0f0e0c;--bg-alt:#1c1917;--fg:#f5f0e8;--fg-muted:#a8a29e;
+  --accent:#ea580c;--accent-light:#f97316;--accent-glow:rgba(234,88,12,.15);
+  --card:#1c1917;--border:#44403c;--rail-bg:#171412;
+  --cool:#14b8a6;--cool-light:#2dd4bf;--cool-glow:rgba(20,184,166,.15);
+  --warm:#fbbf24;--warm-light:#fde68a;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;font-size:calc(16px * var(--text-scale))}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{font-family:var(--font-body);background:var(--bg);color:var(--fg);line-height:1.7;overflow-x:hidden;transition:background .4s,color .4s}
+body::after{content:'';position:fixed;inset:0;opacity:.025;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");pointer-events:none;z-index:9999}
+::selection{background:var(--accent);color:#fff}
+a{color:var(--accent);text-decoration:none;transition:color .2s}
+a:hover{color:var(--accent-light)}
+/* Progress */
+#progress{position:fixed;top:0;left:0;height:3px;width:0;background:linear-gradient(90deg,var(--cool),var(--accent),var(--warm));z-index:10001;transition:width .1s linear}
+/* Topbar */
+#topbar{position:fixed;top:3px;left:0;right:0;height:52px;background:color-mix(in srgb,var(--bg) 72%,transparent);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 1.25rem;z-index:10000;transition:background .4s}
+.topbar-left{display:flex;align-items:center;gap:1rem;min-width:0}
+.home-link{font-family:var(--font-display);font-size:1.1rem;color:var(--fg);white-space:nowrap}
+.breadcrumb{font-size:.75rem;color:var(--fg-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.breadcrumb span{margin:0 .35rem}
+.topbar-right{display:flex;align-items:center;gap:.5rem;flex-shrink:0}
+.reading-time{font-size:.72rem;color:var(--fg-muted);white-space:nowrap;padding-right:.5rem;border-right:1px solid var(--border);margin-right:.25rem}
+.topbar-btn{width:34px;height:34px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--fg);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.8rem;transition:all .2s}
+.topbar-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.topbar-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#menuBtn{display:none}
+@media(max-width:880px){#menuBtn{display:flex}.breadcrumb{display:none}.reading-time{display:none}}
+/* Scrim */
+#scrim{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9998;opacity:0;pointer-events:none;transition:opacity .3s}
+#scrim.open{opacity:1;pointer-events:auto}
+/* Wrap */
+.wrap{display:grid;grid-template-columns:220px 1fr;max-width:1100px;margin:0 auto;padding-top:55px;min-height:100vh}
+@media(max-width:880px){.wrap{grid-template-columns:1fr}}
+/* Rail */
+#rail{position:sticky;top:55px;height:calc(100vh - 55px);overflow-y:auto;padding:2rem 1rem 2rem 1.25rem;border-right:1px solid var(--border);background:var(--rail-bg);transition:background .4s}
+#rail a{display:block;font-size:.82rem;color:var(--fg-muted);padding:.45rem .65rem;border-radius:6px;margin-bottom:2px;transition:all .2s;line-height:1.4}
+#rail a:hover{color:var(--fg);background:var(--accent-glow)}
+#rail a.active{color:var(--accent);background:var(--accent-glow);font-weight:500}
+@media(max-width:880px){
+  #rail{position:fixed;top:55px;left:0;bottom:0;width:260px;transform:translateX(-100%);transition:transform .3s ease;z-index:9999;border-right:1px solid var(--border)}
+  #rail.open{transform:translateX(0)}
+}
+/* Main */
+main{padding:2rem 2.5rem 4rem;max-width:680px;min-width:0}
+@media(max-width:880px){main{padding:1.5rem 1.25rem 3rem}}
+/* Typography */
+h1,h2,h3{font-family:var(--font-display);font-weight:400;line-height:1.15}
+.hero-title{font-size:clamp(2.5rem,6vw,4.2rem);margin-bottom:.5rem;letter-spacing:-.02em}
+.hero-sub{font-size:1.05rem;color:var(--fg-muted);max-width:520px;line-height:1.6;margin-bottom:2rem}
+.section-title{font-size:clamp(1.6rem,3.5vw,2.2rem);margin-bottom:1.25rem;letter-spacing:-.01em;position:relative}
+.section-title::after{content:'';display:block;width:40px;height:3px;background:var(--accent);margin-top:.5rem;border-radius:2px}
+p{margin-bottom:1.15rem;font-size:1rem;color:var(--fg)}
+p.muted{color:var(--fg-muted)}
+/* Reveal */
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+@media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
+/* Spectrum */
+.spectrum{margin:2.5rem 0;padding:1.5rem;background:var(--card);border:1px solid var(--border);border-radius:12px}
+.spectrum-labels{display:flex;justify-content:space-between;font-size:.78rem;margin-bottom:.75rem}
+.spectrum-label-cool{color:var(--cool);font-weight:500}
+.spectrum-label-warm{color:var(--accent);font-weight:500}
+.spectrum-track{position:relative;height:8px;border-radius:4px;background:linear-gradient(90deg,var(--cool),var(--cool-light) 30%,var(--warm) 70%,var(--accent));margin-bottom:1rem}
+.spectrum-track input[type=range]{position:absolute;top:50%;left:0;width:100%;transform:translateY(-50%);-webkit-appearance:none;appearance:none;background:transparent;cursor:pointer;height:24px;margin:0}
+.spectrum-track input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--fg);border:3px solid var(--card);box-shadow:0 2px 8px rgba(0,0,0,.25);cursor:grab}
+.spectrum-track input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--fg);border:3px solid var(--card);box-shadow:0 2px 8px rgba(0,0,0,.25);cursor:grab}
+.spectrum-callout{font-size:.92rem;color:var(--fg);line-height:1.6;padding:.75rem 1rem;background:var(--bg-alt);border-radius:8px;min-height:60px;transition:background .4s}
+/* Cards */
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin:2rem 0;transition:background .4s,border-color .4s}
+/* Snap Card */
+.snap-card{position:relative;overflow:hidden;border-left:4px solid var(--accent)}
+.snap-card .snap-quote{font-family:var(--font-display);font-size:1.35rem;font-style:italic;line-height:1.5;margin-bottom:1rem;color:var(--fg)}
+.snap-actions{display:flex;gap:.5rem;flex-wrap:wrap}
+.snap-btn{display:inline-flex;align-items:center;gap:.4rem;padding:.45rem .85rem;border:1px solid var(--border);border-radius:8px;background:var(--bg-alt);color:var(--fg-muted);font-size:.78rem;cursor:pointer;transition:all .2s;font-family:var(--font-body)}
+.snap-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.snap-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* SVG Diagram */
+.diagram-wrap{margin:2rem 0;overflow-x:auto}
+.diagram-wrap svg{width:100%;height:auto;display:block}
+.diagram-wrap .node{cursor:pointer;transition:filter .2s}
+.diagram-wrap .node:hover{filter:brightness(1.2)}
+.diagram-wrap .node-label{font-family:var(--font-body);font-size:11px;fill:var(--fg);pointer-events:none}
+.diagram-wrap .conn{stroke-width:2;fill:none;transition:stroke .3s,opacity .3s}
+.diagram-wrap .conn.highlight{stroke-width:3.5}
+.diagram-wrap .node-group.dim .node-circle{opacity:.3}
+.diagram-wrap .node-group.dim .node-label{opacity:.3}
+.diagram-legend{display:flex;gap:1.5rem;margin-top:.75rem;font-size:.78rem;color:var(--fg-muted)}
+.diagram-legend span::before{content:'';display:inline-block;width:12px;height:3px;border-radius:2px;margin-right:.4rem;vertical-align:middle}
+.legend-local::before{background:var(--accent)}
+.legend-corp::before{background:var(--cool)}
+/* Chart */
+.chart-wrap{position:relative;margin:1.5rem 0}
+.chart-wrap canvas{max-height:320px}
+/* CTA */
+.action{border-left:4px solid var(--warm);margin-top:2rem}
+.action h3{font-family:var(--font-display);font-size:1.3rem;margin-bottom:.75rem}
+.checklist{list-style:none;margin-bottom:1.25rem}
+.checklist li{display:flex;align-items:flex-start;gap:.65rem;padding:.55rem 0;border-bottom:1px solid var(--border);font-size:.92rem}
+.checklist li:last-child{border-bottom:none}
+.checklist input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;margin-top:3px}
+.checklist label{cursor:pointer;color:var(--fg);transition:color .2s}
+.checklist input:checked+label{color:var(--fg-muted);text-decoration:line-through}
+.progress-gauge{height:8px;background:var(--bg-alt);border-radius:4px;overflow:hidden;margin-top:.5rem}
+.progress-gauge-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--warm));border-radius:4px;transition:width .4s ease;width:0}
+.progress-label{font-size:.75rem;color:var(--fg-muted);margin-top:.35rem;text-align:right}
+/* Toast */
+.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(80px);background:var(--fg);color:var(--bg);padding:.7rem 1.4rem;border-radius:8px;font-size:.85rem;opacity:0;transition:all .35s ease;z-index:10002;pointer-events:none}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+/* Decorative blobs */
+.blob{position:fixed;border-radius:50%;filter:blur(100px);opacity:.08;pointer-events:none;z-index:-1}
+.blob-1{width:500px;height:500px;background:var(--cool);top:-100px;right:-150px}
+.blob-2{width:400px;height:400px;background:var(--accent);bottom:-80px;left:-120px}
+/* Footer */
+footer{border-top:1px solid var(--border);padding:2rem 0;text-align:center;font-size:.78rem;color:var(--fg-muted);margin-top:2rem}
+footer a{color:var(--accent)}
+/* Reduced motion */
+@media(prefers-reduced-motion:reduce){
+  .reveal{opacity:1;transform:none}
+  #progress{transition:none}
+  .toast{transition:none}
+  .progress-gauge-fill{transition:none}
+  .spectrum-callout{transition:none}
+}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+
+<header id="topbar">
+  <div class="topbar-left">
+    <a href="https://iggym.github.io/cogitatio-elegans/" class="home-link">Cogitatio Elegans</a>
+    <nav class="breadcrumb" aria-label="Breadcrumb">Articles<span>/</span>Food Systems<span>/</span>Cold Comfort</nav>
+  </div>
+  <div class="topbar-right">
+    <span class="reading-time" id="readingTime">7 min read</span>
+    <button class="topbar-btn" id="sizeBtn" title="Toggle text size" aria-label="Toggle text size">Aa</button>
+    <button class="topbar-btn" id="themeBtn" title="Toggle theme" aria-label="Toggle theme"><i class="fas fa-moon"></i></button>
+    <button class="topbar-btn" id="menuBtn" title="Open menu" aria-label="Open navigation menu"><i class="fas fa-bars"></i></button>
+  </div>
+</header>
+
+<div id="scrim" aria-hidden="true"></div>
+
+<div class="wrap">
+  <nav id="rail" aria-label="Article sections">
+    <a href="#hero">Overview</a>
+    <a href="#frost">Frost on the Table</a>
+    <a href="#calculation">Cold Calculation</a>
+    <a href="#threads">Frozen Threads</a>
+    <a href="#truth">Cold Truth</a>
+    <a href="#breaking">Breaking the Ice</a>
+    <a href="#match">Strike a Match</a>
+  </nav>
+
+  <main>
+    <article>
+      <!-- Hero -->
+      <section id="hero" class="reveal">
+        <h1 class="hero-title">Cold Comfort</h1>
+        <p class="hero-sub">Industrial refrigeration and the centralized food chain. A perspective shift on the technology that remade sustenance.</p>
+
+        <div class="spectrum" role="group" aria-label="Perspective spectrum">
+          <div class="spectrum-labels">
+            <span class="spectrum-label-cool">Conventional View</span>
+            <span class="spectrum-label-warm">Shifted Perspective</span>
+          </div>
+          <div class="spectrum-track">
+            <input type="range" id="spectrumSlider" min="0" max="100" value="0" aria-label="Shift perspective between conventional and reframed view">
+          </div>
+          <div class="spectrum-callout" id="spectrumCallout">Refrigeration preserves food freshness, prevents spoilage, and expands culinary access to perishable goods.</div>
+        </div>
+      </section>
+
+      <!-- Section 1 -->
+      <section id="frost" class="reveal">
+        <h2 class="section-title">Frost on the Table</h2>
+        <p>Martha Cline lifts the last crate of heirloom tomatoes onto the farmers' market table. It is 6:47 in the morning, late August, and the air carries that particular Ohio sweetness — soil, cut grass, the faint diesel of a passing truck. Three stalls down, the space where Dale Hutchins used to sell sweet corn sits empty for the third straight week. Dale's farm didn't fail. It got absorbed — bought by a distributor that ships his corn four hundred miles to a processing facility, freezes it, and ships it back to the same grocery store fifty yards from this market.</p>
+        <p>Martha's tomatoes will sell out by noon. But the grocery store across the street will sell more tomatoes today than she'll move all season. Those tomatoes traveled 1,800 miles in a refrigerated truck from a farm in California that grows nothing but tomatoes — forty thousand acres of a single variety bred not for flavor but for the ability to survive three weeks in a cold chain.</p>
+        <p>Refrigeration was supposed to save food. Instead, it remade the map of who grows it, who sells it, and who eats it.</p>
+      </section>
+
+      <!-- Section 2 -->
+      <section id="calculation" class="reveal">
+        <h2 class="section-title">Cold Calculation</h2>
+        <p>Here is the reframe: <strong>Industrial refrigeration was not built to feed people. It was built to concentrate the power to feed people.</strong></p>
+        <p>The cold chain didn't expand access to fresh food — it replaced local food webs with transport-dependent distribution systems controlled by fewer and fewer entities. When you can freeze, chill, and ship anything anywhere, the advantage shifts from the farmer who grows food near you to the corporation that owns the refrigerated warehouse, the truck fleet, and the retail shelf.</p>
+        <p>Between 1950 and 2000, the number of farms in the United States fell by 64 percent. Cold storage capacity grew by more than 600 percent in the same period. This is not a coincidence. The infrastructure of preservation became the infrastructure of monopoly.</p>
+
+        <!-- SVG Diagram -->
+        <div class="diagram-wrap card reveal" role="img" aria-label="Diagram comparing local food path versus corporate cold chain path">
+          <svg id="chainDiagram" viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg">
+            <!-- Local path connections -->
+            <line class="conn local-conn" x1="130" y1="70" x2="360" y2="70" stroke="var(--accent)" stroke-dasharray="6 4"/>
+            <line class="conn local-conn" x1="360" y1="70" x2="630" y2="70" stroke="var(--accent)" stroke-dasharray="6 4"/>
+            <!-- Corporate path connections -->
+            <line class="conn corp-conn" x1="130" y1="230" x2="250" y2="230" stroke="var(--cool)"/>
+            <line class="conn corp-conn" x1="250" y1="230" x2="370" y2="230" stroke="var(--cool)"/>
+            <line class="conn corp-conn" x1="370" y1="230" x2="490" y2="230" stroke="var(--cool)"/>
+            <line class="conn corp-conn" x1="490" y1="230" x2="630" y2="230" stroke="var(--cool)"/>
+            <!-- Local path label -->
+            <text x="380" y="30" text-anchor="middle" font-size="11" fill="var(--accent)" font-family="var(--font-body)" font-weight="500">LOCAL PATH</text>
+            <!-- Corporate path label -->
+            <text x="380" y="195" text-anchor="middle" font-size="11" fill="var(--cool)" font-family="var(--font-body)" font-weight="500">CORPORATE COLD CHAIN</text>
+            <!-- Local nodes -->
+            <g class="node-group" data-path="local">
+              <g class="node" data-name="Local Farm" tabindex="0" role="button" aria-label="Local Farm node">
+                <circle class="node-circle" cx="90" cy="70" r="30" fill="var(--accent-glow)" stroke="var(--accent)" stroke-width="2"/>
+                <text class="node-label" x="90" y="66" text-anchor="middle" font-size="10" font-weight="500">Local</text>
+                <text class="node-label" x="90" y="79" text-anchor="middle" font-size="10" font-weight="500">Farm</text>
+              </g>
+              <g class="node" data-name="Community Market" tabindex="0" role="button" aria-label="Community Market node">
+                <circle class="node-circle" cx="320" cy="70" r="30" fill="var(--accent-glow)" stroke="var(--accent)" stroke-width="2"/>
+                <text class="node-label" x="320" y="66" text-anchor="middle" font-size="10" font-weight="500">Community</text>
+                <text class="node-label" x="320" y="79" text-anchor="middle" font-size="10" font-weight="500">Market</text>
+              </g>
+            </g>
+            <!-- Consumer node (shared) -->
+            <g class="node" data-name="Consumer" tabindex="0" role="button" aria-label="Consumer node">
+              <circle class="node-circle" cx="670" cy="150" r="35" fill="var(--warm-light)" fill-opacity=".15" stroke="var(--warm)" stroke-width="2.5"/>
+              <text class="node-label" x="670" y="146" text-anchor="middle" font-size="11" font-weight="700">You</text>
+              <text class="node-label" x="670" y="160" text-anchor="middle" font-size="9">(Consumer)</text>
+            </g>
+            <!-- Lines to consumer -->
+            <line class="conn local-conn" x1="630" y1="70" x2="640" y2="130" stroke="var(--accent)" stroke-dasharray="6 4"/>
+            <line class="conn corp-conn" x1="630" y1="230" x2="640" y2="170" stroke="var(--cool)"/>
+            <!-- Corporate nodes -->
+            <g class="node-group" data-path="corp">
+              <g class="node" data-name="Corporate Farm" tabindex="0" role="button" aria-label="Corporate Farm node">
+                <circle class="node-circle" cx="90" cy="230" r="30" fill="var(--cool-glow)" stroke="var(--cool)" stroke-width="2"/>
+                <text class="node-label" x="90" y="226" text-anchor="middle" font-size="10" font-weight="500">Corporate</text>
+                <text class="node-label" x="90" y="239" text-anchor="middle" font-size="10" font-weight="500">Farm</text>
+              </g>
+              <g class="node" data-name="Processor" tabindex="0" role="button" aria-label="Processor node">
+                <circle class="node-circle" cx="210" cy="230" r="26" fill="var(--cool-glow)" stroke="var(--cool)" stroke-width="2"/>
+                <text class="node-label" x="210" y="234" text-anchor="middle" font-size="10" font-weight="500">Processor</text>
+              </g>
+              <g class="node" data-name="Cold Storage" tabindex="0" role="button" aria-label="Cold Storage node">
+                <circle class="node-circle" cx="330" cy="230" r="30" fill="var(--cool-glow)" stroke="var(--cool)" stroke-width="2.5"/>
+                <text class="node-label" x="330" y="226" text-anchor="middle" font-size="10" font-weight="700">Cold</text>
+                <text class="node-label" x="330" y="239" text-anchor="middle" font-size="10" font-weight="700">Storage</text>
+              </g>
+              <g class="node" data-name="Distributor" tabindex="0" role="button" aria-label="Distributor node">
+                <circle class="node-circle" cx="450" cy="230" r="26" fill="var(--cool-glow)" stroke="var(--cool)" stroke-width="2"/>
+                <text class="node-label" x="450" y="234" text-anchor="middle" font-size="10" font-weight="500">Distributor</text>
+              </g>
+              <g class="node" data-name="Retail Chain" tabindex="0" role="button" aria-label="Retail Chain node">
+                <circle class="node-circle" cx="570" cy="230" r="28" fill="var(--cool-glow)" stroke="var(--cool)" stroke-width="2"/>
+                <text class="node-label" x="570" y="226" text-anchor="middle" font-size="10" font-weight="500">Retail</text>
+                <text class="node-label" x="570" y="239" text-anchor="middle" font-size="10" font-weight="500">Chain</text>
+              </g>
+            </g>
+            <!-- Tooltip -->
+            <rect id="svgTooltip" x="0" y="0" width="1" height="1" rx="6" fill="var(--fg)" opacity="0" pointer-events="none"/>
+            <text id="svgTooltipText" x="0" y="0" fill="var(--bg)" font-size="11" font-family="var(--font-body)" opacity="0" pointer-events="none" text-anchor="middle"></text>
+          </svg>
+          <div class="diagram-legend">
+            <span class="legend-local">Local food path (2 steps)</span>
+            <span class="legend-corp">Corporate cold chain (5 steps)</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 3 -->
+      <section id="threads" class="reveal">
+        <h2 class="section-title">Frozen Threads</h2>
+        <p>The connections are hiding in plain sight. Refrigeration didn't just keep food cold — it kept populations dependent on a single, brittle supply chain.</p>
+        <p>Consider: a community that grows its own food has a direct relationship with its sustenance. The farmer up the road grows what the season allows. The grocer knows the rancher by name. When the national highway system and refrigerated trucking converged in the 1950s, that relationship was severed — not by malice, but by logistics. The cold chain made it possible to source food from anywhere, which meant it became necessary to source food from everywhere.</p>
+        <p>The supermarket became the only grocery store in town. The distributor became the only supplier to the supermarket. The processor became the only buyer from the farm. Each link in the chain added distance — physical, economic, and cognitive — between the person eating and the person growing.</p>
+
+        <!-- Perspective Snap Card -->
+        <div class="card snap-card reveal" id="snapCard">
+          <p class="snap-quote" id="snapQuote">Refrigeration didn't keep food fresh. It kept communities dependent.</p>
+          <div class="snap-actions">
+            <button class="snap-btn" id="copyBtn" aria-label="Copy quote to clipboard"><i class="fas fa-copy"></i> Copy</button>
+            <button class="snap-btn" id="shareXBtn" aria-label="Share on X"><i class="fab fa-x-twitter"></i> Share</button>
+            <button class="snap-btn" id="shareLinkedInBtn" aria-label="Share on LinkedIn"><i class="fab fa-linkedin-in"></i> Share</button>
+          </div>
+        </div>
+
+        <p>Cognitive shift: logistics technologies designed to preserve food can structurally decouple communities from local ecosystems, centralizing corporate control over human sustenance.</p>
+      </section>
+
+      <!-- Section 4 -->
+      <section id="truth" class="reveal">
+        <h2 class="section-title">Cold Truth</h2>
+        <p>To be clear: refrigeration saved lives. It reduced foodborne illness, extended shelf life, and made it possible for communities in harsh climates to access nutrients year-round. The technology itself is not the villain.</p>
+        <p>But the systems built around it were not inevitable. They were designed — by companies with the capital to build cold storage warehouses, buy truck fleets, and negotiate exclusive contracts with retailers. The cold chain enabled centralization. Centralization enabled consolidation. Consolidation enabled the displacement of local food economies that had sustained communities for generations.</p>
+
+        <!-- Chart.js -->
+        <div class="card reveal">
+          <h3 style="font-family:var(--font-display);font-size:1.15rem;margin-bottom:.5rem">The Inverse Relationship</h3>
+          <p class="muted" style="font-size:.82rem;margin-bottom:1rem">As cold storage capacity expanded, independent farms collapsed. Data reflects US trends 1950–2020.</p>
+          <div class="chart-wrap">
+            <canvas id="consolidationChart"></canvas>
+          </div>
+        </div>
+
+        <p>The nuance matters. A small dairy farmer in Vermont can now ship artisan cheese to a restaurant in Phoenix. That's the cold chain working as promised. But that same farmer competes against a conglomerate that ships millions of pounds of processed cheese product through the same infrastructure at a fraction of the cost. The highway is open to everyone, but the tolls favor the fleet.</p>
+      </section>
+
+      <!-- Section 5 -->
+      <section id="breaking" class="reveal">
+        <h2 class="section-title">Breaking the Ice</h2>
+        <p>The cold chain is not going away. But the dependence it created is not permanent.</p>
+        <p>In Detroit, urban farms now produce over 400,000 pounds of food annually on vacant lots that were once served exclusively by refrigerated trucks from distant warehouses. In Vermont, food hubs aggregate produce from dozens of small farms and distribute it within a 50-mile radius — no 18-wheeler required. In Portland, Oregon, a community-supported agriculture program delivers seasonal produce to 4,000 households using bicycles and electric vans.</p>
+        <p>These are not nostalgic gestures. They are logistics systems — different ones. Shorter, more resilient, and accountable to the communities they serve.</p>
+        <p>The question is not whether refrigeration is good or bad. The question is: <strong>who controls the distance between your plate and the soil that grew it?</strong></p>
+      </section>
+
+      <!-- Section 6 -->
+      <section id="match" class="reveal">
+        <h2 class="section-title">Strike a Match</h2>
+        <p>Within 24 hours, you can do one thing: find a local food producer within 50 miles of where you live and buy something from them directly. A farmers' market, a farm stand, a community-supported agriculture share. One purchase. One broken link in the cold chain. One reconnection between your hands and the soil that feeds you.</p>
+
+        <!-- CTA Checklist -->
+        <div class="card action reveal">
+          <h3>Your 24-Hour Action Plan</h3>
+          <ul class="checklist">
+            <li><input type="checkbox" id="c1"><label for="c1">Find a local food producer within 50 miles of you</label></li>
+            <li><input type="checkbox" id="c2"><label for="c2">Visit a farmers' market this week</label></li>
+            <li><input type="checkbox" id="c3"><label for="c3">Ask your grocery store about local sourcing</label></li>
+            <li><input type="checkbox" id="c4"><label for="c4">Share this perspective with one person</label></li>
+          </ul>
+          <div class="progress-gauge"><div class="progress-gauge-fill" id="gaugeFill"></div></div>
+          <div class="progress-label" id="gaugeLabel">0 of 4 completed</div>
+        </div>
+      </section>
+    </article>
+
+    <footer>
+      <p>Part of <a href="https://iggym.github.io/cogitatio-elegans/">Cogitatio Elegans</a> — perspective-shifting writing on the systems that shape us.</p>
+    </footer>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ====== Theme ====== */
+const root = document.documentElement;
+const themeBtn = document.getElementById('themeBtn');
+function getPreferredTheme(){
+  return localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light');
+}
+function applyTheme(t){
+  root.setAttribute('data-theme', t);
+  themeBtn.innerHTML = t === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+  localStorage.setItem('theme', t);
+  if(window.consolidationChart) updateChartColors();
+}
+applyTheme(getPreferredTheme());
+themeBtn.addEventListener('click', () => {
+  applyTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+});
+
+/* ====== Text Size ====== */
+const sizeBtn = document.getElementById('sizeBtn');
+const sizes = [1, 1.12, 1.25];
+let sizeIdx = 0;
+sizeBtn.addEventListener('click', () => {
+  sizeIdx = (sizeIdx + 1) % sizes.length;
+  root.style.setProperty('--text-scale', sizes[sizeIdx]);
+});
+
+/* ====== Mobile Menu ====== */
+const menuBtn = document.getElementById('menuBtn');
+const rail = document.getElementById('rail');
+const scrim = document.getElementById('scrim');
+function toggleMenu(open){
+  rail.classList.toggle('open', open);
+  scrim.classList.toggle('open', open);
+  scrim.setAttribute('aria-hidden', !open);
+}
+menuBtn.addEventListener('click', () => toggleMenu(!rail.classList.contains('open')));
+scrim.addEventListener('click', () => toggleMenu(false));
+rail.querySelectorAll('a').forEach(a => a.addEventListener('click', () => { if(window.innerWidth <= 880) toggleMenu(false); }));
+
+/* ====== Progress Bar ====== */
+const progressBar = document.getElementById('progress');
+function updateProgress(){
+  const h = document.documentElement.scrollHeight - window.innerHeight;
+  const pct = h > 0 ? (window.scrollY / h) * 100 : 0;
+  progressBar.style.width = pct + '%';
+}
+window.addEventListener('scroll', updateProgress, {passive:true});
+updateProgress();
+
+/* ====== Scrollspy ====== */
+const sections = document.querySelectorAll('section[id]');
+const railLinks = document.querySelectorAll('#rail a');
+const spyObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if(e.isIntersecting){
+      railLinks.forEach(l => l.classList.remove('active'));
+      const hit = document.querySelector(`#rail a[href="#${e.target.id}"]`);
+      if(hit) hit.classList.add('active');
+    }
+  });
+}, {rootMargin:'-15% 0px -70% 0px'});
+sections.forEach(s => spyObs.observe(s));
+
+/* ====== Scroll Reveal ====== */
+const revealObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if(e.isIntersecting){
+      e.target.classList.add('visible');
+      revealObs.unobserve(e.target);
+    }
+  });
+}, {threshold:0.08});
+document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
+
+/* ====== Spectrum Visualization ====== */
+const slider = document.getElementById('spectrumSlider');
+const callout = document.getElementById('spectrumCallout');
+const spectrumStatements = [
+  {max:20, text:"Refrigeration preserves food freshness, prevents spoilage, and expands culinary access to perishable goods."},
+  {max:40, text:"Cold-chain logistics reduced spoilage and made seasonal foods available year-round across vast distances."},
+  {max:60, text:"But the infrastructure of preservation became the infrastructure of control — concentrating who decides what reaches your plate."},
+  {max:80, text:"Refrigeration enabled the consolidation of agricultural monopolies, centralized supply chains, and uniform mass distribution — displacing local food webs."},
+  {max:101, text:"Logistics technologies designed to preserve food can structurally decouple communities from local ecosystems, centralizing corporate control over human sustenance."}
+];
+slider.addEventListener('input', () => {
+  const v = parseInt(slider.value);
+  const match = spectrumStatements.find(s => v < s.max);
+  callout.textContent = match ? match.text : spectrumStatements[4].text;
+});
+
+/* ====== SVG Diagram Interactivity ====== */
+const svgDiagram = document.getElementById('chainDiagram');
+const nodeGroups = svgDiagram.querySelectorAll('.node-group');
+const allNodes = svgDiagram.querySelectorAll('.node');
+const localConns = svgDiagram.querySelectorAll('.local-conn');
+const corpConns = svgDiagram.querySelectorAll('.corp-conn');
+const tooltip = document.getElementById('svgTooltip');
+const tooltipText = document.getElementById('svgTooltipText');
+
+const nodeDescriptions = {
+  'Local Farm': 'Small-scale, diversified, community-rooted',
+  'Community Market': 'Direct producer-to-consumer, no cold chain',
+  'Corporate Farm': 'Monoculture, volume-optimized, contract-bound',
+  'Processor': 'Value extraction point — raw becomes product',
+  'Cold Storage': 'The chokepoint — he who controls the thermostat controls the flow',
+  'Distributor': 'Logistics bottleneck — exclusive contracts lock out small players',
+  'Retail Chain': 'Final gatekeeper — shelf space is rented, not earned',
+  'Consumer': 'End point — conditioned to accept whatever arrives on the shelf'
+};
+
+function highlightPath(path){
+  nodeGroups.forEach(g => {
+    g.classList.toggle('dim', g.dataset.path && g.dataset.path !== path);
+  });
+  if(path === 'local'){
+    localConns.forEach(c => { c.classList.add('highlight'); c.style.opacity = '1'; });
+    corpConns.forEach(c => { c.classList.remove('highlight'); c.style.opacity = '.2'; });
+  } else {
+    corpConns.forEach(c => { c.classList.add('highlight'); c.style.opacity = '1'; });
+    localConns.forEach(c => { c.classList.remove('highlight'); c.style.opacity = '.2'; });
+  }
+}
+function resetPaths(){
+  nodeGroups.forEach(g => g.classList.remove('dim'));
+  localConns.forEach(c => { c.classList.remove('highlight'); c.style.opacity = '1'; });
+  corpConns.forEach(c => { c.classList.remove('highlight'); c.style.opacity = '1'; });
+  tooltip.setAttribute('opacity','0');
+  tooltipText.setAttribute('opacity','0');
+}
+
+allNodes.forEach(node => {
+  const name = node.dataset.name;
+  node.addEventListener('mouseenter', e => {
+    const group = node.closest('.node-group');
+    if(group && group.dataset.path) highlightPath(group.dataset.path);
+    /* Show tooltip */
+    const circle = node.querySelector('.node-circle');
+    if(circle && nodeDescriptions[name]){
+      const cx = parseFloat(circle.getAttribute('cx'));
+      const cy = parseFloat(circle.getAttribute('cy'));
+      const r = parseFloat(circle.getAttribute('r'));
+      const desc = nodeDescriptions[name];
+      const tw = desc.length * 6.5 + 16;
+      const th = 26;
+      const tx = cx;
+      const ty = cy - r - 18;
+      tooltip.setAttribute('x', tx - tw/2);
+      tooltip.setAttribute('y', ty - th/2);
+      tooltip.setAttribute('width', tw);
+      tooltip.setAttribute('height', th);
+      tooltip.setAttribute('opacity','0.92');
+      tooltipText.textContent = desc;
+      tooltipText.setAttribute('x', tx);
+      tooltipText.setAttribute('y', ty + 4);
+      tooltipText.setAttribute('opacity','1');
+    }
+  });
+  node.addEventListener('mouseleave', resetPaths);
+  node.addEventListener('focus', () => {
+    const group = node.closest('.node-group');
+    if(group && group.dataset.path) highlightPath(group.dataset.path);
+  });
+  node.addEventListener('blur', resetPaths);
+});
+
+/* ====== Chart.js ====== */
+function getChartColors(){
+  const cs = getComputedStyle(root);
+  return {
+    fg: cs.getPropertyValue('--fg').trim(),
+    muted: cs.getPropertyValue('--fg-muted').trim(),
+    accent: cs.getPropertyValue('--accent').trim(),
+    cool: cs.getPropertyValue('--cool').trim(),
+    border: cs.getPropertyValue('--border').trim(),
+    card: cs.getPropertyValue('--card').trim()
+  };
+}
+
+let chartInstance = null;
+function createChart(){
+  const ctx = document.getElementById('consolidationChart').getContext('2d');
+  const c = getChartColors();
+  const labels = ['1950','1960','1970','1980','1990','2000','2010','2020'];
+  const farms = [5388,3963,2954,2440,2146,2172,2180,2019];
+  const coldStorage = [400,550,750,1000,1400,2500,3800,4500];
+
+  if(chartInstance) chartInstance.destroy();
+
+  chartInstance = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        {
+          type:'line',
+          label:'US Farms (thousands)',
+          data:farms,
+          borderColor:c.accent,
+          backgroundColor:c.accent + '22',
+          yAxisID:'y1',
+          tension:.35,
+          pointRadius:4,
+          pointHoverRadius:7,
+          borderWidth:2.5,
+          fill:true,
+          order:1
+        },
+        {
+          type:'bar',
+          label:'Cold Storage Capacity (million cu ft)',
+          data:coldStorage,
+          backgroundColor:c.cool + '88',
+          hoverBackgroundColor:c.cool,
+          yAxisID:'y2',
+          borderRadius:4,
+          order:2
+        }
+      ]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:true,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{
+          labels:{color:c.muted,font:{family:"'DM Sans',sans-serif",size:11},usePointStyle:true,pointStyleWidth:10}
+        },
+        tooltip:{
+          backgroundColor:c.fg,
+          titleColor:c.card,
+          bodyColor:c.card,
+          titleFont:{family:"'DM Sans',sans-serif",weight:'700'},
+          bodyFont:{family:"'DM Sans',sans-serif"},
+          padding:10,
+          cornerRadius:8
+        }
+      },
+      scales:{
+        x:{
+          ticks:{color:c.muted,font:{family:"'DM Sans',sans-serif",size:11}},
+          grid:{color:c.border + '44'}
+        },
+        y1:{
+          type:'linear',
+          position:'left',
+          title:{display:true,text:'Farms (thousands)',color:c.accent,font:{family:"'DM Sans',sans-serif",size:11}},
+          ticks:{color:c.accent,font:{family:"'DM Sans',sans-serif",size:10}},
+          grid:{color:c.border + '33'}
+        },
+        y2:{
+          type:'linear',
+          position:'right',
+          title:{display:true,text:'Cold Storage (M cu ft)',color:c.cool,font:{family:"'DM Sans',sans-serif",size:11}},
+          ticks:{color:c.cool,font:{family:"'DM Sans',sans-serif",size:10}},
+          grid:{drawOnChartArea:false}
+        }
+      }
+    }
+  });
+}
+/* Init chart when visible */
+const chartObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if(e.isIntersecting){
+      createChart();
+      chartObs.unobserve(e.target);
+    }
+  });
+}, {threshold:0.2});
+chartObs.observe(document.getElementById('consolidationChart'));
+
+function updateChartColors(){
+  if(chartInstance) createChart();
+}
+
+/* ====== Copy & Share ====== */
+const snapQuote = document.getElementById('snapQuote').textContent.trim();
+const toast = document.getElementById('toast');
+function showToast(msg){
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2200);
+}
+
+document.getElementById('copyBtn').addEventListener('click', () => {
+  navigator.clipboard.writeText(snapQuote).then(() => showToast('Copied to clipboard')).catch(() => showToast('Failed to copy'));
+});
+
+document.getElementById('shareXBtn').addEventListener('click', () => {
+  const url = encodeURIComponent(window.location.href);
+  const text = encodeURIComponent(snapQuote);
+  window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank', 'width=550,height=420');
+});
+
+document.getElementById('shareLinkedInBtn').addEventListener('click', () => {
+  const url = encodeURIComponent(window.location.href);
+  window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}`, '_blank', 'width=550,height=520');
+});
+
+/* ====== Checklist Progress ====== */
+const checks = document.querySelectorAll('.checklist input[type=checkbox]');
+const gaugeFill = document.getElementById('gaugeFill');
+const gaugeLabel = document.getElementById('gaugeLabel');
+function updateGauge(){
+  const checked = document.querySelectorAll('.checklist input:checked').length;
+  const pct = (checked / checks.length) * 100;
+  gaugeFill.style.width = pct + '%';
+  gaugeLabel.textContent = `${checked} of ${checks.length} completed`;
+}
+checks.forEach(c => c.addEventListener('change', updateGauge));
+
+/* ====== Reading Time ====== */
+const articleText = document.querySelector('article').textContent;
+const wordCount = articleText.trim().split(/\s+/).length;
+const readingMin = Math.max(1, Math.round(wordCount / 230));
+document.getElementById('readingTime').textContent = readingMin + ' min read';
+
+/* ====== Snap Card Gradient Shift ====== */
+const snapCard = document.getElementById('snapCard');
+const snapObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if(e.isIntersecting){
+      const ratio = e.intersectionRatio;
+      const hue = 20 + ratio * 15;
+      snapCard.style.borderLeftColor = `hsl(${hue}, 80%, 45%)`;
+    }
+  });
+}, {threshold: Array.from({length:20}, (_,i) => i/19)});
+snapObs.observe(snapCard);
+</script>
+</body>
+</html>
