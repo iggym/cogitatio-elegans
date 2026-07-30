@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mass Literacy & Public Schooling — A Perspective Shift</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --font: 'Inter', system-ui, sans-serif;
+  --size-base: 16px;
+  --lh: 1.7;
+  --radius: 14px;
+  --radius-sm: 8px;
+  --transition: 0.35s cubic-bezier(.4,0,.2,1);
+  --sidebar-w: 220px;
+  --topbar-h: 56px;
+}
+[data-theme="dark"] {
+  --bg: #0a0a0a;
+  --bg-elevated: #141414;
+  --bg-card: #1a1a1a;
+  --bg-glass: rgba(10,10,10,0.72);
+  --text: #fafaf9;
+  --text-secondary: #a8a29e;
+  --text-muted: #78716c;
+  --border: rgba(255,255,255,0.08);
+  --border-strong: rgba(255,255,255,0.15);
+  --accent-reframe: #f43f5e;
+  --accent-reframe-soft: rgba(244,63,94,0.15);
+  --accent-conventional: #2563eb;
+  --accent-conventional-soft: rgba(37,99,235,0.15);
+  --accent-agency: #059669;
+  --accent-agency-soft: rgba(5,150,105,0.15);
+  --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  --shadow-lg: 0 12px 48px rgba(0,0,0,0.6);
+  --chart-grid: rgba(255,255,255,0.05);
+  --chart-tick: #78716c;
+}
+[data-theme="light"] {
+  --bg: #fafaf9;
+  --bg-elevated: #ffffff;
+  --bg-card: #f5f5f4;
+  --bg-glass: rgba(250,250,249,0.72);
+  --text: #1c1917;
+  --text-secondary: #57534e;
+  --text-muted: #a8a29e;
+  --border: rgba(0,0,0,0.08);
+  --border-strong: rgba(0,0,0,0.15);
+  --accent-reframe: #e11d48;
+  --accent-reframe-soft: rgba(225,29,72,0.1);
+  --accent-conventional: #2563eb;
+  --accent-conventional-soft: rgba(37,99,235,0.1);
+  --accent-agency: #059669;
+  --accent-agency-soft: rgba(5,150,105,0.1);
+  --shadow: 0 4px 24px rgba(0,0,0,0.08);
+  --shadow-lg: 0 12px 48px rgba(0,0,0,0.12);
+  --chart-grid: rgba(0,0,0,0.05);
+  --chart-tick: #a8a29e;
+}
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; font-size: var(--size-base); }
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: var(--lh); -webkit-font-smoothing: antialiased;
+  overflow-x: hidden; transition: background var(--transition), color var(--transition);
+}
+a { color: inherit; text-decoration: none; }
+button { cursor: pointer; font-family: var(--font); border: none; background: none; color: inherit; }
+[data-text-size="small"] { --size-base: 14px; }
+[data-text-size="medium"] { --size-base: 16px; }
+[data-text-size="large"] { --size-base: 18px; }
+
+/* Progress */
+#progress {
+  position: fixed; top: 0; left: 0; height: 3px; z-index: 9999;
+  background: linear-gradient(90deg, #2563eb, #f43f5e);
+  width: 0%; transition: width 0.08s linear;
+}
+
+/* Topbar */
+#topbar {
+  position: fixed; top: 3px; left: 0; right: 0; height: var(--topbar-h);
+  background: var(--bg-glass); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border); z-index: 1000;
+  display: flex; align-items: center; padding: 0 24px; gap: 16px;
+  transition: background var(--transition);
+}
+.home-link {
+  font-weight: 600; font-size: 0.8rem; letter-spacing: 0.04em;
+  text-transform: uppercase; white-space: nowrap; opacity: 0.7; transition: opacity 0.2s;
+}
+.home-link:hover { opacity: 1; }
+.breadcrumb { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; display: flex; align-items: center; gap: 6px; }
+.breadcrumb .sep { opacity: 0.4; }
+.reading-time {
+  font-size: 0.7rem; color: var(--text-muted); white-space: nowrap;
+  background: var(--border); padding: 3px 10px; border-radius: 20px;
+}
+.spacer { flex: 1; }
+.controls { display: flex; align-items: center; gap: 6px; }
+.size-btn, .theme-btn, .drawer-btn {
+  width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center;
+  justify-content: center; font-size: 0.75rem; font-weight: 600;
+  background: var(--border); transition: all 0.2s; color: var(--text-secondary);
+}
+.size-btn:hover, .theme-btn:hover, .drawer-btn:hover { background: var(--border-strong); color: var(--text); }
+.size-btn.active { background: var(--accent-reframe-soft); color: var(--accent-reframe); }
+.drawer-btn { display: none; }
+@media (max-width: 880px) { .drawer-btn { display: flex; } .breadcrumb, .reading-time { display: none; } }
+
+/* Layout */
+.wrap {
+  display: grid; grid-template-columns: var(--sidebar-w) 1fr;
+  max-width: 1280px; margin: 0 auto; min-height: 100vh;
+  padding-top: calc(var(--topbar-h) + 3px + 24px);
+}
+@media (max-width: 880px) { .wrap { grid-template-columns: 1fr; } }
+
+/* Sidebar */
+#rail {
+  position: sticky; top: calc(var(--topbar-h) + 3px + 24px);
+  height: calc(100vh - var(--topbar-h) - 3px - 24px);
+  padding: 24px 16px; overflow-y: auto; border-right: 1px solid var(--border);
+  transition: transform var(--transition);
+}
+.rail-label {
+  font-size: 0.65rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 16px;
+}
+#rail a {
+  display: block; font-size: 0.78rem; font-weight: 400; color: var(--text-secondary);
+  padding: 8px 12px; border-radius: var(--radius-sm); margin-bottom: 2px;
+  transition: all 0.2s; line-height: 1.4;
+}
+#rail a:hover { color: var(--text); background: var(--border); }
+#rail a.active { color: var(--accent-reframe); background: var(--accent-reframe-soft); font-weight: 500; }
+@media (max-width: 880px) {
+  #rail {
+    position: fixed; top: 0; left: 0; bottom: 0; width: 280px; z-index: 1100;
+    background: var(--bg-elevated); padding-top: 80px; border-right: 1px solid var(--border-strong);
+    transform: translateX(-100%); box-shadow: var(--shadow-lg);
+  }
+  #rail.open { transform: translateX(0); }
+}
+
+/* Scrim */
+#scrim {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1050;
+  opacity: 0; pointer-events: none; transition: opacity var(--transition);
+}
+#scrim.visible { opacity: 1; pointer-events: auto; }
+
+/* Main */
+main {
+  max-width: 680px; padding: 0 32px 80px 32px; width: 100%; justify-self: center;
+}
+@media (max-width: 880px) { main { padding: 0 20px 60px 20px; } }
+
+/* Typography */
+h1 { font-size: 2.8rem; font-weight: 600; line-height: 1.08; letter-spacing: -0.03em; margin-bottom: 16px; }
+h2 { font-size: 1.6rem; font-weight: 600; line-height: 1.15; letter-spacing: -0.02em; margin-bottom: 12px; }
+h3 { font-size: 1.15rem; font-weight: 600; line-height: 1.3; margin-bottom: 8px; }
+p { font-size: 1rem; font-weight: 300; color: var(--text-secondary); margin-bottom: 20px; }
+.lead { font-size: 1.125rem; font-weight: 400; color: var(--text); line-height: 1.65; }
+strong { font-weight: 500; color: var(--text); }
+em { font-style: italic; }
+
+/* Sections */
+section { margin-bottom: 64px; scroll-margin-top: 100px; }
+
+/* Hero */
+.hero { margin-bottom: 48px; }
+.hero .overline {
+  font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--accent-reframe); margin-bottom: 16px;
+}
+.hero h1 { max-width: 540px; }
+.hero .subtitle { font-size: 1.1rem; font-weight: 300; color: var(--text-secondary); max-width: 480px; line-height: 1.6; }
+
+/* Spectrum */
+.spectrum {
+  margin: 40px 0; border-radius: var(--radius); overflow: hidden;
+  background: var(--bg-card); border: 1px solid var(--border);
+}
+.spectrum-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 20px 0; font-size: 0.7rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.08em;
+}
+.spectrum-header .left-label { color: #3b82f6; }
+.spectrum-header .right-label { color: #f43f5e; }
+.spectrum-track {
+  position: relative; height: 48px; margin: 12px 20px; border-radius: 24px;
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6, #f43f5e);
+  cursor: pointer; overflow: visible; user-select: none; -webkit-user-select: none;
+}
+.spectrum-thumb {
+  position: absolute; top: 50%; width: 28px; height: 28px;
+  background: #fff; border-radius: 50%; transform: translate(-50%, -50%);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3); cursor: grab; left: 50%;
+  transition: box-shadow 0.2s;
+}
+.spectrum-thumb:active { cursor: grabbing; box-shadow: 0 2px 16px rgba(0,0,0,0.5); }
+.spectrum-text {
+  padding: 12px 20px 20px; font-size: 0.88rem; line-height: 1.6;
+  color: var(--text-secondary); min-height: 60px; transition: opacity 0.25s;
+}
+.spectrum-text .emphasis { font-weight: 500; color: var(--text); }
+
+/* Diagram */
+.diagram-container {
+  margin: 32px 0; border-radius: var(--radius); overflow: hidden;
+  background: var(--bg-card); border: 1px solid var(--border); padding: 20px;
+  position: relative;
+}
+.diagram-title {
+  font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 12px;
+}
+.diagram-container svg { width: 100%; height: auto; display: block; }
+.node-label {
+  font-family: 'Inter', system-ui, sans-serif; font-size: 11px; font-weight: 600;
+  pointer-events: none; fill: var(--text);
+}
+.edge-line { stroke: var(--border-strong); stroke-width: 1.5; transition: all 0.3s; }
+.edge-line.highlighted { stroke: #f43f5e; stroke-width: 2.5; }
+.diagram-tooltip {
+  position: absolute; background: var(--bg-elevated); border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm); padding: 12px 16px; font-size: 0.82rem;
+  color: var(--text-secondary); max-width: 240px; line-height: 1.5;
+  box-shadow: var(--shadow-lg); pointer-events: none; opacity: 0;
+  transition: opacity 0.2s; z-index: 100;
+}
+.diagram-tooltip.visible { opacity: 1; }
+
+@keyframes pulse-ring {
+  0% { r: 36; opacity: 0.3; }
+  100% { r: 52; opacity: 0; }
+}
+.pulse-ring { animation: pulse-ring 2.5s ease-out infinite; }
+
+/* Chart */
+.chart-container {
+  margin: 32px 0; border-radius: var(--radius); overflow: hidden;
+  background: var(--bg-card); border: 1px solid var(--border); padding: 20px;
+}
+.chart-title {
+  font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 12px;
+}
+.chart-filters { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.chart-filter-btn {
+  font-size: 0.72rem; font-weight: 500; padding: 5px 14px;
+  border-radius: 20px; border: 1px solid var(--border-strong);
+  background: transparent; color: var(--text-secondary); transition: all 0.2s;
+}
+.chart-filter-btn.active-0 { background: rgba(244,63,94,0.15); color: #f43f5e; border-color: #f43f5e; }
+.chart-filter-btn.active-1 { background: rgba(37,99,235,0.15); color: #2563eb; border-color: #2563eb; }
+.chart-filter-btn.active-2 { background: rgba(245,158,11,0.15); color: #f59e0b; border-color: #f59e0b; }
+.chart-filter-btn:hover:not([class*="active-"]) { background: var(--border); }
+.chart-canvas-wrap { position: relative; height: 300px; }
+
+/* Snap Card */
+.snap-card {
+  margin: 48px 0; border-radius: var(--radius); overflow: hidden;
+  background: linear-gradient(135deg, rgba(244,63,94,0.1), rgba(37,99,235,0.1));
+  border: 1px solid var(--border-strong); padding: 40px 32px;
+  text-align: center;
+}
+.snap-label {
+  font-size: 0.65rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.12em; color: #f43f5e; margin-bottom: 20px;
+}
+.snap-quote {
+  font-size: 1.35rem; font-weight: 500; line-height: 1.4;
+  color: var(--text); letter-spacing: -0.01em; max-width: 440px; margin: 0 auto 24px;
+}
+.snap-actions { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.snap-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 0.72rem; font-weight: 500; padding: 8px 16px;
+  border-radius: 20px; background: var(--bg-elevated); border: 1px solid var(--border-strong);
+  color: var(--text-secondary); transition: all 0.2s;
+}
+.snap-btn:hover { background: var(--bg); color: var(--text); border-color: #f43f5e; }
+.snap-btn svg { width: 14px; height: 14px; }
+
+/* Action Card */
+.action-card {
+  margin: 32px 0; border-radius: var(--radius); overflow: hidden;
+  background: var(--bg-card); border: 1px solid var(--border); padding: 28px;
+}
+.action-card h3 { margin-bottom: 20px; }
+.checklist { list-style: none; }
+.checklist li {
+  display: flex; align-items: flex-start; gap: 12px; padding: 12px 0;
+  border-bottom: 1px solid var(--border); font-size: 0.9rem; color: var(--text-secondary);
+  line-height: 1.5; transition: all 0.3s;
+}
+.checklist li:last-child { border-bottom: none; }
+.checklist input[type="checkbox"] {
+  appearance: none; -webkit-appearance: none; width: 22px; height: 22px; min-width: 22px;
+  border: 2px solid var(--border-strong); border-radius: 6px; cursor: pointer;
+  transition: all 0.2s; position: relative; margin-top: 1px; flex-shrink: 0;
+}
+.checklist input[type="checkbox"]:checked { background: #059669; border-color: #059669; }
+.checklist input[type="checkbox"]:checked::after {
+  content: '✓'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  color: #fff; font-size: 13px; font-weight: 700;
+}
+.checklist li.checked-item { color: var(--text-muted); }
+.checklist li.checked-item label { text-decoration: line-through; }
+.progress-gauge { margin-top: 20px; display: flex; align-items: center; gap: 12px; }
+.progress-bar-track { flex: 1; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+.progress-bar-fill {
+  height: 100%; width: 0%; background: linear-gradient(90deg, #059669, #34d399);
+  border-radius: 4px; transition: width 0.5s cubic-bezier(.4,0,.2,1);
+}
+.progress-label { font-size: 0.75rem; font-weight: 600; color: #059669; white-space: nowrap; }
+
+/* Reveal */
+.reveal {
+  opacity: 0; transform: translateY(24px);
+  transition: opacity 0.7s cubic-bezier(.4,0,.2,1), transform 0.7s cubic-bezier(.4,0,.2,1);
+}
+.reveal.visible { opacity: 1; transform: translateY(0); }
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--bg-elevated); color: var(--text); border: 1px solid var(--border-strong);
+  padding: 12px 24px; border-radius: var(--radius-sm); font-size: 0.82rem;
+  box-shadow: var(--shadow-lg); z-index: 9999; opacity: 0;
+  transition: all 0.3s cubic-bezier(.4,0,.2,1);
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* Footer */
+footer {
+  text-align: center; padding: 40px 24px; border-top: 1px solid var(--border);
+  font-size: 0.75rem; color: var(--text-muted); max-width: 680px; margin: 0 auto;
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  html { scroll-behavior: auto; }
+  .reveal { opacity: 1; transform: none; }
+  .pulse-ring { animation: none; }
+}
+
+@media (max-width: 768px) {
+  h1 { font-size: 2rem; }
+  h2 { font-size: 1.3rem; }
+  .snap-quote { font-size: 1.1rem; }
+  .snap-card { padding: 28px 20px; }
+  .action-card { padding: 20px; }
+  .hero .subtitle { font-size: 1rem; }
+}
+@media (max-width: 480px) {
+  h1 { font-size: 1.7rem; }
+  main { padding: 0 16px 40px 16px; }
+}
+::selection { background: rgba(244,63,94,0.2); color: var(--text); }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div id="progress" role="progressbar" aria-label="Reading progress"></div>
+
+<header id="topbar">
+  <a href="https://iggym.github.io/cogitatio-elegans/" class="home-link" aria-label="Home">Cogitatio</a>
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <span class="sep">›</span>
+    <span>Mass Literacy & Public Schooling</span>
+  </nav>
+  <span class="reading-time" id="readingTime">~8 min read</span>
+  <div class="spacer"></div>
+  <div class="controls">
+    <button class="size-btn" data-size="small" aria-label="Small text">S</button>
+    <button class="size-btn active" data-size="medium" aria-label="Medium text">M</button>
+    <button class="size-btn" data-size="large" aria-label="Large text">L</button>
+    <button class="theme-btn" id="themeToggle" aria-label="Toggle theme">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+    <button class="drawer-btn" id="drawerBtn" aria-label="Open navigation">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </div>
+</header>
+
+<div id="scrim" aria-hidden="true"></div>
+
+<div class="wrap">
+  <nav id="rail" aria-label="Article sections">
+    <div class="rail-label">Sections</div>
+    <a href="#bells-and-binds" data-section="bells-and-binds">Bells and Binds</a>
+    <a href="#the-hook-within" data-section="the-hook-within">The Hook Within</a>
+    <a href="#iron-in-the-ink" data-section="iron-in-the-ink">Iron in the Ink</a>
+    <a href="#grain-of-salt" data-section="grain-of-salt">Grain of Salt</a>
+    <a href="#pen-to-power" data-section="pen-to-power">Pen to Power</a>
+    <a href="#take-the-reins" data-section="take-the-reins">Take the Reins</a>
+  </nav>
+
+  <main>
+    <article>
+
+      <section class="hero">
+        <div class="overline reveal">Perspective Shift</div>
+        <h1 class="reveal">Mass Literacy Was Never About You</h1>
+        <p class="subtitle reveal">The story we tell about public schooling is a story of liberation. The history tells something quieter—and more unsettling.</p>
+      </section>
+
+      <div class="spectrum reveal" role="group" aria-label="Perspective spectrum">
+        <div class="spectrum-header">
+          <span class="left-label">Conventional View</span>
+          <span class="right-label">Shifted View</span>
+        </div>
+        <div class="spectrum-track" id="spectrumTrack">
+          <div class="spectrum-thumb" id="spectrumThumb" role="slider" aria-label="Shift perspective" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50" tabindex="0"></div>
+        </div>
+        <div class="spectrum-text" id="spectrumText">
+          <span class="emphasis">Slide to shift your perspective.</span> The conventional view sees mass literacy as a humanitarian triumph. The shifted view reveals the administrative machinery beneath.
+        </div>
+      </div>
+
+      <section id="bells-and-binds">
+        <h2 class="reveal">Bells and Binds</h2>
+        <p class="lead reveal">In 1840, inside a stone schoolhouse in East Prussia, thirty children rose at the sound of a bell. They opened identical primers to the same page. They recited the same words, at the same cadence, in a language that was not their mother tongue. The room ran like clockwork. Inputs in, standardized outputs out.</p>
+        <p class="reveal">This was the Prussian model—the world's first system of compulsory state education. And it worked. Within a generation, literacy rates in Prussia surged past 80%. The world looked on with admiration. Here, it seemed, was proof that a nation could enlighten its people through sheer institutional will.</p>
+        <p class="reveal">But the schoolmaster's bell was not rung for the child's sake alone.</p>
+        <p class="reveal">The same system that taught children to read also taught them to <strong>arrive on time</strong>, to <strong>follow instructions from a central authority</strong>, to <strong>sit in rows</strong>, to <strong>internalize a standardized version of reality</strong>. The classroom was not merely a place of learning—it was a rehearsal for the machinery of the modern state.</p>
+      </section>
+
+      <section id="the-hook-within">
+        <h2 class="reveal">The Hook Within</h2>
+        <p class="lead reveal">The historical push for universal literacy in the 19th and early 20th centuries was primarily driven by the <strong>administrative needs of the modern nation-state</strong>—for military conscription, uniform taxation, and ideological homogenization.</p>
+        <p class="reveal">Transforming diverse, localized oral cultures into standardized, literate populations made citizens <strong>"legible"</strong> to central authorities. The primary historical engine of mass education was not individual liberation—it was <strong>state standardization and control</strong>.</p>
+        <p class="reveal">This is not a conspiracy theory. It is a structural observation. The same institutions that taught children to read also taught them to march in formation, to fill out forms in a standardized language, and to internalize the narrative of the nation-state. The humanitarian benefits were real, but they were the <strong>byproduct</strong>—not the design.</p>
+      </section>
+
+      <section id="iron-in-the-ink">
+        <h2 class="reveal">Iron in the Ink</h2>
+        <p class="lead reveal">Consider the chain. Prussia's 1763 compulsory schooling edict came after the devastating toll of the Seven Years' War. The state needed soldiers who could read orders, follow written instructions, and operate complex machinery. Illiterate conscripts were a strategic liability.</p>
+        <p class="reveal">France's Jules Ferry laws of 1882, which made primary education free and mandatory, arrived alongside the consolidation of the Third Republic—still reeling from the Franco-Prussian War. The Republic needed citizens who could read <em>republican</em> values, not monarchist ones.</p>
+        <p class="reveal">In Britain, the Elementary Education Act of 1870 followed the expansion of the franchise and the need for a literate electorate that could be reached through newspapers and pamphlets—preferably ones that supported the governing order.</p>
+        <p class="reveal">The pattern is unmistakable: each wave of compulsory schooling followed a <strong>crisis of state capacity</strong>, not a crisis of conscience.</p>
+
+        <div class="diagram-container reveal">
+          <div class="diagram-title">The Legibility Network — Hover to Explore</div>
+          <svg id="networkDiagram" viewBox="0 0 600 380" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg"></svg>
+          <div class="diagram-tooltip" id="diagramTooltip"></div>
+        </div>
+      </section>
+
+      <div class="snap-card reveal" id="snapCard">
+        <div class="snap-label">Perspective Snap</div>
+        <div class="snap-quote" id="snapQuote">The same pen that taught a child to read his name also taught the state to count him.</div>
+        <div class="snap-actions">
+          <button class="snap-btn" id="copyBtn" aria-label="Copy quote">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copy
+          </button>
+          <button class="snap-btn" id="shareXBtn" aria-label="Share on X">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            Share on X
+          </button>
+          <button class="snap-btn" id="shareLinkedInBtn" aria-label="Share on LinkedIn">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+            LinkedIn
+          </button>
+        </div>
+      </div>
+
+      <section id="grain-of-salt">
+        <h2 class="reveal">Grain of Salt</h2>
+        <p class="lead reveal">None of this is to say that literacy did not improve lives. It did—enormously. The ability to read opened doors to self-advocacy, to political organizing, to the pleasure of literature. Workers who could read could organize. Women who could read could demand rights. The enslaved who could read could plot escape.</p>
+        <p class="reveal">But the historical engine that drove the <em>expansion</em> of mass literacy was not the desire to arm workers with critical consciousness. It was the desire to arm armies with literate soldiers, tax bureaus with form-filling citizens, and nation-states with ideologically homogeneous populations.</p>
+        <p class="reveal">The humanitarian benefits were real—and they were the <strong>byproduct, not the design</strong>. Acknowledging this does not diminish the value of literacy. It reveals the asymmetry of power that shaped its distribution.</p>
+
+        <div class="chart-container reveal">
+          <div class="chart-title">State Capacity & Literacy — Western Europe 1800–1920</div>
+          <div class="chart-filters">
+            <button class="chart-filter-btn active-0" data-dataset="0">Literacy Rate</button>
+            <button class="chart-filter-btn active-1" data-dataset="1">Military Mobilization</button>
+            <button class="chart-filter-btn active-2" data-dataset="2">Tax Revenue (% GDP)</button>
+          </div>
+          <div class="chart-canvas-wrap">
+            <canvas id="stateChart"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <section id="pen-to-power">
+        <h2 class="reveal">Pen to Power</h2>
+        <p class="lead reveal">Understanding this history does not require cynicism. It requires clarity. And clarity is a form of agency.</p>
+        <p class="reveal">If the original design of mass schooling was to make citizens legible to the state, then the most radical act a literate person can perform is to <strong>read in ways the state never intended</strong>: to read critically, to read across boundaries, to read in languages and traditions that the standardizing impulse sought to erase.</p>
+        <p class="reveal">Every time you read something that challenges the dominant narrative, you are using the tools of legibility <em>against</em> the logic of control. Every time you question the framing of a textbook, you are doing what the system was designed to prevent.</p>
+        <p class="reveal">The pen was never neutral. But neither is the hand that holds it.</p>
+      </section>
+
+      <section id="take-the-reins">
+        <h2 class="reveal">Take the Reins</h2>
+        <p class="lead reveal">Within the next 24 hours, find and read one primary source about the history of compulsory schooling in your country. Not a summary. Not a think piece. The original text of a law, a parliamentary debate, or a founding document of a school system. Read it with this question in mind: <strong>Who was the intended beneficiary—the child, or the state?</strong></p>
+
+        <div class="action-card reveal">
+          <h3>Your 24-Hour Challenge</h3>
+          <ul class="checklist" id="checklist">
+            <li>
+              <input type="checkbox" id="check1" aria-label="Find a primary source on compulsory schooling history">
+              <label for="check1">Find a primary source on compulsory schooling in your country</label>
+            </li>
+            <li>
+              <input type="checkbox" id="check2" aria-label="Identify one assumption about education">
+              <label for="check2">Identify one assumption about education you've never questioned</label>
+            </li>
+            <li>
+              <input type="checkbox" id="check3" aria-label="Discuss this reframe with someone">
+              <label for="check3">Discuss this reframe with one person today</label>
+            </li>
+            <li>
+              <input type="checkbox" id="check4" aria-label="Share this article">
+              <label for="check4">Share this article with someone who'd challenge it</label>
+            </li>
+          </ul>
+          <div class="progress-gauge">
+            <div class="progress-bar-track">
+              <div class="progress-bar-fill" id="actionProgress"></div>
+            </div>
+            <div class="progress-label" id="actionProgressLabel">0 / 4</div>
+          </div>
+        </div>
+      </section>
+
+    </article>
+  </main>
+</div>
+
+<footer>
+  <p>A perspective-shifting exploration. Read critically. Question everything.</p>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ── Helpers ── */
+function $(sel) { return document.querySelector(sel); }
+function $$(sel) { return document.querySelectorAll(sel); }
+
+function showToast(msg, dur) {
+  dur = dur || 2500;
+  var t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, dur);
+}
+
+/* ── Theme ── */
+(function() {
+  var saved = localStorage.getItem('theme');
+  if (saved) {
+    document.documentElement.setAttribute('data-theme', saved);
+  } else {
+    var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+  }
+  $('#themeToggle').addEventListener('click', function() {
+    var cur = document.documentElement.getAttribute('data-theme');
+    var next = cur === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+    if (window.stateChartInstance) updateChartTheme();
+  });
+})();
+
+/* ── Text Size ── */
+ $$('.size-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    $$('.size-btn').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    document.documentElement.setAttribute('data-text-size', btn.dataset.size);
+  });
+});
+
+/* ── Reading Time ── */
+(function() {
+  var art = $('article');
+  if (!art) return;
+  var words = art.textContent.trim().split(/\s+/).length;
+  var mins = Math.max(1, Math.round(words / 220));
+  var el = $('#readingTime');
+  if (el) el.textContent = '~' + mins + ' min read';
+})();
+
+/* ── Scroll Progress ── */
+function updateProgress() {
+  var h = document.documentElement.scrollHeight - window.innerHeight;
+  var pct = h > 0 ? (window.scrollY / h) * 100 : 0;
+  $('#progress').style.width = pct + '%';
+}
+window.addEventListener('scroll', updateProgress, { passive: true });
+
+/* ── Scrollspy ── */
+(function() {
+  var sections = $$('section[id]');
+  var links = $$('#rail a[data-section]');
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        links.forEach(function(l) { l.classList.remove('active'); });
+        var match = $('#rail a[data-section="' + entry.target.id + '"]');
+        if (match) match.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -60% 0px' });
+  sections.forEach(function(s) { observer.observe(s); });
+})();
+
+/* ── Mobile Drawer ── */
+(function() {
+  var btn = $('#drawerBtn');
+  var rail = $('#rail');
+  var scrim = $('#scrim');
+  function open() { rail.classList.add('open'); scrim.classList.add('visible'); }
+  function close() { rail.classList.remove('open'); scrim.classList.remove('visible'); }
+  btn.addEventListener('click', open);
+  scrim.addEventListener('click', close);
+  $$('#rail a').forEach(function(a) { a.addEventListener('click', close); });
+})();
+
+/* ── Reveal ── */
+(function() {
+  var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (prefersReduced) {
+    $$('.reveal').forEach(function(el) { el.classList.add('visible'); });
+    return;
+  }
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -30px 0px' });
+  $$('.reveal').forEach(function(el) { observer.observe(el); });
+})();
+
+/* ── Spectrum Slider ── */
+(function() {
+  var track = $('#spectrumTrack');
+  var thumb = $('#spectrumThumb');
+  var textEl = $('#spectrumText');
+  var isDragging = false;
+
+  var texts = [
+    { pos: 0,   html: '<span class="emphasis">Conventional View:</span> Mass literacy was a purely humanitarian triumph aimed at enlightening the working class and giving them an independent, critical voice.' },
+    { pos: 25,  html: '<span class="emphasis">The humanitarian story is real</span>—but it may not be the whole story. What if the expansion of literacy served another purpose entirely?' },
+    { pos: 50,  html: '<span class="emphasis">Slide to shift your perspective.</span> The conventional view sees mass literacy as a humanitarian triumph. The shifted view reveals the administrative machinery beneath.' },
+    { pos: 75,  html: '<span class="emphasis">The reframe emerges:</span> Universal literacy was driven by the administrative needs of the modern nation-state—for conscription, taxation, and ideological control.' },
+    { pos: 100, html: '<span class="emphasis">Shifted View:</span> The primary historical engine of mass education was not individual liberation, but state standardization and control. Citizens became "legible" to central authorities.' }
+  ];
+
+  function updateSpectrum(pct) {
+    pct = Math.max(0, Math.min(100, pct));
+    thumb.style.left = pct + '%';
+    thumb.setAttribute('aria-valuenow', Math.round(pct));
+    var closest = texts[0], minDist = 999;
+    texts.forEach(function(t) {
+      var d = Math.abs(t.pos - pct);
+      if (d < minDist) { minDist = d; closest = t; }
+    });
+    textEl.style.opacity = '0';
+    setTimeout(function() {
+      textEl.innerHTML = closest.html;
+      textEl.style.opacity = '1';
+    }, 150);
+  }
+
+  function getPos(e) {
+    var rect = track.getBoundingClientRect();
+    var cx = e.touches ? e.touches[0].clientX : e.clientX;
+    return ((cx - rect.left) / rect.width) * 100;
+  }
+
+  track.addEventListener('mousedown', function(e) { isDragging = true; updateSpectrum(getPos(e)); });
+  thumb.addEventListener('mousedown', function(e) { isDragging = true; e.stopPropagation(); });
+  window.addEventListener('mousemove', function(e) { if (isDragging) updateSpectrum(getPos(e)); });
+  window.addEventListener('mouseup', function() { isDragging = false; });
+  track.addEventListener('touchstart', function(e) { isDragging = true; updateSpectrum(getPos(e)); }, { passive: true });
+  thumb.addEventListener('touchstart', function() { isDragging = true; }, { passive: true });
+  window.addEventListener('touchmove', function(e) { if (isDragging) updateSpectrum(getPos(e)); }, { passive: true });
+  window.addEventListener('touchend', function() { isDragging = false; });
+  thumb.addEventListener('keydown', function(e) {
+    var cur = parseFloat(thumb.style.left) || 50;
+    if (e.key === 'ArrowLeft')  { updateSpectrum(cur - 5); e.preventDefault(); }
+    if (e.key === 'ArrowRight') { updateSpectrum(cur + 5); e.preventDefault(); }
+  });
+})();
+
+/* ── SVG Network Diagram ── */
+(function() {
+  var svg = document.getElementById('networkDiagram');
+  var tooltip = document.getElementById('diagramTooltip');
+  if (!svg || !tooltip) return;
+
+  var NS = 'http://www.w3.org/2000/svg';
+
+  /* Node data — colors are hex, NOT CSS variables */
+  var nodes = [
+    { id: 'literacy',  label: 'Mass Literacy',              x: 300, y: 190, r: 38, fill: '#f43f5e', stroke: '#f43f5e', desc: 'The central project: making entire populations capable of reading and writing in a standardized form.' },
+    { id: 'military',  label: 'Military Conscription',      x: 120, y: 80,  r: 30, fill: '#3b82f6', stroke: '#3b82f6', desc: 'Literate soldiers could follow written orders, read maps, and operate complex machinery—transforming army effectiveness.' },
+    { id: 'taxation',  label: 'Uniform Taxation',           x: 480, y: 80,  r: 30, fill: '#3b82f6', stroke: '#3b82f6', desc: 'Citizens who could read tax codes and fill standardized forms made uniform taxation possible across vast territories.' },
+    { id: 'ideology',  label: 'Ideological Homogenization', x: 480, y: 300, r: 30, fill: '#f43f5e', stroke: '#f43f5e', desc: 'Standardized curricula transmitted a unified national narrative, replacing local traditions with state-approved identity.' },
+    { id: 'language',  label: 'Language Standardization',   x: 300, y: 330, r: 28, fill: '#f59e0b', stroke: '#f59e0b', desc: 'Diverse local dialects and oral traditions were suppressed in favor of a single national language—making populations administratively uniform.' },
+    { id: 'culture',   label: 'Cultural Erasure',           x: 120, y: 300, r: 28, fill: '#a855f7', stroke: '#a855f7', desc: 'Local oral cultures, folk traditions, and communal knowledge systems were systematically devalued and displaced by the literate standard.' }
+  ];
+
+  var edges = [
+    { from: 'literacy', to: 'military' },
+    { from: 'literacy', to: 'taxation' },
+    { from: 'literacy', to: 'ideology' },
+    { from: 'literacy', to: 'language' },
+    { from: 'ideology', to: 'language' },
+    { from: 'ideology', to: 'culture' },
+    { from: 'language', to: 'culture' }
+  ];
+
+  function getNode(id) {
+    for (var i = 0; i < nodes.length; i++) { if (nodes[i].id === id) return nodes[i]; }
+    return null;
+  }
+
+  function isEdgeConnected(edge, nodeId) {
+    return edge.from === nodeId || edge.to === nodeId;
+  }
+
+  function isNodeConnected(nodeId, targetId) {
+    for (var i = 0; i < edges.length; i++) {
+      if ((edges[i].from === nodeId && edges[i].to === targetId) ||
+          (edges[i].to === nodeId && edges[i].from === targetId)) return true;
+    }
+    return false;
+  }
+
+  /* Draw edges first (behind nodes) */
+  var edgeElements = [];
+  edges.forEach(function(edge) {
+    var a = getNode(edge.from);
+    var b = getNode(edge.to);
+    var line = document.createElementNS(NS, 'line');
+    line.setAttribute('x1', a.x);
+    line.setAttribute('y1', a.y);
+    line.setAttribute('x2', b.x);
+    line.setAttribute('y2', b.y);
+    line.classList.add('edge-line');
+    line.dataset.from = edge.from;
+    line.dataset.to = edge.to;
+    svg.appendChild(line);
+    edgeElements.push(line);
+  });
+
+  /* Pulse ring on center node */
+  var pulseRing = document.createElementNS(NS, 'circle');
+  pulseRing.setAttribute('cx', '300');
+  pulseRing.setAttribute('cy', '190');
+  pulseRing.setAttribute('r', '38');
+  pulseRing.setAttribute('fill', 'none');
+  pulseRing.setAttribute('stroke', '#f43f5e');
+  pulseRing.setAttribute('stroke-width', '1.5');
+  pulseRing.classList.add('pulse-ring');
+  svg.appendChild(pulseRing);
+
+  /* Draw nodes */
+  var circleElements = [];
+  nodes.forEach(function(node) {
+    var g = document.createElementNS(NS, 'g');
+
+    /* Circle */
+    var circle = document.createElementNS(NS, 'circle');
+    circle.setAttribute('cx', node.x);
+    circle.setAttribute('cy', node.y);
+    circle.setAttribute('r', node.r);
+    circle.setAttribute('fill', node.fill);
+    circle.setAttribute('fill-opacity', '0.15');
+    circle.setAttribute('stroke', node.stroke);
+    circle.setAttribute('stroke-width', '2');
+    circle.style.cursor = 'pointer';
+    circle.style.transition = 'all 0.3s';
+    circle.dataset.id = node.id;
+    g.appendChild(circle);
+    circleElements.push(circle);
+
+    /* Label */
+    var words = node.label.split(' ');
+    var lines = [];
+    var current = '';
+    words.forEach(function(word) {
+      var test = current ? current + ' ' + word : word;
+      if (test.length > 14 && current) {
+        lines.push(current);
+        current = word;
+      } else {
+        current = test;
+      }
+    });
+    if (current) lines.push(current);
+
+    lines.forEach(function(line, li) {
+      var text = document.createElementNS(NS, 'text');
+      text.setAttribute('x', node.x);
+      text.setAttribute('y', node.y + (li - (lines.length - 1) / 2) * 15 + 1);
+      text.setAttribute('text-anchor', 'middle');
+      text.setAttribute('dominant-baseline', 'central');
+      text.classList.add('node-label');
+      text.textContent = line;
+      g.appendChild(text);
+    });
+
+    svg.appendChild(g);
+
+    /* Hover interactions */
+    circle.addEventListener('mouseenter', function() {
+      /* Highlight connected edges */
+      edgeElements.forEach(function(line) {
+        if (isEdgeConnected({ from: line.dataset.from, to: line.dataset.to }, node.id)) {
+          line.classList.add('highlighted');
+        } else {
+          line.style.opacity = '0.15';
+        }
+      });
+      /* Highlight connected nodes, dim others */
+      circleElements.forEach(function(c) {
+        if (c.dataset.id === node.id) {
+          c.setAttribute('fill-opacity', '0.4');
+          c.setAttribute('stroke-width', '3');
+        } else if (isNodeConnected(node.id, c.dataset.id)) {
+          c.setAttribute('fill-opacity', '0.3');
+          c.setAttribute('stroke-width', '2.5');
+        } else {
+          c.setAttribute('fill-opacity', '0.05');
+          c.setAttribute('stroke-opacity', '0.2');
+        }
+      });
+      /* Tooltip */
+      tooltip.textContent = node.desc;
+      tooltip.classList.add('visible');
+    });
+
+    circle.addEventListener('mousemove', function(e) {
+      var container = svg.closest('.diagram-container');
+      if (!container) return;
+      var rect = container.getBoundingClientRect();
+      var x = e.clientX - rect.left + 16;
+      var y = e.clientY - rect.top - 10;
+      /* Keep tooltip in bounds */
+      if (x + 240 > rect.width) x = e.clientX - rect.left - 256;
+      tooltip.style.left = x + 'px';
+      tooltip.style.top = y + 'px';
+    });
+
+    circle.addEventListener('mouseleave', function() {
+      edgeElements.forEach(function(line) {
+        line.classList.remove('highlighted');
+        line.style.opacity = '';
+      });
+      circleElements.forEach(function(c) {
+        c.setAttribute('fill-opacity', '0.15');
+        c.setAttribute('stroke-width', '2');
+        c.setAttribute('stroke-opacity', '1');
+      });
+      tooltip.classList.remove('visible');
+    });
+  });
+})();
+
+/* ── Chart.js ── */
+(function() {
+  var ctx = document.getElementById('stateChart');
+  if (!ctx) return;
+
+  var labels = ['1800', '1820', '1840', '1860', '1880', '1900', '1920'];
+
+  var chartData = {
+    labels: labels,
+    datasets: [
+      {
+        label: 'Literacy Rate (%)',
+        data: [45, 52, 63, 72, 83, 91, 96],
+        borderColor: '#f43f5e',
+        backgroundColor: 'rgba(244,63,94,0.08)',
+        fill: true, tension: 0.4, pointRadius: 4, pointHoverRadius: 7, borderWidth: 2
+      },
+      {
+        label: 'Military Mobilization Capacity (%)',
+        data: [15, 22, 35, 48, 62, 75, 85],
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59,130,246,0.08)',
+        fill: true, tension: 0.4, pointRadius: 4, pointHoverRadius: 7, borderWidth: 2
+      },
+      {
+        label: 'Tax Revenue (% GDP)',
+        data: [8, 10, 13, 17, 22, 28, 35],
+        borderColor: '#f59e0b',
+        backgroundColor: 'rgba(245,158,11,0.08)',
+        fill: true, tension: 0.4, pointRadius: 4, pointHoverRadius: 7, borderWidth: 2
+      }
+    ]
+  };
+
+  function makeOpts() {
+    var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: dark ? '#1a1a1a' : '#ffffff',
+          titleColor: dark ? '#fafaf9' : '#1c1917',
+          bodyColor: dark ? '#a8a29e' : '#57534e',
+          borderColor: dark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)',
+          borderWidth: 1, cornerRadius: 8, padding: 12,
+          titleFont: { family: 'Inter', weight: '600', size: 12 },
+          bodyFont: { family: 'Inter', weight: '400', size: 11 },
+          callbacks: {
+            label: function(ctx) { return ctx.dataset.label + ': ' + ctx.parsed.y + '%'; }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' },
+          ticks: { color: dark ? '#78716c' : '#a8a29e', font: { family: 'Inter', size: 11 } },
+          title: { display: true, text: 'Year', color: dark ? '#78716c' : '#a8a29e', font: { family: 'Inter', size: 11 } }
+        },
+        y: {
+          grid: { color: dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' },
+          ticks: { color: dark ? '#78716c' : '#a8a29e', font: { family: 'Inter', size: 11 }, callback: function(v) { return v + '%'; } },
+          title: { display: true, text: 'Percentage', color: dark ? '#78716c' : '#a8a29e', font: { family: 'Inter', size: 11 } },
+          min: 0, max: 100
+        }
+      }
+    };
+  }
+
+  window.stateChartInstance = new Chart(ctx, { type: 'line', data: chartData, options: makeOpts() });
+
+  window.updateChartTheme = function() {
+    window.stateChartInstance.options = makeOpts();
+    window.stateChartInstance.update();
+  };
+
+  /* Filter toggles */
+  $$('.chart-filter-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var idx = parseInt(btn.dataset.dataset);
+      var isActive = btn.classList.contains('active-' + idx);
+      if (isActive) {
+        btn.classList.remove('active-' + idx);
+        btn.style.opacity = '0.45';
+      } else {
+        btn.classList.add('active-' + idx);
+        btn.style.opacity = '1';
+      }
+      var meta = window.stateChartInstance.getDatasetMeta(idx);
+      meta.hidden = !btn.classList.contains('active-' + idx);
+      window.stateChartInstance.update();
+    });
+  });
+})();
+
+/* ── Social Share ── */
+(function() {
+  var quoteEl = document.getElementById('snapQuote');
+  if (!quoteEl) return;
+  var quoteText = quoteEl.textContent.trim();
+  var pageUrl = window.location.href;
+
+  var copyBtn = document.getElementById('copyBtn');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', function() {
+      var full = quoteText + ' — ' + pageUrl;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(full).then(function() {
+          showToast('Quote copied to clipboard');
+        });
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = full; document.body.appendChild(ta);
+        ta.select(); document.execCommand('copy');
+        document.body.removeChild(ta);
+        showToast('Quote copied to clipboard');
+      }
+    });
+  }
+
+  var xBtn = document.getElementById('shareXBtn');
+  if (xBtn) {
+    xBtn.addEventListener('click', function() {
+      var t = encodeURIComponent(quoteText);
+      var u = encodeURIComponent(pageUrl);
+      window.open('https://twitter.com/intent/tweet?text=' + t + '&url=' + u, '_blank', 'width=550,height=420');
+    });
+  }
+
+  var liBtn = document.getElementById('shareLinkedInBtn');
+  if (liBtn) {
+    liBtn.addEventListener('click', function() {
+      var u = encodeURIComponent(pageUrl);
+      window.open('https://www.linkedin.com/sharing/share-offsite/?url=' + u, '_blank', 'width=550,height=520');
+    });
+  }
+})();
+
+/* ── Checklist ── */
+(function() {
+  var checks = $$('.checklist input[type="checkbox"]');
+  var bar = $('#actionProgress');
+  var label = $('#actionProgressLabel');
+
+  function update() {
+    var total = checks.length;
+    var checked = 0;
+    checks.forEach(function(c) { if (c.checked) checked++; });
+    var pct = (checked / total) * 100;
+    bar.style.width = pct + '%';
+    label.textContent = checked + ' / ' + total;
+
+    /* Update li styling */
+    checks.forEach(function(c) {
+      var li = c.closest('li');
+      if (c.checked) {
+        li.classList.add('checked-item');
+      } else {
+        li.classList.remove('checked-item');
+      }
+    });
+
+    if (checked === total) {
+      showToast('Challenge complete — you\'ve taken the first step.', 3500);
+    }
+  }
+
+  checks.forEach(function(c) { c.addEventListener('change', update); });
+})();
+
+/* ── Snap Card Scroll Gradient ── */
+(function() {
+  var card = $('#snapCard');
+  if (!card) return;
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      var ratio = entry.intersectionRatio;
+      var hue = Math.round(350 + ratio * 30);
+      card.style.background = 'linear-gradient(135deg, hsla(' + hue + ',80%,60%,0.1), hsla(220,70%,55%,0.1))';
+    });
+  }, { threshold: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1] });
+  observer.observe(card);
+})();
+
+/* ── Init ── */
+updateProgress();
+</script>
+</body>
+</html>
