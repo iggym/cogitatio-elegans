@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blind Spot | Cogitatio Elegans</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root,[data-theme="dark"]{
+  --bg-primary:#000;--bg-secondary:#0A0A0A;--bg-tertiary:#111;
+  --text-primary:#FFF;--text-secondary:#94A3B8;--text-muted:#64748B;
+  --accent:#6366F1;--accent-light:#818CF8;--accent-glow:rgba(99,102,241,.3);
+  --border:rgba(255,255,255,.08);--surface:rgba(255,255,255,.03);
+  --danger:#FF3B30;--success:#34D399;--warning:#FF6B35;
+  --font-base:17px;--topbar-h:56px;
+}
+[data-theme="light"]{
+  --bg-primary:#FFF;--bg-secondary:#F8FAFC;--bg-tertiary:#F1F5F9;
+  --text-primary:#0F172A;--text-secondary:#475569;--text-muted:#94A3B8;
+  --accent:#4F46E5;--accent-light:#6366F1;--accent-glow:rgba(79,70,229,.2);
+  --border:rgba(0,0,0,.08);--surface:rgba(0,0,0,.03);
+  --danger:#EF4444;--success:#10B981;--warning:#F97316;
+}
+html{font-size:var(--font-base);scroll-behavior:smooth;scroll-padding-top:calc(var(--topbar-h) + 24px)}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg-primary);color:var(--text-primary);line-height:1.7;overflow-x:hidden;transition:background .4s,color .4s}
+::selection{background:var(--accent);color:#fff}
+a{color:var(--accent-light);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* Progress Bar */
+#progress{position:fixed;top:0;left:0;height:3px;width:0;background:linear-gradient(90deg,var(--accent),var(--accent-light));z-index:1001;transition:width .05s linear;border-radius:0 2px 2px 0}
+
+/* Topbar */
+#topbar{position:sticky;top:0;z-index:1000;height:var(--topbar-h);background:rgba(0,0,0,.72);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-bottom:1px solid var(--border);transition:background .4s}
+[data-theme="light"] #topbar{background:rgba(255,255,255,.78)}
+.topbar-inner{max-width:1400px;margin:0 auto;height:100%;display:flex;align-items:center;gap:12px;padding:0 20px;font-size:.8rem}
+.home-link{display:flex;align-items:center;gap:6px;color:var(--text-primary);font-weight:600;font-size:.85rem;letter-spacing:-.02em;white-space:nowrap}
+.home-link:hover{text-decoration:none;color:var(--accent-light)}
+.breadcrumb{color:var(--text-muted);display:flex;align-items:center;gap:6px;white-space:nowrap}
+.breadcrumb span{color:var(--text-secondary)}
+.reading-time{color:var(--text-muted);font-family:'JetBrains Mono',monospace;font-size:.7rem;white-space:nowrap;margin-left:auto}
+.topbar-controls{display:flex;align-items:center;gap:4px}
+.ctrl-btn{background:var(--surface);border:1px solid var(--border);color:var(--text-secondary);border-radius:8px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.75rem;transition:all .2s}
+.ctrl-btn:hover{background:var(--border);color:var(--text-primary)}
+.ctrl-btn.active{color:var(--accent-light);border-color:var(--accent)}
+.font-btn{font-family:'JetBrains Mono',monospace;font-weight:600;font-size:.7rem;width:auto;padding:0 10px}
+.menu-btn{display:none}
+
+/* Scrim */
+#scrim{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:900;opacity:0;pointer-events:none;transition:opacity .3s}
+#scrim.open{opacity:1;pointer-events:auto}
+
+/* Layout */
+.wrap{max-width:1400px;margin:0 auto;display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+#rail{position:sticky;top:calc(var(--topbar-h) + 24px);height:fit-content;padding:32px 20px 32px 24px;border-right:1px solid var(--border)}
+#rail a{display:block;padding:8px 12px;border-radius:8px;color:var(--text-muted);font-size:.8rem;font-weight:500;transition:all .2s;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#rail a:hover{color:var(--text-primary);background:var(--surface);text-decoration:none}
+#rail a.active{color:var(--accent-light);background:rgba(99,102,241,.1);font-weight:600}
+#rail .rail-label{font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--text-muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px;padding:0 12px}
+main{padding:0;min-width:0}
+
+/* Article */
+article{max-width:720px;padding:40px 32px 80px;margin:0 auto}
+.hero{padding:48px 0 40px;text-align:center;border-bottom:1px solid var(--border);margin-bottom:48px}
+.hero-label{font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--accent);text-transform:uppercase;letter-spacing:.15em;margin-bottom:16px}
+.hero h1{font-size:clamp(2.2rem,5vw,3.4rem);font-weight:700;letter-spacing:-.03em;line-height:1.05;margin-bottom:16px}
+.hero .subtitle{font-size:1.05rem;color:var(--text-secondary);font-weight:300;max-width:540px;margin:0 auto;line-height:1.6}
+
+/* Sections */
+section{margin-bottom:56px}
+section h2{font-size:1.5rem;font-weight:600;letter-spacing:-.02em;margin-bottom:20px;color:var(--text-primary);position:relative;padding-left:16px}
+section h2::before{content:'';position:absolute;left:0;top:6px;bottom:6px;width:3px;border-radius:2px;background:var(--accent)}
+section p{color:var(--text-secondary);margin-bottom:18px;font-weight:300;font-size:1rem}
+section p strong{color:var(--text-primary);font-weight:500}
+
+/* Spectrum */
+.spectrum{margin-top:40px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:16px;padding:28px 24px 24px;position:relative;overflow:hidden}
+.spectrum::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--success),var(--warning),var(--danger));opacity:.7}
+.spectrum-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.spectrum-label{font-size:.65rem;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.1em;padding:4px 10px;border-radius:6px;font-weight:500}
+.spectrum-label.legacy{color:var(--success);background:rgba(52,211,153,.1)}
+.spectrum-label.shifted{color:var(--danger);background:rgba(255,59,48,.1)}
+.spectrum-slider-wrap{position:relative;margin:16px 0 20px}
+.spectrum-slider{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:3px;background:linear-gradient(90deg,var(--success),var(--warning),var(--danger));outline:none;cursor:pointer}
+.spectrum-slider::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--text-primary);border:3px solid var(--accent);cursor:grab;box-shadow:0 2px 8px rgba(0,0,0,.4);transition:transform .15s}
+.spectrum-slider::-webkit-slider-thumb:active{cursor:grabbing;transform:scale(1.15)}
+.spectrum-slider::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--text-primary);border:3px solid var(--accent);cursor:grab;box-shadow:0 2px 8px rgba(0,0,0,.4)}
+.spectrum-content{min-height:80px;transition:opacity .3s}
+.spectrum-statement{font-size:.95rem;color:var(--text-secondary);line-height:1.65;margin-bottom:6px;padding-left:20px;position:relative;font-weight:300}
+.spectrum-statement::before{content:'→';position:absolute;left:0;color:var(--accent-light);font-weight:500}
+.spectrum-reading{font-size:.7rem;font-family:'JetBrains Mono',monospace;color:var(--text-muted);margin-top:12px;text-align:center}
+
+/* Snap Card */
+.snap-card{position:relative;background:linear-gradient(135deg,rgba(99,102,241,.12),rgba(255,59,48,.08));border:1px solid var(--border);border-radius:16px;padding:36px 32px;margin:32px 0;overflow:hidden}
+.snap-card::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 30% 50%,rgba(99,102,241,.1),transparent 70%);pointer-events:none;transition:opacity .6s}
+.snap-card .snap-text{font-size:1.35rem;font-weight:600;line-height:1.45;color:var(--text-primary);letter-spacing:-.02em;margin-bottom:20px;position:relative}
+.snap-actions{display:flex;gap:8px;flex-wrap:wrap;position:relative}
+.snap-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;font-size:.75rem;font-weight:500;border:1px solid var(--border);background:var(--surface);color:var(--text-secondary);cursor:pointer;transition:all .2s}
+.snap-btn:hover{background:var(--border);color:var(--text-primary)}
+.snap-btn.copied{color:var(--success);border-color:var(--success)}
+
+/* Canvas container */
+.canvas-wrap{position:relative;background:var(--bg-secondary);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin:28px 0}
+.canvas-wrap canvas{display:block;width:100%;cursor:crosshair}
+.canvas-legend{display:flex;gap:16px;padding:12px 16px;border-top:1px solid var(--border);font-size:.7rem;color:var(--text-muted);flex-wrap:wrap}
+.canvas-legend span{display:flex;align-items:center;gap:5px}
+.canvas-legend .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.canvas-tooltip{position:absolute;background:rgba(0,0,0,.88);color:#fff;padding:8px 12px;border-radius:8px;font-size:.75rem;pointer-events:none;opacity:0;transition:opacity .2s;z-index:10;max-width:200px;line-height:1.4;backdrop-filter:blur(8px)}
+[data-theme="light"] .canvas-tooltip{background:rgba(15,23,42,.9)}
+
+/* Chart container */
+.chart-wrap{position:relative;background:var(--bg-secondary);border:1px solid var(--border);border-radius:16px;padding:24px;margin:28px 0}
+.chart-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.chart-title{font-size:.85rem;font-weight:600;color:var(--text-primary)}
+.chart-toggles{display:flex;gap:4px}
+.chart-toggle{padding:5px 10px;border-radius:6px;font-size:.7rem;font-weight:500;border:1px solid var(--border);background:var(--surface);color:var(--text-muted);cursor:pointer;transition:all .2s}
+.chart-toggle.active{color:var(--accent-light);border-color:var(--accent);background:rgba(99,102,241,.1)}
+.chart-note{font-size:.65rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace;margin-top:12px;text-align:center}
+
+/* Action Card */
+.action-card{background:var(--bg-secondary);border:1px solid var(--border);border-radius:16px;padding:28px 24px;margin:32px 0}
+.action-card h3{font-size:1rem;font-weight:600;margin-bottom:20px;color:var(--text-primary)}
+.checklist{list-style:none;margin-bottom:20px}
+.checklist li{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);font-size:.9rem;color:var(--text-secondary);cursor:pointer;transition:color .2s}
+.checklist li:last-child{border-bottom:none}
+.checklist li:hover{color:var(--text-primary)}
+.checklist input[type="checkbox"]{-webkit-appearance:none;appearance:none;width:20px;height:20px;border:2px solid var(--border);border-radius:6px;flex-shrink:0;margin-top:2px;cursor:pointer;transition:all .2s;position:relative;background:transparent}
+.checklist input[type="checkbox"]:checked{background:var(--accent);border-color:var(--accent)}
+.checklist input[type="checkbox"]:checked::after{content:'✓';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font-size:12px;font-weight:700}
+.checklist li.checked{color:var(--text-muted);text-decoration:line-through}
+.progress-bar-wrap{margin-top:16px}
+.progress-label{font-size:.7rem;font-family:'JetBrains Mono',monospace;color:var(--text-muted);margin-bottom:6px;display:flex;justify-content:space-between}
+.progress-track{height:6px;background:var(--surface);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--success));border-radius:3px;transition:width .4s ease;width:0}
+
+/* CTA Box */
+.cta-box{background:linear-gradient(135deg,rgba(99,102,241,.1),rgba(52,211,153,.06));border:1px solid var(--accent);border-radius:16px;padding:32px 28px;text-align:center;margin:32px 0}
+.cta-box p{font-size:1.05rem;font-weight:400;color:var(--text-primary);margin-bottom:16px}
+.cta-step{font-size:.8rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace}
+
+/* Reveal */
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+
+/* Footer */
+footer{border-top:1px solid var(--border);padding:32px;text-align:center;color:var(--text-muted);font-size:.75rem;margin-top:40px}
+
+/* Responsive */
+@media(max-width:880px){
+  .wrap{grid-template-columns:1fr}
+  #rail{position:fixed;top:0;left:0;bottom:0;width:260px;z-index:950;background:var(--bg-primary);border-right:1px solid var(--border);transform:translateX(-100%);transition:transform .3s ease;padding-top:calc(var(--topbar-h) + 24px);overflow-y:auto}
+  #rail.open{transform:translateX(0)}
+  .menu-btn{display:flex}
+  .reading-time{display:none}
+  .breadcrumb{display:none}
+  article{padding:24px 20px 60px}
+  .hero h1{font-size:2rem}
+  .snap-card .snap-text{font-size:1.15rem}
+}
+@media(max-width:480px){
+  .spectrum{padding:20px 16px}
+  .canvas-wrap{border-radius:12px}
+  .chart-wrap{padding:16px}
+  .action-card{padding:20px 16px}
+}
+
+/* Reduced Motion */
+@media(prefers-reduced-motion:reduce){
+  *{transition-duration:0s!important;animation-duration:0s!important;scroll-behavior:auto!important}
+  .reveal{opacity:1;transform:none}
+  #progress{transition:none}
+}
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+
+<header id="topbar">
+  <div class="topbar-inner">
+    <a href="https://iggym.github.io/cogitatio-elegans/" class="home-link"><i data-lucide="home" style="width:15px;height:15px"></i> Cogitatio</a>
+    <nav class="breadcrumb" aria-label="Breadcrumb"><span>Home</span><span style="color:var(--border)">›</span><span style="color:var(--text-secondary)">Technology</span><span style="color:var(--border)">›</span><span style="color:var(--text-primary)">Blind Spot</span></nav>
+    <span class="reading-time" id="readingTime">— min read</span>
+    <div class="topbar-controls">
+      <button class="ctrl-btn font-btn" id="fontToggle" title="Change text size" aria-label="Change text size">Aa</button>
+      <button class="ctrl-btn" id="themeToggle" title="Toggle theme" aria-label="Toggle theme"><i data-lucide="sun" style="width:14px;height:14px"></i></button>
+    </div>
+    <button class="ctrl-btn menu-btn" id="menuBtn" title="Menu" aria-label="Open navigation"><i data-lucide="menu" style="width:16px;height:16px"></i></button>
+  </div>
+</header>
+
+<div id="scrim" role="presentation"></div>
+
+<div class="wrap">
+  <nav id="rail" aria-label="Article sections">
+    <div class="rail-label">Sections</div>
+    <a href="#through-the-lens">Through the Lens</a>
+    <a href="#blind-spot">Blind Spot</a>
+    <a href="#thread-by-thread">Thread by Thread</a>
+    <a href="#flip-side">Flip Side</a>
+    <a href="#porch-light">Porch Light</a>
+    <a href="#step-outside">Step Outside</a>
+  </nav>
+
+  <main>
+    <article>
+      <header class="hero">
+        <div class="hero-label">Perspective Shift</div>
+        <h1>Blind Spot</h1>
+        <p class="subtitle">The more cameras watch your street, the less your neighbors see you</p>
+
+        <div class="spectrum" id="spectrum">
+          <div class="spectrum-header">
+            <span class="spectrum-label legacy">Community Shield</span>
+            <span class="spectrum-label shifted">Surveillance Net</span>
+          </div>
+          <div class="spectrum-slider-wrap">
+            <input type="range" min="0" max="100" value="0" class="spectrum-slider" id="spectrumSlider" aria-label="Perspective spectrum">
+          </div>
+          <div class="spectrum-content" id="spectrumContent"></div>
+          <div class="spectrum-reading">Drag to shift perspective</div>
+        </div>
+      </header>
+
+      <section id="through-the-lens" class="reveal">
+        <h2>Through the Lens</h2>
+        <p>Maria watches her doorbell camera feed at 2 AM. A figure lingers near her neighbor's porch. She doesn't call the neighbor. She doesn't step outside. She opens the app, screenshots the footage, and posts it to the neighborhood watch group.</p>
+        <p>Within minutes, seventeen strangers identify the figure as the new tenant's teenage son, coming home from his shift at the diner. Nobody apologizes to him. Nobody knocks on his door to ask if he's okay. The camera saw. The network judged. The trust was already gone.</p>
+        <p>This scene plays out thousands of times each day across suburban America. A motion detected. A notification pushed. A judgment rendered. All without a single word spoken between human beings who share a fence line.</p>
+        <p>The camera didn't make the neighborhood safer that night. It made it <strong>smaller</strong>.</p>
+      </section>
+
+      <section id="blind-spot" class="reveal">
+        <h2>Blind Spot</h2>
+        <p>Here is the reframe: <strong>Home security cameras are not community defense tools. They are suspicion infrastructure.</strong> They do not protect neighborhoods—they replace the organic, human interdependence that actually keeps communities safe with a decentralized system of mutual surveillance that monetizes paranoia and erodes trust.</p>
+        <p>The real transaction is not "camera for safety." It is "footage for data, data for profit, and your neighbor's privacy for your peace of mind." You are not the customer buying protection. You are the sensor being sold.</p>
+
+        <div class="snap-card" id="snapCard">
+          <div class="snap-text" id="snapText">The camera didn't replace the neighbor. It replaced the need to have one.</div>
+          <div class="snap-actions">
+            <button class="snap-btn" id="copyBtn" aria-label="Copy to clipboard"><i data-lucide="copy" style="width:13px;height:13px"></i> Copy</button>
+            <button class="snap-btn" id="shareX" aria-label="Share on X"><i data-lucide="twitter" style="width:13px;height:13px"></i> X</button>
+            <button class="snap-btn" id="shareLinkedIn" aria-label="Share on LinkedIn"><i data-lucide="linkedin" style="width:13px;height:13px"></i> LinkedIn</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="thread-by-thread" class="reveal">
+        <h2>Thread by Thread</h2>
+        <p>The connections are architectural, and they are hiding in plain sight.</p>
+        <p>When you install a doorbell camera, you join a network. That network has business relationships you never agreed to. Ring has shared footage with law enforcement without user consent. Amazon's Neighbors app turns every user into an unpaid informant, broadcasting "suspicious activity" to a feed that rewards fear and punishes nuance. Insurance companies offer premium discounts for camera installation—because your footage becomes their evidence, and your surveillance becomes their risk assessment.</p>
+        <p>The "community" these platforms promise is a hall of mirrors. You watching them. Them watching you. Everyone watching everyone through a lens that flattens a neighbor into a pixelated silhouette, a timestamp, a threat score.</p>
+        <p><strong>This is not a community. It is a surveillance network wearing a neighborhood's face.</strong></p>
+
+        <figure class="canvas-wrap">
+          <canvas id="networkCanvas" width="700" height="460"></canvas>
+          <div class="canvas-legend">
+            <span><span class="dot" style="background:var(--success)"></span> Community bonds</span>
+            <span><span class="dot" style="background:var(--danger)"></span> Surveillance systems</span>
+            <span><span class="dot" style="background:var(--warning)"></span> Replacement links</span>
+          </div>
+          <div class="canvas-tooltip" id="canvasTooltip"></div>
+        </figure>
+      </section>
+
+      <section id="flip-side" class="reveal">
+        <h2>Flip Side</h2>
+        <p>There is a counterargument, and it deserves honesty. Cameras do sometimes deter specific crimes. A person with a camera on their porch is less likely to be burglarized. There are documented cases where doorbell footage has aided in solving genuine crimes.</p>
+        <p>But the question is not whether cameras can ever be useful. The question is <strong>what they cost</strong>. And the cost is not measured in dollars. It is measured in the slow, invisible erosion of the social fabric that makes neighborhoods worth protecting in the first place.</p>
+        <p>The camera doesn't eliminate threat—it relocates it from the physical world, where humans can read context and extend grace, to the digital one, where algorithms maximize engagement through fear and a teenager coming home from work becomes a "suspicious figure" on a neighborhood watch feed.</p>
+
+        <div class="chart-wrap">
+          <div class="chart-header">
+            <span class="chart-title">Camera Adoption vs. Community Trust</span>
+            <div class="chart-toggles">
+              <button class="chart-toggle active" data-set="adoption">Adoption</button>
+              <button class="chart-toggle active" data-set="trust">Trust</button>
+            </div>
+          </div>
+          <canvas id="mainChart" height="280"></canvas>
+          <div class="chart-note">Illustrative model · Inverse correlation described in reference framework</div>
+        </div>
+      </section>
+
+      <section id="porch-light" class="reveal">
+        <h2>Porch Light</h2>
+        <p>The counter-narrative is already being written. In neighborhoods across the country, residents are choosing a different path. They're establishing "porch protocols"—informal agreements to look out for each other without cameras. They're choosing to meet the new neighbor before surveilling them. To borrow a tool before installing a sensor. To build the kind of trust that no algorithm can replicate because it was never digital to begin with.</p>
+        <p>This is not nostalgia. It is strategy. The most effective crime prevention system ever invented is not a camera. <strong>It is a neighbor who knows your name.</strong></p>
+        <p>When you know the people on your block, you notice when something is wrong—not because a motion sensor triggered, but because a routine changed. You notice because you were already paying attention. Not to a feed. To a person.</p>
+        <p>The difference between surveillance and care is not the quality of the lens. It is the presence of the relationship.</p>
+      </section>
+
+      <section id="step-outside" class="reveal">
+        <h2>Step Outside</h2>
+        <p>The shift starts with a single, deliberate choice. Not a purchase. Not an installation. An introduction.</p>
+
+        <div class="cta-box">
+          <p>Within 24 hours, walk to a neighbor's door you've never knocked on. Introduce yourself. Ask their name. Leave your phone in your pocket.</p>
+          <div class="cta-step">One unmonitored human contact > a thousand hours of footage</div>
+        </div>
+
+        <div class="action-card">
+          <h3>Your 24-Hour Trust Reset</h3>
+          <ul class="checklist" id="checklist">
+            <li><input type="checkbox" id="c1"><label for="c1">Introduce yourself to a neighbor you've never spoken to</label></li>
+            <li><input type="checkbox" id="c2"><label for="c2">Learn one neighbor's name today</label></li>
+            <li><input type="checkbox" id="c3"><label for="c3">Leave your phone in your pocket during your next walk</label></li>
+            <li><input type="checkbox" id="c4"><label for="c4">Ask a neighbor for a small favor—borrow a tool, ask a recommendation</label></li>
+            <li><input type="checkbox" id="c5"><label for="c5">Reposition or disable one camera that monitors shared space</label></li>
+          </ul>
+          <div class="progress-bar-wrap">
+            <div class="progress-label"><span>Progress</span><span id="progressPct">0%</span></div>
+            <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+          </div>
+        </div>
+      </section>
+    </article>
+
+    <footer>
+      <p>Cogitatio Elegans · Perspective-Shifting Writing</p>
+    </footer>
+  </main>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  lucide.createIcons();
+
+  /* ── Reading Time ── */
+  const articleText = document.querySelector('article')?.innerText || '';
+  const wordCount = articleText.trim().split(/\s+/).length;
+  const readMin = Math.max(1, Math.round(wordCount / 230));
+  document.getElementById('readingTime').textContent = readMin + ' min read';
+
+  /* ── Theme Toggle ── */
+  const html = document.documentElement;
+  const saved = localStorage.getItem('theme');
+  if (saved) html.setAttribute('data-theme', saved);
+  else if (window.matchMedia('(prefers-color-scheme:light)').matches) html.setAttribute('data-theme','light');
+
+  const themeBtn = document.getElementById('themeToggle');
+  themeBtn.addEventListener('click', () => {
+    const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    html.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+    updateChartColors();
+    drawNetwork();
+  });
+
+  /* ── Font Size Toggle ── */
+  const sizes = ['15px','17px','20px'];
+  const sizeLabels = ['S','M','L'];
+  let sizeIdx = saved ? sizes.indexOf(localStorage.getItem('fontSize')||'17px') : 1;
+  if (sizeIdx < 0) sizeIdx = 1;
+  html.style.setProperty('--font-base', sizes[sizeIdx]);
+  const fontBtn = document.getElementById('fontToggle');
+  fontBtn.textContent = sizeLabels[sizeIdx];
+  fontBtn.addEventListener('click', () => {
+    sizeIdx = (sizeIdx + 1) % sizes.length;
+    html.style.setProperty('--font-base', sizes[sizeIdx]);
+    fontBtn.textContent = sizeLabels[sizeIdx];
+    localStorage.setItem('fontSize', sizes[sizeIdx]);
+  });
+
+  /* ── Scroll Progress ── */
+  const progressBar = document.getElementById('progress');
+  function updateProgress() {
+    const h = document.documentElement.scrollHeight - window.innerHeight;
+    const pct = h > 0 ? (window.scrollY / h) * 100 : 0;
+    progressBar.style.width = pct + '%';
+  }
+  window.addEventListener('scroll', updateProgress, {passive:true});
+
+  /* ── Scrollspy ── */
+  const railLinks = document.querySelectorAll('#rail a[href^="#"]');
+  const sections = [...railLinks].map(l => document.querySelector(l.getAttribute('href'))).filter(Boolean);
+  const spyObs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        railLinks.forEach(l => l.classList.remove('active'));
+        const active = document.querySelector(`#rail a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, {rootMargin:'-20% 0px -60% 0px'});
+  sections.forEach(s => spyObs.observe(s));
+
+  /* ── Mobile Drawer ── */
+  const rail = document.getElementById('rail');
+  const scrim = document.getElementById('scrim');
+  const menuBtn = document.getElementById('menuBtn');
+  function openDrawer(){rail.classList.add('open');scrim.classList.add('open')}
+  function closeDrawer(){rail.classList.remove('open');scrim.classList.remove('open')}
+  menuBtn.addEventListener('click', openDrawer);
+  scrim.addEventListener('click', closeDrawer);
+  railLinks.forEach(l => l.addEventListener('click', closeDrawer));
+
+  /* ── Reveal Animations ── */
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  if (!reducedMotion) {
+    const revealEls = document.querySelectorAll('.reveal');
+    const revealObs = new IntersectionObserver(entries => {
+      entries.forEach(e => {if(e.isIntersecting){e.target.classList.add('visible');revealObs.unobserve(e.target)}});
+    }, {threshold:0.12});
+    revealEls.forEach(el => revealObs.observe(el));
+  } else {
+    document.querySelectorAll('.reveal').forEach(el => el.classList.add('visible'));
+  }
+
+  /* ── Spectrum Slider ── */
+  const spectrumSlider = document.getElementById('spectrumSlider');
+  const spectrumContent = document.getElementById('spectrumContent');
+  const spectrumData = [
+    {v:0, statements:[
+      'Cameras protect families and deter crime',
+      'Neighbors watch out for each other through shared technology',
+      'Visibility creates accountability and safety'
+    ]},
+    {v:25, statements:[
+      'Cameras provide useful data but begin reshaping social dynamics',
+      'The line between watching out and watching over starts to blur',
+      'Safety gains come with subtle social costs'
+    ]},
+    {v:50, statements:[
+      'Cameras shift the default from trust to verification',
+      'The neighborhood becomes a monitored space, not a shared one',
+      'Visibility creates both security and suspicion in equal measure'
+    ]},
+    {v:75, statements:[
+      'Cameras monetize anxiety and replace human connection',
+      'Neighbors surveil each other through algorithmic mediation',
+      'The social contract is rewritten in terms of threat scores'
+    ]},
+    {v:100, statements:[
+      'Suspicion replaces trust as the organizing principle of community',
+      'The camera didn\'t replace the neighbor—it replaced the need to have one',
+      'Security technologies framed as communal protection substitute social cohesion with algorithmic suspicion'
+    ]}
+  ];
+
+  function updateSpectrum() {
+    const val = parseInt(spectrumSlider.value);
+    let closest = spectrumData[0], minDist = 999;
+    spectrumData.forEach(d => {const dist=Math.abs(d.v-val);if(dist<minDist){minDist=dist;closest=d}});
+    spectrumContent.style.opacity = '0';
+    setTimeout(() => {
+      spectrumContent.innerHTML = closest.statements.map(s => `<div class="spectrum-statement">${s}</div>`).join('');
+      spectrumContent.style.opacity = '1';
+    }, 180);
+  }
+  spectrumSlider.addEventListener('input', updateSpectrum);
+  updateSpectrum();
+
+  /* ── Snap Card: Copy & Share ── */
+  const snapText = document.getElementById('snapText').innerText;
+  const copyBtn = document.getElementById('copyBtn');
+  copyBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(snapText).then(() => {
+      copyBtn.classList.add('copied');
+      copyBtn.innerHTML = '<i data-lucide="check" style="width:13px;height:13px"></i> Copied';
+      lucide.createIcons();
+      setTimeout(() => {copyBtn.classList.remove('copied');copyBtn.innerHTML='<i data-lucide="copy" style="width:13px;height:13px"></i> Copy';lucide.createIcons()},2000);
+    });
+  });
+
+  const shareUrl = encodeURIComponent(window.location.href);
+  const shareText = encodeURIComponent(snapText);
+  document.getElementById('shareX').addEventListener('click', () => {
+    window.open(`https://twitter.com/intent/tweet?text=${shareText}&url=${shareUrl}`,'_blank','width=550,height=420');
+  });
+  document.getElementById('shareLinkedIn').addEventListener('click', () => {
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${shareUrl}`,'_blank','width=550,height=520');
+  });
+
+  /* ── Snap Card: Scroll Gradient Shift ── */
+  const snapCard = document.getElementById('snapCard');
+  window.addEventListener('scroll', () => {
+    const r = snapCard.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, 1 - r.top / window.innerHeight));
+    const angle = 135 + pct * 90;
+    snapCard.style.background = `linear-gradient(${angle}deg,rgba(99,102,241,.12),rgba(255,59,48,${.08+pct*.12}))`;
+  }, {passive:true});
+
+  /* ── Network Canvas ── */
+  const canvas = document.getElementById('networkCanvas');
+  const ctx = canvas.getContext('2d');
+  const tooltip = document.getElementById('canvasTooltip');
+  let dpr = window.devicePixelRatio || 1;
+  let cw, ch;
+
+  const communityNodes = [
+    {label:'Front Porch',desc:'The physical space where neighbors naturally meet and talk',x:.12,y:.15},
+    {label:'Borrowed Cup',desc:'The informal economy of mutual aid and small favors',x:.08,y:.35},
+    {label:'Block Party',desc:'Collective joy that builds identity and belonging',x:.14,y:.55},
+    {label:'Watchful Elder',desc:'Organic attention born from care, not surveillance',x:.06,y:.75},
+    {label:'Hello',desc:'The simplest act of recognition between strangers',x:.16,y:.92}
+  ];
+  const surveillanceNodes = [
+    {label:'Doorbell Cam',desc:'Replaces the front porch with a fixed wide-angle lens',x:.88,y:.15},
+    {label:'Cloud Storage',desc:'Your neighbor\'s image stored on servers you don\'t control',x:.92,y:.35},
+    {label:'Police Feed',desc:'Direct data pipelines from your porch to law enforcement',x:.86,y:.55},
+    {label:'Data Broker',desc:'Footage packaged, sold, and analyzed for profit',x:.94,y:.75},
+    {label:'Algorithm',desc:'Automated suspicion scoring that replaces human judgment',x:.90,y:.92}
+  ];
+  const replacementLinks = [
+    [0,0],[1,1],[2,2],[3,3],[4,4]
+  ];
+  const communityEdges = [[0,1],[1,2],[2,3],[3,4],[0,4],[0,2]];
+  const surveillanceEdges = [[0,1],[1,2],[2,3],[3,4],[0,4],[0,2]];
+
+  let hoveredNode = null;
+  let animFrame = 0;
+
+  function resizeCanvas() {
+    const rect = canvas.parentElement.getBoundingClientRect();
+    cw = rect.width; ch = 460;
+    canvas.width = cw * dpr; canvas.height = ch * dpr;
+    canvas.style.width = cw + 'px'; canvas.style.height = ch + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function getThemeColors() {
+    const s = getComputedStyle(document.documentElement);
+    return {
+      bg: s.getPropertyValue('--bg-secondary').trim(),
+      text: s.getPropertyValue('--text-primary').trim(),
+      muted: s.getPropertyValue('--text-muted').trim(),
+      success: s.getPropertyValue('--success').trim(),
+      danger: s.getPropertyValue('--danger').trim(),
+      warning: s.getPropertyValue('--warning').trim(),
+      border: s.getPropertyValue('--border').trim()
+    };
+  }
+
+  function drawNetwork() {
+    if (!ctx) return;
+    const tc = getThemeColors();
+    ctx.clearRect(0, 0, cw, ch);
+
+    // Divider
+    ctx.save();
+    ctx.setLineDash([4,4]);
+    ctx.strokeStyle = tc.border;
+    ctx.lineWidth = 1;
+    ctx.beginPath();ctx.moveTo(cw/2,20);ctx.lineTo(cw/2,ch-20);ctx.stroke();
+    ctx.restore();
+
+    // Labels
+    ctx.font = '600 10px "JetBrains Mono",monospace';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = tc.success;
+    ctx.fillText('COMMUNITY', cw*.12, 24);
+    ctx.fillStyle = tc.danger;
+    ctx.fillText('SURVEILLANCE', cw*.88, 24);
+
+    const pulse = Math.sin(animFrame * 0.03) * 0.3 + 0.7;
+
+    // Draw replacement links
+    replacementLinks.forEach(([ci,si]) => {
+      const cn = communityNodes[ci], sn = surveillanceNodes[si];
+      const cx1 = cn.x*cw, cy1 = cn.y*ch, cx2 = sn.x*cw, cy2 = sn.y*ch;
+      const isHovered = hoveredNode && (hoveredNode.side === 'community' && hoveredNode.idx === ci || hoveredNode.side === 'surveillance' && hoveredNode.idx === si);
+      ctx.save();
+      ctx.setLineDash([6,4]);
+      ctx.strokeStyle = isHovered ? tc.warning : (tc.warning + '44');
+      ctx.lineWidth = isHovered ? 2 : 1;
+      ctx.globalAlpha = isHovered ? 1 : 0.4;
+      ctx.beginPath();ctx.moveTo(cx1,cy1);ctx.lineTo(cx2,cy2);ctx.stroke();
+      ctx.restore();
+    });
+
+    // Community edges
+    communityEdges.forEach(([a,b]) => {
+      const na = communityNodes[a], nb = communityNodes[b];
+      ctx.save();
+      ctx.strokeStyle = tc.success + '55';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();ctx.moveTo(na.x*cw,na.y*ch);ctx.lineTo(nb.x*cw,nb.y*ch);ctx.stroke();
+      ctx.restore();
+    });
+
+    // Surveillance edges
+    surveillanceEdges.forEach(([a,b]) => {
+      const na = surveillanceNodes[a], nb = surveillanceNodes[b];
+      ctx.save();
+      ctx.strokeStyle = tc.danger + '55';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();ctx.moveTo(na.x*cw,na.y*ch);ctx.lineTo(nb.x*cw,nb.y*ch);ctx.stroke();
+      ctx.restore();
+    });
+
+    // Draw nodes
+    function drawNode(n, color, side, idx) {
+      const nx = n.x*cw, ny = n.y*ch;
+      const isHov = hoveredNode && hoveredNode.side === side && hoveredNode.idx === idx;
+      const r = isHov ? 14 : 10;
+
+      // Glow
+      if (isHov) {
+        ctx.save();
+        ctx.beginPath();ctx.arc(nx,ny,r+8,0,Math.PI*2);
+        ctx.fillStyle = color + '22';ctx.fill();ctx.restore();
+      }
+
+      ctx.save();
+      ctx.beginPath();ctx.arc(nx,ny,r,0,Math.PI*2);
+      ctx.fillStyle = isHov ? color : color + 'cc';
+      ctx.fill();
+      ctx.strokeStyle = color;ctx.lineWidth = 2;ctx.stroke();
+      ctx.restore();
+
+      ctx.save();
+      ctx.font = (isHov ? '600' : '500') + ' 11px Inter,sans-serif';
+      ctx.textAlign = side === 'community' ? 'left' : 'right';
+      ctx.fillStyle = isHov ? tc.text : tc.muted;
+      const offsetX = side === 'community' ? r + 8 : -r - 8;
+      ctx.fillText(n.label, nx + offsetX, ny + 4);
+      ctx.restore();
+    }
+
+    communityNodes.forEach((n,i) => drawNode(n, tc.success, 'community', i));
+    surveillanceNodes.forEach((n,i) => drawNode(n, tc.danger, 'surveillance', i));
+  }
+
+  function animateNetwork() {
+    animFrame++;
+    drawNetwork();
+    if (!reducedMotion) requestAnimationFrame(animateNetwork);
+  }
+
+  canvas.addEventListener('mousemove', e => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    hoveredNode = null;
+    [...communityNodes.map((n,i)=>({...n,side:'community',idx:i})),
+     ...surveillanceNodes.map((n,i)=>({...n,side:'surveillance',idx:i}))].forEach(n => {
+      const dx = n.x*cw - mx, dy = n.y*ch - my;
+      if (Math.sqrt(dx*dx+dy*dy) < 20) hoveredNode = n;
+    });
+    if (hoveredNode) {
+      tooltip.style.opacity = '1';
+      tooltip.textContent = hoveredNode.desc;
+      const tx = Math.min(mx + 12, cw - 210);
+      const ty = my - 40;
+      tooltip.style.left = tx + 'px'; tooltip.style.top = ty + 'px';
+    } else {
+      tooltip.style.opacity = '0';
+    }
+  });
+  canvas.addEventListener('mouseleave', () => {hoveredNode=null;tooltip.style.opacity='0'});
+
+  resizeCanvas();
+  window.addEventListener('resize', () => {dpr=window.devicePixelRatio||1;resizeCanvas();drawNetwork()});
+  if (reducedMotion) drawNetwork(); else animateNetwork();
+
+  /* ── Chart.js ── */
+  const chartCtx = document.getElementById('mainChart').getContext('2d');
+  let mainChart;
+
+  function getChartColors() {
+    const s = getComputedStyle(document.documentElement);
+    return {
+      text: s.getPropertyValue('--text-muted').trim(),
+      border: s.getPropertyValue('--border').trim(),
+      danger: s.getPropertyValue('--danger').trim(),
+      success: s.getPropertyValue('--success').trim()
+    };
+  }
+
+  function createChart() {
+    const cc = getChartColors();
+    if (mainChart) mainChart.destroy();
+    mainChart = new Chart(chartCtx, {
+      type:'bar',
+      data:{
+        labels:['2018','2019','2020','2021','2022','2023','2024'],
+        datasets:[
+          {
+            label:'Camera Adoption (%)',
+            data:[14,22,35,48,56,62,68],
+            backgroundColor:cc.danger+'99',
+            borderColor:cc.danger,
+            borderWidth:1,
+            borderRadius:4,
+            order:2
+          },
+          {
+            label:'Community Trust Index (%)',
+            data:[72,68,62,55,48,43,39],
+            type:'line',
+            borderColor:cc.success,
+            backgroundColor:cc.success+'18',
+            fill:true,
+            tension:.4,
+            pointRadius:4,
+            pointBackgroundColor:cc.success,
+            pointBorderColor:cc.success,
+            borderWidth:2,
+            order:1
+          }
+        ]
+      },
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        interaction:{mode:'index',intersect:false},
+        plugins:{
+          legend:{display:true,position:'bottom',labels:{color:cc.text,font:{size:11,family:'Inter'},boxWidth:12,padding:16}},
+          tooltip:{backgroundColor:'rgba(0,0,0,.85)',titleFont:{size:12,family:'Inter'},bodyFont:{size:11,family:'Inter'},padding:10,cornerRadius:8}
+        },
+        scales:{
+          x:{grid:{color:cc.border},ticks:{color:cc.text,font:{size:10,family:'JetBrains Mono'}}},
+          y:{min:0,max:100,grid:{color:cc.border},ticks:{color:cc.text,font:{size:10,family:'JetBrains Mono'},callback:v=>v+'%'}}
+        }
+      }
+    });
+  }
+  createChart();
+
+  function updateChartColors() {
+    setTimeout(createChart, 100);
+  }
+
+  // Chart toggles
+  document.querySelectorAll('.chart-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      btn.classList.toggle('active');
+      const idx = btn.dataset.set === 'adoption' ? 0 : 1;
+      mainChart.data.datasets[idx].hidden = !btn.classList.contains('active');
+      mainChart.update();
+    });
+  });
+
+  /* ── Checklist ── */
+  const checks = document.querySelectorAll('#checklist input[type="checkbox"]');
+  const progressFill = document.getElementById('progressFill');
+  const progressPct = document.getElementById('progressPct');
+
+  function updateChecklist() {
+    const total = checks.length;
+    let done = 0;
+    checks.forEach(c => {
+      const li = c.closest('li');
+      if (c.checked) {done++;li.classList.add('checked')} else {li.classList.remove('checked')}
+    });
+    const pct = Math.round((done/total)*100);
+    progressFill.style.width = pct+'%';
+    progressPct.textContent = pct+'%';
+  }
+  checks.forEach(c => c.addEventListener('change', updateChecklist));
+
+  /* ── Init ── */
+  updateProgress();
+});
+</script>
+</body>
+</html>
