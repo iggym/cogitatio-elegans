@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Silence by Subscription | Cogitatio Elegans</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #f4f4f9;
+            --text: #1a1a2e;
+            --text-muted: #5a5a72;
+            --accent: #4a47a3;
+            --accent-light: #d1d0ea;
+            --card: #ffffff;
+            --border: #e0e0e8;
+            --glass: rgba(255, 255, 255, 0.75);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --snap-gradient: linear-gradient(135deg, #4a47a3 0%, #8e8cd8 100%);
+        }
+
+        [data-theme="dark"] {
+            --bg: #0f0f1a;
+            --text: #f4f4f9;
+            --text-muted: #a0a0b8;
+            --accent: #8e8cd8;
+            --accent-light: #4a47a3;
+            --card: #1a1a2e;
+            --border: #2a2a3e;
+            --glass: rgba(26, 26, 46, 0.75);
+            --glass-border: rgba(142, 140, 216, 0.2);
+            --snap-gradient: linear-gradient(135deg, #8e8cd8 0%, #4a47a3 100%);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            overflow-x: hidden;
+        }
+
+        ::selection { background: var(--accent); color: var(--bg); }
+        
+        /* Progress Bar */
+        #progress {
+            position: fixed;
+            top: 0; left: 0;
+            height: 4px;
+            width: 0%;
+            background: var(--snap-gradient);
+            z-index: 1000;
+            transition: width 0.1s ease-out;
+        }
+
+        /* Topbar */
+        #topbar {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 64px;
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            z-index: 999;
+        }
+
+        .topbar-left { display: flex; align-items: center; gap: 16px; }
+        .topbar-right { display: flex; align-items: center; gap: 16px; }
+        
+        .home-link {
+            font-weight: 700;
+            color: var(--text);
+            text-decoration: none;
+            letter-spacing: -0.5px;
+        }
+
+        .breadcrumb { font-size: 0.85rem; color: var(--text-muted); display: none; }
+        .reading-time { font-size: 0.8rem; color: var(--text-muted); display: none; }
+
+        .font-controls { display: flex; gap: 4px; background: var(--border); padding: 2px; border-radius: 6px; }
+        .font-btn { background: none; border: none; color: var(--text-muted); padding: 4px 8px; cursor: pointer; font-size: 0.75rem; border-radius: 4px; transition: all 0.2s; }
+        .font-btn.active { background: var(--card); color: var(--accent); }
+
+        .theme-toggle { background: none; border: 1px solid var(--border); color: var(--text-muted); width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .theme-toggle:hover { color: var(--accent); border-color: var(--accent); }
+
+        .menu-btn { display: none; background: none; border: none; color: var(--text); cursor: pointer; font-size: 1.5rem; }
+
+        /* Layout */
+        .wrap {
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding-top: 64px;
+            gap: 48px;
+        }
+
+        #rail {
+            position: sticky;
+            top: 64px;
+            height: calc(100vh - 64px);
+            overflow-y: auto;
+            padding: 32px 0;
+        }
+
+        #rail nav { display: flex; flex-direction: column; gap: 8px; }
+        #rail a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            padding: 8px 12px;
+            border-left: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        #rail a:hover { color: var(--text); }
+        #rail a.active { color: var(--accent); border-left-color: var(--accent); font-weight: 600; }
+
+        main {
+            padding: 32px 24px 96px 0;
+            max-width: 720px;
+        }
+
+        /* Typography */
+        h1, h2, h3 { line-height: 1.2; letter-spacing: -0.02em; margin-bottom: 16px; }
+        h1 { font-size: clamp(2.2rem, 5vw, 3.2rem); margin-bottom: 24px; }
+        h2 { font-size: 1.8rem; margin-top: 64px; }
+        h3 { font-size: 1.2rem; margin-top: 32px; }
+        p { margin-bottom: 20px; font-size: 1.05rem; }
+        strong { color: var(--text); font-weight: 600; }
+
+        .article-meta { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 48px; display: flex; gap: 16px; }
+        
+        /* Reveal Animation */
+        .reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.8s ease, transform 0.8s ease; }
+        .reveal.in-view { opacity: 1; transform: translateY(0); }
+
+        /* Hero Spectrum */
+        .spectrum-container {
+            margin: 48px 0;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.04);
+        }
+        .spectrum-labels { display: flex; justify-content: space-between; margin-bottom: 16px; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+        .spectrum-left { color: var(--text-muted); }
+        .spectrum-right { color: var(--accent); }
+        
+        .spectrum {
+            width: 100%;
+            height: 8px;
+            background: var(--border);
+            border-radius: 4px;
+            position: relative;
+            margin-bottom: 24px;
+        }
+        .spectrum-fill {
+            position: absolute;
+            top: 0; left: 0;
+            height: 100%;
+            width: 50%;
+            background: var(--snap-gradient);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        .spectrum-handle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 24px;
+            height: 24px;
+            background: var(--card);
+            border: 2px solid var(--accent);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            cursor: grab;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .spectrum:active .spectrum-handle { cursor: grabbing; }
+        
+        .spectrum-text {
+            text-align: center;
+            color: var(--text);
+            font-size: 1.1rem;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.3s;
+        }
+
+        /* Perspective Snap */
+        .snap-card {
+            background: var(--snap-gradient);
+            color: white;
+            padding: 48px 32px;
+            border-radius: 16px;
+            margin: 64px 0;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 16px 32px rgba(74, 71, 163, 0.2);
+        }
+        .snap-card::before {
+            content: '“';
+            position: absolute;
+            top: -20px; left: 16px;
+            font-size: 8rem;
+            opacity: 0.2;
+            font-family: Georgia, serif;
+        }
+        .snap-text { font-size: 1.6rem; font-weight: 600; line-height: 1.4; margin-bottom: 32px; position: relative; z-index: 1; }
+        .snap-actions { display: flex; gap: 12px; justify-content: center; }
+        .snap-btn { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; padding: 8px 16px; border-radius: 50px; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+        .snap-btn:hover { background: rgba(255,255,255,0.3); }
+        .copied-msg { font-size: 0.75rem; opacity: 0; transition: opacity 0.3s; }
+        .copied-msg.show { opacity: 1; }
+
+        /* SVG Diagram */
+        .diagram-container { margin: 48px 0; background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 32px; }
+        svg { width: 100%; height: auto; }
+        .node { cursor: pointer; transition: all 0.3s; }
+        .node circle { fill: var(--accent-light); stroke: var(--accent); stroke-width: 2; transition: all 0.3s; }
+        .node text { fill: var(--text); font-size: 10px; text-anchor: middle; font-weight: 600; pointer-events: none; }
+        .node:hover circle, .node.active circle { fill: var(--accent); stroke-width: 3; r: 25; }
+        .path-line { stroke: var(--border); stroke-width: 2; fill: none; transition: all 0.3s; }
+        .path-line.active { stroke: var(--accent); stroke-width: 3; }
+        .node:hover text { fill: var(--bg); }
+
+        /* Chart */
+        .chart-wrapper { margin: 48px 0; background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 32px; }
+        .chart-filters { display: flex; gap: 12px; margin-bottom: 24px; }
+        .chart-filter { background: var(--bg); border: 1px solid var(--border); color: var(--text-muted); padding: 6px 14px; border-radius: 50px; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }
+        .chart-filter.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+        /* CTA Checklist */
+        .action {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 32px;
+            margin: 48px 0;
+        }
+        .checklist-gauge { height: 8px; background: var(--border); border-radius: 4px; margin: 24px 0; overflow: hidden; }
+        .gauge-fill { height: 100%; width: 0%; background: var(--snap-gradient); transition: width 0.5s ease; }
+        .gauge-text { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px; text-align: right; }
+        .checklist { list-style: none; }
+        .checklist li { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px; cursor: pointer; padding: 12px; border-radius: 8px; transition: background 0.2s; }
+        .checklist li:hover { background: var(--bg); }
+        .checklist input[type="checkbox"] { appearance: none; width: 24px; height: 24px; border: 2px solid var(--border); border-radius: 6px; cursor: pointer; position: relative; flex-shrink: 0; margin-top: 2px; transition: all 0.2s; }
+        .checklist input[type="checkbox"]:checked { background: var(--accent); border-color: var(--accent); }
+        .checklist input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 14px; }
+        .checklist label { font-size: 1rem; }
+        .checklist input:checked + label { text-decoration: line-through; color: var(--text-muted); }
+
+        /* Mobile Drawer */
+        #scrim { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 998; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+        #scrim.active { opacity: 1; pointer-events: auto; }
+
+        @media (max-width: 880px) {
+            .wrap { grid-template-columns: 1fr; gap: 0; }
+            .breadcrumb, .reading-time { display: block; }
+            .menu-btn { display: block; }
+            
+            #rail {
+                position: fixed;
+                top: 64px; left: 0;
+                width: 280px;
+                height: calc(100vh - 64px);
+                background: var(--card);
+                border-right: 1px solid var(--border);
+                padding: 32px 24px;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                z-index: 999;
+            }
+            #rail.open { transform: translateX(0); }
+            main { padding: 32px 24px 96px; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+            .reveal { opacity: 1; transform: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="progress"></div>
+    
+    <header id="topbar">
+        <div class="topbar-left">
+            <button id="menuBtn" class="menu-btn" aria-label="Open menu">☰</button>
+            <a href="https://iggym.github.io/cogitatio-elegans/" class="home-link">Cogitatio Elegans</a>
+            <span class="breadcrumb">/ Silence by Subscription</span>
+        </div>
+        <div class="topbar-right">
+            <span class="reading-time" id="readTime">5 min read</span>
+            <div class="font-controls">
+                <button class="font-btn" data-size="16">A</button>
+                <button class="font-btn active" data-size="18">A</button>
+                <button class="font-btn" data-size="20">A</button>
+            </div>
+            <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">🌙</button>
+        </div>
+    </header>
+
+    <div id="scrim"></div>
+
+    <div class="wrap">
+        <aside id="rail">
+            <nav>
+                <a href="#opening" class="active">Silence by Subscription</a>
+                <a href="#reframe">Bearing the Wall</a>
+                <a href="#connections">Sounding the Depths</a>
+                <a href="#nuance">Footing the Bill</a>
+                <a href="#agency">Room to Breathe</a>
+                <a href="#action">Reclaim the Space</a>
+            </nav>
+        </aside>
+
+        <main>
+            <article>
+                <div class="article-meta">
+                    <span>Architecture</span> • <span>6 min read</span>
+                </div>
+
+                <section id="opening" class="reveal">
+                    <h1>Silence by Subscription</h1>
+                    <p>The fluorescent hum is the first to go. A tap on the side of the plastic earcup, and the chaotic chatter of the morning stand-up three desks away vanishes. The clack of a neighbor’s mechanical keyboard dissolves. The sudden, jarring ring of a sales call is swallowed into a void of engineered quiet.</p>
+                    <p>You sink into your chair, finally alone with your thoughts. You have purchased your peace. But as you settle into the silence, a question should nag at you: <strong>Why did you have to buy it in the first place?</strong></p>
+                </section>
+
+                <!-- Interactive Hero Spectrum -->
+                <div class="spectrum-container reveal">
+                    <div class="spectrum-labels">
+                        <span class="spectrum-left">Legacy Perspective</span>
+                        <span class="spectrum-right">Shifted Perspective</span>
+                    </div>
+                    <div class="spectrum" id="spectrumTrack">
+                        <div class="spectrum-fill" id="spectrumFill"></div>
+                        <div class="spectrum-handle" id="spectrumHandle"></div>
+                    </div>
+                    <div class="spectrum-text" id="spectrumText">
+                        Headphones are personal productivity tools that help me carve out focus in a chaotic environment.
+                    </div>
+                </div>
+
+                <section id="reframe" class="reveal">
+                    <h2>Bearing the Wall</h2>
+                    <p>We have been sold a convenient lie about open-plan offices and the technology that saves us from them. The conventional view is that personal noise-canceling headphones are individual productivity tools—lifesavers for the modern worker trying to carve out peace and focus in a chaotic environment.</p>
+                    <p>The truth is far more insidious. Noise-canceling technology did not rescue us from hyper-dense, wide-open office floor plans. It <strong>enabled</strong> them. By strapping acoustic insulation to our heads, we became the structural load-bearing walls of the modern office, absorbing the human friction of spatial cost-cutting directly onto our own nervous systems.</p>
+                </section>
+
+                <!-- Perspective Snap Card -->
+                <div class="snap-card reveal">
+                    <p class="snap-text" id="snapText">Your silence is subsidizing their square footage.</p>
+                    <div class="snap-actions">
+                        <button class="snap-btn" id="copyBtn">📋 <span class="btn-label">Copy</span></button>
+                        <button class="snap-btn" id="shareTwitter">𝕏 Share</button>
+                        <button class="snap-btn" id="shareLinkedIn">in Share</button>
+                    </div>
+                    <span class="copied-msg" id="copiedMsg">Copied to clipboard!</span>
+                </div>
+
+                <section id="connections" class="reveal">
+                    <h2>Sounding the Depths</h2>
+                    <p>Look closely at the architecture of a modern tech campus. The walls have been stripped away to foster "collaboration." Yet, every employee sits encased in a personal bubble of forced auditory isolation. We have externalized the architectural failure of the workplace onto the individual worker.</p>
+                    <p>This is the hidden connection: personal coping mechanisms for environmental stress frequently serve as covert institutional subsidies for systemic architectural degradation. The company saves millions on drywall, acoustic paneling, and square footage, while you pay the cognitive tax of constant sensory defense.</p>
+                    
+                    <!-- Interactive SVG Diagram -->
+                    <div class="diagram-container reveal">
+                        <svg viewBox="0 0 400 300">
+                            <!-- Paths -->
+                            <path id="path1" class="path-line" d="M100,150 L200,150" />
+                            <path id="path2" class="path-line" d="M200,150 L300,80" />
+                            <path id="path3" class="path-line" d="M200,150 L300,220" />
+                            
+                            <!-- Nodes -->
+                            <g class="node" data-id="1" data-paths="path1">
+                                <circle cx="100" cy="150" r="35"></circle>
+                                <text x="100" y="145">Open Plan</text>
+                                <text x="100" y="158">(Cost Savings)</text>
+                            </g>
+                            <g class="node" data-id="2" data-paths="path1,path2,path3">
+                                <circle cx="200" cy="150" r="35"></circle>
+                                <text x="200" y="145">Headphone</text>
+                                <text x="200" y="158">Subsidy</text>
+                            </g>
+                            <g class="node" data-id="3" data-paths="path2">
+                                <circle cx="300" cy="80" r="35"></circle>
+                                <text x="300" y="75">Cognitive</text>
+                                <text x="300" y="88">Overload</text>
+                            </g>
+                            <g class="node" data-id="4" data-paths="path3">
+                                <circle cx="300" cy="220" r="35"></circle>
+                                <text x="300" y="215">Nervous</text>
+                                <text x="300" y="228">System Tax</text>
+                            </g>
+                        </svg>
+                        <p style="text-align: center; margin-top: 16px; font-size: 0.9rem; color: var(--text-muted);">Hover over nodes to trace the structural flow of stress.</p>
+                    </div>
+                </section>
+
+                <section id="nuance" class="reveal">
+                    <h2>Footing the Bill</h2>
+                    <p>To be fair, the technology itself is a marvel. Active noise control uses destructive interference to cancel out low-frequency ambient sounds, providing genuine relief. And yes, some workers genuinely prefer the ambient hum of a crowded room, using headphones merely to listen to music rather than to block out the world.</p>
+                    <p>But the macro-trend is undeniable. As office density increased, headphone adoption became mandatory for survival, not a preference for ambiance. The burden of acoustic management shifted from the building's architecture to the individual's personal hardware.</p>
+
+                    <!-- Chart.js Visualization -->
+                    <div class="chart-wrapper reveal">
+                        <div class="chart-filters">
+                            <button class="chart-filter active" data-filter="both">Both</button>
+                            <button class="chart-filter" data-filter="density">Office Density</button>
+                            <button class="chart-filter" data-filter="headphones">Headphone Usage</button>
+                        </div>
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </section>
+
+                <section id="agency" class="reveal">
+                    <h2>Room to Breathe</h2>
+                    <p>Recognizing this dynamic strips away the illusion of personal failing. Your exhaustion at the end of the day is not a lack of focus; it is the result of carrying a structural burden you were never meant to bear. Meaningful change requires shifting the boundary back to where it belongs: the institution.</p>
+                    <p>You do not have to passively accept the subsidy. Small, decisive choices can reclaim your spatial agency and force a correction in your environment.</p>
+                </section>
+
+                <section id="action" class="reveal">
+                    <h2>Reclaim the Space</h2>
+                    <p>Within the next 24 hours, take one decisive step to offload the acoustic burden back onto the environment. Use the checklist below to track your progress:</p>
+                    
+                    <div class="action">
+                        <div class="gauge-text"><span id="gaugePercent">0</span>% Reclaimed</div>
+                        <div class="checklist-gauge">
+                            <div class="gauge-fill" id="gaugeFill"></div>
+                        </div>
+                        <ul class="checklist">
+                            <li>
+                                <input type="checkbox" id="c1">
+                                <label for="c1">Identify one "third space" outside the open floor plan for deep work tomorrow.</label>
+                            </li>
+                            <li>
+                                <input type="checkbox" id="c2">
+                                <label for="c2">Remove headphones for one 30-minute block and consciously note the acoustic friction.</label>
+                            </li>
+                            <li>
+                                <input type="checkbox" id="c3">
+                                <label for="c3">Draft one polite message to facilities or leadership proposing an acoustic improvement.</label>
+                            </li>
+                        </ul>
+                    </div>
+                </section>
+            </article>
+        </main>
+    </div>
+
+    <script>
+        // --- Progress Bar & Scrollspy ---
+        const progress = document.getElementById('progress');
+        const sections = document.querySelectorAll('section');
+        const railLinks = document.querySelectorAll('#rail a');
+
+        window.addEventListener('scroll', () => {
+            const winHeight = window.innerHeight;
+            const docHeight = document.documentElement.scrollHeight - winHeight;
+            const scrolled = (window.scrollY / docHeight) * 100;
+            progress.style.width = scrolled + '%';
+        });
+
+        // --- Intersection Observer for Reveal & Scrollspy ---
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('in-view');
+                    const id = entry.target.getAttribute('id');
+                    railLinks.forEach(link => {
+                        link.classList.toggle('active', link.getAttribute('href') === '#' + id);
+                    });
+                }
+            });
+        }, { threshold: 0.2 });
+
+        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+        // --- Mobile Menu ---
+        const menuBtn = document.getElementById('menuBtn');
+        const rail = document.getElementById('rail');
+        const scrim = document.getElementById('scrim');
+
+        menuBtn.addEventListener('click', () => {
+            rail.classList.add('open');
+            scrim.classList.add('active');
+        });
+        scrim.addEventListener('click', () => {
+            rail.classList.remove('open');
+            scrim.classList.remove('active');
+        });
+        railLinks.forEach(link => link.addEventListener('click', () => {
+            rail.classList.remove('open');
+            scrim.classList.remove('active');
+        }));
+
+        // --- Theme Toggle ---
+        const themeToggle = document.getElementById('themeToggle');
+        const html = document.documentElement;
+        
+        const setTheme = (theme) => {
+            html.setAttribute('data-theme', theme);
+            themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+            localStorage.setItem('theme', theme);
+        };
+
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const savedTheme = localStorage.getItem('theme') || (prefersDark ? 'dark' : 'light');
+        setTheme(savedTheme);
+
+        themeToggle.addEventListener('click', () => {
+            const current = html.getAttribute('data-theme');
+            setTheme(current === 'dark' ? 'light' : 'dark');
+        });
+
+        // --- Font Controls ---
+        const fontBtns = document.querySelectorAll('.font-btn');
+        fontBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                fontBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                document.body.style.fontSize = btn.dataset.size + 'px';
+            });
+        });
+
+        // --- Hero Spectrum Slider ---
+        const track = document.getElementById('spectrumTrack');
+        const fill = document.getElementById('spectrumFill');
+        const handle = document.getElementById('spectrumHandle');
+        const spectrumText = document.getElementById('spectrumText');
+        
+        const legacyText = "Headphones are personal productivity tools that help me carve out focus in a chaotic environment.";
+        const shiftedText = "Headphones are structural enablers that subsidize corporate cost-cutting at the expense of my nervous system.";
+
+        let isDragging = false;
+
+        const updateSpectrum = (clientX) => {
+            const rect = track.getBoundingClientRect();
+            let x = clientX - rect.left;
+            x = Math.max(0, Math.min(x, rect.width));
+            const percent = (x / rect.width) * 100;
+            
+            fill.style.width = percent + '%';
+            handle.style.left = percent + '%';
+            
+            // Fade text
+            spectrumText.style.opacity = 0;
+            setTimeout(() => {
+                spectrumText.innerText = percent < 50 ? legacyText : shiftedText;
+                spectrumText.style.opacity = 1;
+            }, 150);
+        };
+
+        handle.addEventListener('mousedown', (e) => { isDragging = true; e.preventDefault(); });
+        track.addEventListener('click', (e) => updateSpectrum(e.clientX));
+        document.addEventListener('mousemove', (e) => { if (isDragging) updateSpectrum(e.clientX); });
+        document.addEventListener('mouseup', () => { isDragging = false; });
+
+        // --- Perspective Snap Share ---
+        const snapText = document.getElementById('snapText').innerText;
+        const shareUrl = window.location.href;
+        
+        document.getElementById('copyBtn').addEventListener('click', () => {
+            navigator.clipboard.writeText(`"${snapText}" - ${shareUrl}`);
+            const msg = document.getElementById('copiedMsg');
+            msg.classList.add('show');
+            setTimeout(() => msg.classList.remove('show'), 2000);
+        });
+
+        document.getElementById('shareTwitter').addEventListener('click', () => {
+            window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(snapText)}&url=${encodeURIComponent(shareUrl)}`, '_blank');
+        });
+
+        document.getElementById('shareLinkedIn').addEventListener('click', () => {
+            window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`, '_blank');
+        });
+
+        // --- SVG Interactive Diagram ---
+        const nodes = document.querySelectorAll('.node');
+        const paths = document.querySelectorAll('.path-line');
+
+        nodes.forEach(node => {
+            node.addEventListener('mouseenter', () => {
+                const pathIds = node.dataset.paths.split(',');
+                paths.forEach(p => {
+                    if (pathIds.includes(p.id)) p.classList.add('active');
+                    else p.style.opacity = 0.2;
+                });
+                nodes.forEach(n => {
+                    if (n !== node) n.style.opacity = 0.4;
+                });
+            });
+            node.addEventListener('mouseleave', () => {
+                paths.forEach(p => { p.classList.remove('active'); p.style.opacity = 1; });
+                nodes.forEach(n => { n.style.opacity = 1; });
+            });
+        });
+
+        // --- Chart.js Visualization ---
+        const ctx = document.getElementById('trendChart').getContext('2d');
+        const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+        const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim();
+
+        const chartData = {
+            labels: ['2000', '2005', '2010', '2015', '2020'],
+            datasets: [
+                {
+                    label: 'Office Density (Sq Ft/Worker)',
+                    data: [350, 250, 150, 125, 110],
+                    borderColor: '#ff6b6b',
+                    backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                    tension: 0.3
+                },
+                {
+                    label: 'Headphone Usage (%)',
+                    data: [15, 30, 55, 75, 85],
+                    borderColor: accentColor,
+                    backgroundColor: 'rgba(74, 71, 163, 0.1)',
+                    tension: 0.3
+                }
+            ]
+        };
+
+        const trendChart = new Chart(ctx, {
+            type: 'line',
+            data: chartData,
+            options: {
+                responsive: true,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    tooltip: {
+                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        titleFont: { size: 14 },
+                        bodyFont: { size: 12 },
+                        padding: 10
+                    },
+                    legend: {
+                        labels: { color: textColor, font: { size: 12 } }
+                    }
+                },
+                scales: {
+                    x: { ticks: { color: textColor }, grid: { display: false } },
+                    y: { ticks: { color: textColor }, grid: { color: 'rgba(255,255,255,0.1)' } }
+                }
+            }
+        });
+
+        // Chart Filters
+        document.querySelectorAll('.chart-filter').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.chart-filter').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                const filter = btn.dataset.filter;
+                trendChart.data.datasets.forEach((ds, i) => {
+                    ds.hidden = (filter === 'both') ? false : (filter === 'density' ? i !== 0 : i !== 1);
+                });
+                trendChart.update();
+            });
+        });
+
+        // --- Checklist Progress Gauge ---
+        const checkboxes = document.querySelectorAll('.checklist input[type="checkbox"]');
+        const gaugeFill = document.getElementById('gaugeFill');
+        const gaugePercent = document.getElementById('gaugePercent');
+
+        checkboxes.forEach(box => {
+            box.addEventListener('change', () => {
+                const checked = document.querySelectorAll('.checklist input:checked').length;
+                const total = checkboxes.length;
+                const percent = (checked / total) * 100;
+                gaugeFill.style.width = percent + '%';
+                gaugePercent.innerText = Math.round(percent);
+            });
+        });
+
+        // --- Reading Time Estimate ---
+        const mainContent = document.querySelector('main');
+        const words = mainContent.innerText.split(/\s+/).length;
+        const readTime = Math.ceil(words / 200);
+        document.getElementById('readTime').innerText = readTime + ' min read';
+    </script>
+</body>
+</html>
