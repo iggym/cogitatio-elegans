@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Gaming the Grade — Goodhart's Law in Education</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#050505;--bg-alt:#0a0a0a;--surface:#171717;--surface-hover:#1e1e1e;
+  --text:#e5e5e5;--text-sec:#a3a3a3;--text-muted:#737373;
+  --accent:#10b981;--accent-light:#34d399;--accent-dark:#059669;
+  --border:rgba(255,255,255,.1);--border-light:rgba(255,255,255,.05);
+  --font:'Inter',sans-serif;--base:16px;--lh:1.625;--max-w:720px;
+  --glow:0 0 30px rgba(16,185,129,.15)
+}
+.light{
+  --bg:#fafafa;--bg-alt:#f5f5f5;--surface:#ffffff;--surface-hover:#f0f0f0;
+  --text:#171717;--text-sec:#525252;--text-muted:#737373;
+  --accent:#10b981;--accent-light:#34d399;--accent-dark:#059669;
+  --border:rgba(0,0,0,.1);--border-light:rgba(0,0,0,.05);
+  --glow:0 0 30px rgba(16,185,129,.1)
+}
+html{font-size:var(--base);scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:var(--lh);overflow-x:hidden;transition:background .4s,color .4s}
+a{color:var(--accent);text-decoration:none;transition:color .2s}
+a:hover{color:var(--accent-light)}
+::selection{background:var(--accent);color:#000}
+
+/* Progress */
+#progress{position:fixed;top:0;left:0;height:3px;width:0;background:linear-gradient(90deg,var(--accent-dark),var(--accent),var(--accent-light));z-index:1001;transition:width .1s linear}
+
+/* Topbar */
+#topbar{position:sticky;top:0;z-index:1000;background:rgba(5,5,5,.72);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-bottom:1px solid var(--border-light);transition:background .4s}
+.light #topbar{background:rgba(255,255,255,.72)}
+.topbar-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:12px;padding:10px 24px;font-size:13px;overflow-x:auto}
+.home-link{font-weight:600;color:var(--text);white-space:nowrap;letter-spacing:-.02em}
+.home-link:hover{color:var(--accent)}
+.breadcrumb{color:var(--text-muted);white-space:nowrap}
+.breadcrumb span{margin:0 4px}
+.read-time{color:var(--text-sec);white-space:nowrap;margin-left:auto;font-size:12px;font-weight:500}
+.topbar-controls{display:flex;gap:4px;align-items:center}
+.topbar-controls button{background:var(--surface);border:1px solid var(--border);color:var(--text-sec);border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12px;font-family:var(--font);transition:all .2s}
+.topbar-controls button:hover{color:var(--accent);border-color:var(--accent)}
+.topbar-controls button.active{background:var(--accent);color:#000;border-color:var(--accent)}
+.drawer-btn{display:none;background:none;border:none;color:var(--text);font-size:20px;cursor:pointer;padding:4px}
+
+/* Scrim */
+#scrim{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:998;opacity:0;pointer-events:none;transition:opacity .3s}
+#scrim.open{opacity:1;pointer-events:all}
+
+/* Layout */
+.wrap{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+#rail{position:sticky;top:57px;height:calc(100vh - 57px);overflow-y:auto;padding:32px 20px;border-right:1px solid var(--border-light);scrollbar-width:none}
+#rail::-webkit-scrollbar{display:none}
+#rail .rail-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:var(--text-muted);margin-bottom:16px}
+#rail a{display:block;padding:8px 12px;margin-bottom:2px;color:var(--text-sec);font-size:13px;font-weight:500;border-radius:8px;transition:all .2s;border-left:2px solid transparent}
+#rail a:hover{color:var(--text);background:var(--surface)}
+#rail a.active{color:var(--accent);border-left-color:var(--accent);background:rgba(16,185,129,.08)}
+
+main{padding:0;min-width:0}
+
+/* Article */
+article{max-width:var(--max-w);margin:0 auto;padding:40px 24px 80px}
+.hero-block{text-align:center;padding:64px 0 48px}
+.hero-tag{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:var(--accent);background:rgba(16,185,129,.1);padding:4px 14px;border-radius:100px;margin-bottom:20px}
+.hero-title{font-size:clamp(2.2rem,5vw,3.4rem);font-weight:700;letter-spacing:-.04em;line-height:1.08;margin-bottom:16px;background:linear-gradient(135deg,var(--text) 0%,var(--accent) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:18px;font-weight:300;color:var(--text-sec);max-width:560px;margin:0 auto;line-height:1.6}
+
+/* Sections */
+.section{margin-bottom:64px}
+.section-header{margin-bottom:28px}
+.section-num{font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.14em;margin-bottom:8px}
+.section-title{font-size:28px;font-weight:700;letter-spacing:-.03em;line-height:1.15;color:var(--text)}
+.section-title em{font-style:normal;color:var(--accent)}
+p{margin-bottom:20px;color:var(--text-sec);font-size:16px;line-height:1.75}
+p strong{color:var(--text);font-weight:600}
+
+/* Reveal */
+.reveal{opacity:0;transform:translateY(30px);transition:opacity .7s ease,transform .7s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+
+/* Spectrum */
+.spectrum-wrap{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:32px;margin:32px 0;position:relative;overflow:hidden}
+.spectrum-wrap::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle at var(--gx,30%),var(--accent-dark),transparent 60%);opacity:.06;pointer-events:none;transition:opacity .5s}
+.spectrum-labels{display:flex;justify-content:space-between;margin-bottom:16px}
+.spectrum-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;padding:4px 12px;border-radius:100px;transition:all .3s}
+.spectrum-label.legacy{color:var(--text-muted);background:rgba(255,255,255,.05)}
+.spectrum-label.shifted{color:var(--accent);background:rgba(16,185,129,.12)}
+.spectrum-label.dominant{transform:scale(1.05)}
+.spectrum-slider{-webkit-appearance:none;width:100%;height:6px;border-radius:3px;background:linear-gradient(90deg,var(--text-muted),var(--accent));outline:none;margin:16px 0;cursor:pointer}
+.spectrum-slider::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--accent);border:3px solid var(--bg);box-shadow:0 0 12px rgba(16,185,129,.4);cursor:pointer;transition:transform .2s}
+.spectrum-slider::-webkit-slider-thumb:hover{transform:scale(1.2)}
+.spectrum-callout{min-height:80px;padding:20px;border-radius:12px;background:var(--bg-alt);border:1px solid var(--border-light);margin-top:20px;transition:all .3s}
+.spectrum-callout p{margin:0;font-size:15px;line-height:1.7;color:var(--text-sec)}
+.spectrum-callout p em{font-style:normal;color:var(--accent);font-weight:600}
+
+/* Canvas Diagram */
+.diagram-wrap{margin:32px 0;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:24px;position:relative}
+.diagram-wrap canvas{width:100%;height:420px;display:block;cursor:pointer;border-radius:12px}
+.diagram-tooltip{position:absolute;background:var(--bg);border:1px solid var(--accent);color:var(--text);font-size:12px;padding:8px 14px;border-radius:10px;pointer-events:none;opacity:0;transition:opacity .2s;max-width:200px;z-index:10;line-height:1.5}
+.diagram-tooltip.show{opacity:1}
+
+/* Chart */
+.chart-wrap{margin:32px 0;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:24px}
+.chart-toggle{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.chart-toggle button{font-size:12px;font-weight:600;padding:6px 16px;border-radius:100px;border:1px solid var(--border);background:var(--bg-alt);color:var(--text-sec);cursor:pointer;font-family:var(--font);transition:all .2s}
+.chart-toggle button.active{background:var(--accent);color:#000;border-color:var(--accent)}
+.chart-toggle button:hover:not(.active){border-color:var(--accent);color:var(--accent)}
+
+/* Snap Card */
+.snap-card{position:relative;margin:40px 0;padding:36px 32px;border-radius:20px;background:linear-gradient(135deg,rgba(16,185,129,.12),rgba(16,185,129,.03));border:1px solid rgba(16,185,129,.2);overflow:hidden}
+.snap-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--accent-dark),transparent);opacity:var(--snap-opacity,0);transition:opacity .3s;pointer-events:none}
+.snap-text{font-size:22px;font-weight:600;line-height:1.45;color:var(--text);position:relative;z-index:1;letter-spacing:-.02em}
+.snap-actions{display:flex;gap:8px;margin-top:20px;position:relative;z-index:1;flex-wrap:wrap}
+.snap-btn{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:6px 14px;border-radius:100px;border:1px solid var(--border);background:var(--surface);color:var(--text-sec);cursor:pointer;font-family:var(--font);transition:all .2s}
+.snap-btn:hover{border-color:var(--accent);color:var(--accent)}
+.snap-btn.copied{background:var(--accent);color:#000;border-color:var(--accent)}
+.snap-icon{font-size:14px}
+
+/* Action Card */
+.action{margin:40px 0;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:32px;position:relative;overflow:hidden}
+.action-title{font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px;letter-spacing:-.02em}
+.action-desc{font-size:14px;color:var(--text-sec);margin-bottom:24px}
+.checklist{list-style:none;margin-bottom:24px}
+.checklist li{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid var(--border-light);font-size:14px;color:var(--text-sec);cursor:pointer;transition:color .2s}
+.checklist li:last-child{border-bottom:none}
+.checklist li.checked{color:var(--accent)}
+.checklist li.checked .check-label{text-decoration:line-through;color:var(--text-muted)}
+.checklist input[type="checkbox"]{appearance:none;-webkit-appearance:none;width:20px;height:20px;min-width:20px;border:2px solid var(--border);border-radius:6px;cursor:pointer;position:relative;transition:all .2s;margin-top:1px}
+.checklist input[type="checkbox"]:checked{background:var(--accent);border-color:var(--accent)}
+.checklist input[type="checkbox"]:checked::after{content:'✓';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#000;font-size:12px;font-weight:700}
+.progress-gauge{height:6px;background:var(--bg-alt);border-radius:3px;overflow:hidden}
+.progress-gauge-fill{height:100%;background:linear-gradient(90deg,var(--accent-dark),var(--accent-light));border-radius:3px;transition:width .5s cubic-bezier(.4,0,.2,1);width:0}
+.progress-label{font-size:11px;font-weight:600;color:var(--text-muted);margin-top:8px;text-transform:uppercase;letter-spacing:.1em}
+
+/* Footer */
+footer{border-top:1px solid var(--border-light);padding:32px 24px;text-align:center;font-size:13px;color:var(--text-muted)}
+footer a{color:var(--text-sec)}
+
+/* Mobile */
+@media(max-width:880px){
+  .wrap{grid-template-columns:1fr}
+  #rail{position:fixed;top:0;left:0;width:280px;height:100vh;z-index:999;background:var(--bg);transform:translateX(-100%);transition:transform .35s cubic-bezier(.4,0,.2,1);padding:80px 20px 32px;border-right:1px solid var(--border)}
+  #rail.open{transform:translateX(0)}
+  .drawer-btn{display:block}
+  .topbar-inner{gap:8px}
+  .breadcrumb{display:none}
+  .read-time{font-size:11px}
+  .hero-block{padding:40px 0 32px}
+  .hero-title{font-size:2rem}
+  .diagram-wrap canvas{height:320px}
+}
+@media(max-width:480px){
+  .spectrum-wrap,.diagram-wrap,.chart-wrap,.action,.snap-card{padding:20px;border-radius:16px}
+  .snap-text{font-size:18px}
+}
+
+/* Reduced motion */
+@media(prefers-reduced-motion:reduce){
+  .reveal{opacity:1;transform:none;transition:none}
+  *{transition-duration:0s!important;animation-duration:0s!important}
+  html{scroll-behavior:auto}
+}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+
+<header id="topbar">
+  <div class="topbar-inner">
+    <a href="https://iggym.github.io/cogitatio-elegans/" class="home-link">Cogitatio Elegans</a>
+    <span class="breadcrumb">Articles <span>›</span> Goodhart's Law</span>
+    <span class="read-time" id="readTime">— min read</span>
+    <div class="topbar-controls">
+      <button onclick="setTextSize('s')" title="Small text">A<sup>-</sup></button>
+      <button onclick="setTextSize('m')" title="Medium text" class="active" id="sizeM">A</button>
+      <button onclick="setTextSize('l')" title="Large text">A<sup>+</sup></button>
+      <button onclick="toggleTheme()" title="Toggle theme" id="themeBtn">☀</button>
+    </div>
+    <button class="drawer-btn" onclick="toggleDrawer()" aria-label="Menu">☰</button>
+  </div>
+</header>
+
+<div id="scrim" onclick="toggleDrawer()"></div>
+
+<div class="wrap">
+  <nav id="rail">
+    <div class="rail-label">In this article</div>
+    <a href="#crunch-time" data-section="crunch-time">Crunch Time</a>
+    <a href="#the-tail-wags" data-section="the-tail-wags">The Tail Wags</a>
+    <a href="#blind-spots" data-section="blind-spots">Blind Spots</a>
+    <a href="#devils-advocate" data-section="devils-advocate">Devil's Advocate</a>
+    <a href="#way-forward" data-section="way-forward">Way Forward</a>
+    <a href="#first-move" data-section="first-move">First Move</a>
+  </nav>
+
+  <main>
+    <article id="article">
+
+      <!-- HERO -->
+      <div class="hero-block reveal">
+        <div class="hero-tag">Perspective Shift</div>
+        <h1 class="hero-title">Gaming the Grade</h1>
+        <p class="hero-sub">When the measure becomes the target, education becomes the casualty — and the scorecard says everything's fine.</p>
+      </div>
+
+      <!-- SPECTRUM -->
+      <div class="spectrum-wrap reveal" id="spectrumWrap">
+        <div class="spectrum-labels">
+          <span class="spectrum-label legacy dominant" id="specLegacy">Legacy Perspective</span>
+          <span class="spectrum-label shifted" id="specShifted">Shifted Perspective</span>
+        </div>
+        <input type="range" min="0" max="100" value="0" class="spectrum-slider" id="spectrumSlider">
+        <div class="spectrum-callout" id="spectrumCallout">
+          <p id="spectrumText"><em>Metrics as mirrors.</em> Standardized testing and quantitative academic metrics were designed to ensure objective, transparent, and meritocratic evaluation of human capability and institutional performance. They reflect reality — they don't reshape it.</p>
+        </div>
+      </div>
+
+      <!-- CRUNCH TIME -->
+      <section class="section" id="crunch-time">
+        <div class="section-header reveal">
+          <div class="section-num">01</div>
+          <h2 class="section-title">Crunch Time</h2>
+        </div>
+        <div class="reveal">
+          <p>It's 11:47 PM on a Thursday. Maria sits at the kitchen table, a practice SAT worksheet pinned under her left elbow, a vocabulary app glowing on her phone. She's been at this since dinner.</p>
+          <p>She can tell you that <em>obfuscate</em> means to make unclear, that <em>ephemeral</em> means short-lived, that <em>sycophant</em> means a person who acts obsequiously toward someone important. She cannot use any of them in a sentence she'd actually say out loud.</p>
+          <p>She's not learning words. She's learning to <strong>recognize them on a multiple-choice test.</strong> And she knows it. At sixteen, Maria already understands something most policy architects don't: the test isn't measuring what she knows. It's measuring how well she's learned to take the test.</p>
+          <p>She closes the app. Opens it again. Closes it. The score she needs is a number. The number is a gate. The gate doesn't care about understanding. It cares about the number.</p>
+        </div>
+      </section>
+
+      <!-- THE TAIL WAGS -->
+      <section class="section" id="the-tail-wags">
+        <div class="section-header reveal">
+          <div class="section-num">02</div>
+          <h2 class="section-title">The Tail <em>Wags</em></h2>
+        </div>
+        <div class="reveal">
+          <p>Here's the reframe: <strong>Standardized metrics don't evaluate education. They replace it.</strong></p>
+          <p>Once a metric becomes an official target, institutions and individuals optimize their behavior around passing the test rather than acquiring actual comprehension. The test stops being a mirror and becomes the room itself. Education doesn't get measured — it gets reshaped into a game of institutional compliance and pattern matching.</p>
+          <p>The quantification tools designed to ensure objectivity and meritocracy <strong>inevitably corrupt and degrade the very human capabilities they attempt to evaluate.</strong> This isn't a bug. It's an invariant of complex social systems. Goodhart's Law — named after economist Charles Goodhart — states simply: <em>"When a measure becomes a target, it ceases to be a good measure."</em></p>
+          <p>The metric was supposed to watch the system. Instead, the system started watching the metric. And everything bent toward it.</p>
+        </div>
+      </section>
+
+      <!-- FEEDBACK LOOP DIAGRAM -->
+      <div class="diagram-wrap reveal">
+        <div class="section-num" style="margin-bottom:12px">Interactive — The Goodhart Loop</div>
+        <canvas id="loopCanvas"></canvas>
+        <div class="diagram-tooltip" id="loopTooltip"></div>
+      </div>
+
+      <!-- BLIND SPOTS -->
+      <section class="section" id="blind-spots">
+        <div class="section-header reveal">
+          <div class="section-num">03</div>
+          <h2 class="section-title">Blind Spots</h2>
+        </div>
+        <div class="reveal">
+          <p>The pattern repeats everywhere Goodhart's Law touches. In healthcare, when hospitals are measured on patient satisfaction scores, they optimize for comfort — not outcomes. In policing, when departments are measured on arrest quotas, they optimize for volume — not justice. In corporate settings, when employees are measured on lines of code, they optimize for length — not quality.</p>
+          <p>In education, when schools are measured on test scores, they optimize for test performance — <strong>not learning.</strong></p>
+          <p>These aren't separate failures. They're the <strong>same mechanism</strong> wearing different uniforms. The metric becomes the target. The target becomes the behavior. The behavior becomes the system. And the system reports that it's succeeding — because the one thing it's measuring is the one thing it's optimizing for.</p>
+        </div>
+
+        <!-- SNAP CARD -->
+        <div class="snap-card reveal" id="snapCard">
+          <div class="snap-text" id="snapText">We didn't measure learning. We measured the shadow learning casts on a scantron.</div>
+          <div class="snap-actions">
+            <button class="snap-btn" onclick="copySnap()" id="copyBtn">
+              <span class="iconify snap-icon" data-icon="lucide:copy"></span> Copy
+            </button>
+            <button class="snap-btn" onclick="shareX()">
+              <span class="iconify snap-icon" data-icon="lucide:twitter"></span> Share on X
+            </button>
+            <button class="snap-btn" onclick="shareLinkedIn()">
+              <span class="iconify snap-icon" data-icon="lucide:linkedin"></span> Share on LinkedIn
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- CHART -->
+      <div class="chart-wrap reveal">
+        <div class="section-num" style="margin-bottom:8px">The Divergence</div>
+        <p style="font-size:14px;color:var(--text-sec);margin-bottom:16px">As institutions optimize for test performance, standardized scores rise while independent comprehension assessment stagnates or declines. The gap is the distortion.</p>
+        <div class="chart-toggle">
+          <button class="active" onclick="toggleDataset(0,this)" data-idx="0">Test Scores</button>
+          <button class="active" onclick="toggleDataset(1,this)" data-idx="1">Comprehension</button>
+          <button class="active" onclick="toggleDataset(2,this)" data-idx="2">Funding Index</button>
+        </div>
+        <canvas id="divergenceChart" height="280"></canvas>
+      </div>
+
+      <!-- DEVIL'S ADVOCATE -->
+      <section class="section" id="devils-advocate">
+        <div class="section-header reveal">
+          <div class="section-num">04</div>
+          <h2 class="section-title">Devil's Advocate</h2>
+        </div>
+        <div class="reveal">
+          <p>The original intent was noble. Standardized testing emerged from a genuine desire to make evaluation objective, transparent, and meritocratic. Before standardized metrics, university admissions were subjective, often biased, and opaque. The SAT was born in 1926 partly to democratize access — to find talent regardless of pedigree.</p>
+          <p>That intent was real. But <strong>intent doesn't outrun structure.</strong> Goodhart's Law describes an invariant of complex social systems. It doesn't care about your intentions. It cares about your incentives.</p>
+          <p>The counterargument says: without metrics, we have no accountability. Without standardized tests, how do we ensure schools serve all students? How do we identify the schools that are failing the children who need them most?</p>
+          <p>Fair point. The question isn't whether to measure. It's whether <strong>the measurement has become the education.</strong> And the evidence — the teaching-to-the-test curricula, the narrowed course offerings, the arts programs cut to fund test prep, the students who can fill in bubbles but can't formulate an original question — suggests it has.</p>
+          <p>The metric was the diagnostic. Now it's the disease.</p>
+        </div>
+      </section>
+
+      <!-- WAY FORWARD -->
+      <section class="section" id="way-forward">
+        <div class="section-header reveal">
+          <div class="section-num">05</div>
+          <h2 class="section-title">Way Forward</h2>
+        </div>
+        <div class="reveal">
+          <p>But here's the thing about systems: they're made of people. And people can choose differently.</p>
+          <p>A teacher in Portland replaces test-prep Fridays with <em>"curiosity hours"</em> — students investigate any question they want, then present their findings. Test scores don't drop. A school district in New Zealand drops standardized testing for primary students and replaces it with portfolio-based assessment. Literacy rates hold steady. Engagement climbs.</p>
+          <p>Finland built one of the world's highest-performing education systems with <strong>no standardized tests until age 16,</strong> teacher autonomy as the default, and trust as the accountability mechanism. Their students consistently outperform nations that test annually.</p>
+          <p>These aren't revolutions. They're decisions. Small, concrete, executable decisions that refuse to let the metric eat the mission. They don't require policy overhaul. They require a teacher, a parent, a principal — anyone with a small lever of influence — to <strong>optimize for the thing the metric was supposed to protect</strong> instead of the metric itself.</p>
+        </div>
+      </section>
+
+      <!-- FIRST MOVE -->
+      <section class="section" id="first-move">
+        <div class="section-header reveal">
+          <div class="section-num">06</div>
+          <h2 class="section-title">First Move</h2>
+        </div>
+        <div class="reveal">
+          <p>Within the next 24 hours, ask one person — your child, your student, yourself — <strong>a question that has no right answer.</strong> Not "What's the capital of France?" but "What would happen if gravity worked sideways?" or "Why do you think people lie?"</p>
+          <p>Watch what happens when the brain is invited to think instead of to produce the correct output. That's the gap. That's where learning lives. And that's where the metric can't reach.</p>
+        </div>
+
+        <!-- ACTION CARD -->
+        <div class="action reveal">
+          <div class="action-title">Your 24-Hour Shift</div>
+          <div class="action-desc">Check off each micro-action as you complete it. Progress is local — and it starts now.</div>
+          <ul class="checklist" id="checklist">
+            <li><input type="checkbox" onchange="updateGauge()"><span class="check-label">Ask someone a question with no right answer today</span></li>
+            <li><input type="checkbox" onchange="updateGauge()"><span class="check-label">Notice one moment where you're optimizing for a metric instead of the outcome</span></li>
+            <li><input type="checkbox" onchange="updateGauge()"><span class="check-label">Share this perspective with one person who needs to hear it</span></li>
+            <li><input type="checkbox" onchange="updateGauge()"><span class="check-label">Replace one "What's the answer?" with "What do you think?"</span></li>
+          </ul>
+          <div class="progress-gauge"><div class="progress-gauge-fill" id="gaugeFill"></div></div>
+          <div class="progress-label" id="gaugeLabel">0 of 4 complete</div>
+        </div>
+      </section>
+
+    </article>
+  </main>
+</div>
+
+<footer>
+  <p>Part of <a href="https://iggym.github.io/cogitatio-elegans/">Cogitatio Elegans</a> — Perspectives that shift how you think.</p>
+</footer>
+
+<script>
+/* ── Reading Time ── */
+(function(){
+  const text=document.getElementById('article').innerText;
+  const words=text.trim().split(/\s+/).length;
+  const mins=Math.max(1,Math.round(words/230));
+  document.getElementById('readTime').textContent=mins+' min read';
+})();
+
+/* ── Progress Bar ── */
+window.addEventListener('scroll',()=>{
+  const h=document.documentElement.scrollHeight-window.innerHeight;
+  const p=h>0?(window.scrollY/h)*100:0;
+  document.getElementById('progress').style.width=Math.min(p,100)+'%';
+},{passive:true});
+
+/* ── Scrollspy ── */
+const sections=document.querySelectorAll('section[id]');
+const railLinks=document.querySelectorAll('#rail a[data-section]');
+const spyObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      railLinks.forEach(l=>l.classList.remove('active'));
+      const link=document.querySelector(`#rail a[data-section="${e.target.id}"]`);
+      if(link)link.classList.add('active');
+    }
+  });
+},{rootMargin:'-20% 0px -60% 0px'});
+sections.forEach(s=>spyObs.observe(s));
+
+/* ── Reveal ── */
+const revealObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');revealObs.unobserve(e.target)}});
+},{threshold:0.12});
+document.querySelectorAll('.reveal').forEach(el=>revealObs.observe(el));
+
+/* ── Theme Toggle ── */
+function toggleTheme(){
+  document.body.classList.toggle('light');
+  const isLight=document.body.classList.contains('light');
+  document.getElementById('themeBtn').textContent=isLight?'☾':'☀';
+  if(divergenceChart)updateChartTheme();
+}
+/* Respect system preference */
+if(window.matchMedia('(prefers-color-scheme:light)').matches){
+  document.body.classList.add('light');
+  document.getElementById('themeBtn').textContent='☾';
+}
+
+/* ── Text Size ── */
+function setTextSize(s){
+  const sizes={s:'14px',m:'16px',l:'18px'};
+  document.documentElement.style.setProperty('--base',sizes[s]);
+  document.querySelectorAll('.topbar-controls button').forEach((b,i)=>{
+    b.classList.toggle('active',['s','m','l'][i]===s);
+  });
+}
+
+/* ── Mobile Drawer ── */
+function toggleDrawer(){
+  const rail=document.getElementById('rail');
+  const scrim=document.getElementById('scrim');
+  rail.classList.toggle('open');
+  scrim.classList.toggle('open');
+}
+/* Close drawer on link click */
+railLinks.forEach(l=>l.addEventListener('click',()=>{
+  if(window.innerWidth<=880)toggleDrawer();
+}));
+
+/* ── Spectrum Slider ── */
+const specSlider=document.getElementById('spectrumSlider');
+const specLegacy=document.getElementById('specLegacy');
+const specShifted=document.getElementById('specShifted');
+const specText=document.getElementById('spectrumText');
+const specWrap=document.getElementById('spectrumWrap');
+
+const specContent=[
+  {t:'<em>Metrics as mirrors.</em> Standardized testing and quantitative academic metrics were designed to ensure objective, transparent, and meritocratic evaluation of human capability and institutional performance. They reflect reality — they don\'t reshape it.'},
+  {t:'<em>The distortion begins.</em> As metrics gain institutional weight, behavior starts to shift. Teachers begin "teaching to the test." Students begin pattern-matching instead of understanding. The measurement is no longer passive — it\'s actively reshaping the system it observes.'},
+  {t:'<em>Metrics as mold.</em> Once a metric becomes an official target, institutions and individuals optimize their behavior around passing the test rather than acquiring actual comprehension. Education becomes a game of institutional compliance and pattern matching. The quantification tools inevitably corrupt and degrade the underlying human behavior they attempt to evaluate.'}
+];
+
+specSlider.addEventListener('input',()=>{
+  const v=+specSlider.value;
+  specWrap.style.setProperty('--gx',v+'%');
+  specLegacy.classList.toggle('dominant',v<50);
+  specShifted.classList.toggle('dominant',v>=50);
+  specLegacy.style.opacity=v<50?1:.5;
+  specShifted.style.opacity=v>=50?1:.5;
+  const idx=v<34?0:v<67?1:2;
+  specText.innerHTML=specContent[idx].t;
+});
+
+/* ── Canvas Feedback Loop ── */
+(function(){
+  const canvas=document.getElementById('loopCanvas');
+  const ctx=canvas.getContext('2d');
+  const tooltip=document.getElementById('loopTooltip');
+  const dpr=window.devicePixelRatio||1;
+  let W,H,cx,cy,radius;
+
+  const nodes=[
+    {label:'Create Metric',desc:'A new standardized measure is introduced to evaluate performance objectively.'},
+    {label:'Teach to Test',desc:'Curricula and pedagogy shift to maximize test performance rather than depth of understanding.'},
+    {label:'Scores Rise',desc:'Test scores improve — but the improvement reflects optimization, not learning.'},
+    {label:'Comprehension Falls',desc:'Actual understanding, critical thinking, and creativity decline as they\'re deprioritized.'},
+    {label:'Demand Accountability',desc:'Falling real outcomes trigger calls for "more accountability" and tougher standards.'},
+    {label:'More Metrics',desc:'The system responds by introducing additional metrics, intensifying the cycle.'}
+  ];
+
+  let hovered=-1;
+  let animPhase=0;
+
+  function resize(){
+    const rect=canvas.parentElement.getBoundingClientRect();
+    W=rect.width-48;H=420;
+    canvas.width=W*dpr;canvas.height=H*dpr;
+    canvas.style.width=W+'px';canvas.style.height=H+'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    cx=W/2;cy=H/2;radius=Math.min(W,H)*0.32;
+  }
+  resize();
+  window.addEventListener('resize',resize);
+
+  function getNodePos(i){
+    const angle=-Math.PI/2+(2*Math.PI/nodes.length)*i;
+    return{x:cx+Math.cos(angle)*radius,y:cy+Math.sin(angle)*radius};
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    animPhase+=0.008;
+
+    /* Draw connections */
+    for(let i=0;i<nodes.length;i++){
+      const from=getNodePos(i);
+      const to=getNodePos((i+1)%nodes.length);
+      const isHov=hovered===i||hovered===(i+1)%nodes.length;
+      ctx.beginPath();
+      ctx.moveTo(from.x,from.y);
+      ctx.lineTo(to.x,to.y);
+      ctx.strokeStyle=isHov?'rgba(16,185,129,0.8)':'rgba(16,185,129,0.15)';
+      ctx.lineWidth=isHov?2.5:1.5;
+      ctx.stroke();
+
+      /* Arrow */
+      const angle=Math.atan2(to.y-from.y,to.x-from.x);
+      const arrowLen=isHov?12:8;
+      const mx=to.x-Math.cos(angle)*40;
+      const my=to.y-Math.sin(angle)*40;
+      ctx.beginPath();
+      ctx.moveTo(mx,my);
+      ctx.lineTo(mx-arrowLen*Math.cos(angle-0.4),my-arrowLen*Math.sin(angle-0.4));
+      ctx.lineTo(mx-arrowLen*Math.cos(angle+0.4),my-arrowLen*Math.sin(angle+0.4));
+      ctx.closePath();
+      ctx.fillStyle=isHov?'rgba(16,185,129,0.9)':'rgba(16,185,129,0.3)';
+      ctx.fill();
+    }
+
+    /* Animated pulse on cycle */
+    const pulseIdx=Math.floor((animPhase*2)%nodes.length);
+    const pulseFrac=(animPhase*2)%1;
+
+    /* Draw nodes */
+    for(let i=0;i<nodes.length;i++){
+      const p=getNodePos(i);
+      const isHov=hovered===i;
+      const isPulse=i===pulseIdx;
+      const r=isHov?34:28;
+
+      /* Pulse ring */
+      if(isPulse&&!hovered||hovered>=0){
+        if(isPulse){
+          ctx.beginPath();
+          ctx.arc(p.x,p.y,r+8+pulseFrac*14,0,Math.PI*2);
+          ctx.strokeStyle=`rgba(16,185,129,${0.3*(1-pulseFrac)})`;
+          ctx.lineWidth=2;
+          ctx.stroke();
+        }
+      }
+
+      /* Glow */
+      if(isHov){
+        const grd=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r+20);
+        grd.addColorStop(0,'rgba(16,185,129,0.25)');
+        grd.addColorStop(1,'rgba(16,185,129,0)');
+        ctx.fillStyle=grd;
+        ctx.fillRect(p.x-r-20,p.y-r-20,(r+20)*2,(r+20)*2);
+      }
+
+      /* Circle */
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,r,0,Math.PI*2);
+      ctx.fillStyle=isHov?'rgba(16,185,129,0.2)':'rgba(23,23,23,0.9)';
+      ctx.fill();
+      ctx.strokeStyle=isHov?'#10b981':'rgba(16,185,129,0.3)';
+      ctx.lineWidth=isHov?2.5:1.5;
+      ctx.stroke();
+
+      /* Label */
+      ctx.fillStyle=isHov?'#e5e5e5':'#a3a3a3';
+      ctx.font=`${isHov?'600':'500'} ${isHov?12:11}px Inter,sans-serif`;
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      const words=nodes[i].label.split(' ');
+      if(words.length>1){
+        ctx.fillText(words[0],p.x,p.y-6);
+        ctx.fillText(words.slice(1).join(' '),p.x,p.y+8);
+      }else{
+        ctx.fillText(nodes[i].label,p.x,p.y);
+      }
+    }
+
+    /* Center label */
+    ctx.fillStyle='rgba(16,185,129,0.5)';
+    ctx.font='600 11px Inter,sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText('GOODHART',cx,cy-6);
+    ctx.fillText('LOOP',cx,cy+8);
+
+    requestAnimationFrame(draw);
+  }
+  draw();
+
+  /* Mouse interaction */
+  canvas.addEventListener('mousemove',e=>{
+    const rect=canvas.getBoundingClientRect();
+    const mx=e.clientX-rect.left;
+    const my=e.clientY-rect.top;
+    hovered=-1;
+    for(let i=0;i<nodes.length;i++){
+      const p=getNodePos(i);
+      if(Math.hypot(mx-p.x,my-p.y)<34){hovered=i;break}
+    }
+    canvas.style.cursor=hovered>=0?'pointer':'default';
+    if(hovered>=0){
+      tooltip.textContent=nodes[hovered].desc;
+      tooltip.classList.add('show');
+      tooltip.style.left=Math.min(mx+12,W-220)+'px';
+      tooltip.style.top=(my-40)+'px';
+    }else{
+      tooltip.classList.remove('show');
+    }
+  });
+  canvas.addEventListener('mouseleave',()=>{
+    hovered=-1;tooltip.classList.remove('show');
+  });
+})();
+
+/* ── Chart.js ── */
+let divergenceChart;
+(function(){
+  const ctx=document.getElementById('divergenceChart').getContext('2d');
+  const years=['2000','2004','2008','2012','2016','2020','2024'];
+  divergenceChart=new Chart(ctx,{
+    type:'line',
+    data:{
+      labels:years,
+      datasets:[
+        {label:'Standardized Test Scores (normalized)',data:[45,50,58,65,72,76,80],borderColor:'#10b981',backgroundColor:'rgba(16,185,129,0.1)',fill:true,tension:.4,pointRadius:5,pointHoverRadius:8,borderWidth:2.5},
+        {label:'Independent Comprehension Assessment',data:[55,54,52,48,45,42,40],borderColor:'#f97316',backgroundColor:'rgba(249,115,22,0.08)',fill:true,tension:.4,pointRadius:5,pointHoverRadius:8,borderWidth:2.5},
+        {label:'Per-Student Funding Index',data:[40,44,48,52,55,58,60],borderColor:'#6366f1',backgroundColor:'rgba(99,102,241,0.08)',fill:true,tension:.4,pointRadius:5,pointHoverRadius:8,borderWidth:2.5}
+      ]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'rgba(5,5,5,0.9)',
+          titleColor:'#e5e5e5',
+          bodyColor:'#a3a3a3',
+          borderColor:'rgba(16,185,129,0.3)',
+          borderWidth:1,
+          padding:12,
+          cornerRadius:10,
+          titleFont:{family:'Inter',weight:'600'},
+          bodyFont:{family:'Inter'}
+        }
+      },
+      scales:{
+        x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#737373',font:{family:'Inter',size:11}}},
+        y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#737373',font:{family:'Inter',size:11}},min:20,max:100}
+      }
+    }
+  });
+})();
+
+function toggleDataset(idx,btn){
+  const meta=divergenceChart.getDatasetMeta(idx);
+  meta.hidden=!meta.hidden;
+  btn.classList.toggle('active');
+  divergenceChart.update();
+}
+
+function updateChartTheme(){
+  const isLight=document.body.classList.contains('light');
+  divergenceChart.options.scales.x.grid.color=isLight?'rgba(0,0,0,0.06)':'rgba(255,255,255,0.04)';
+  divergenceChart.options.scales.y.grid.color=isLight?'rgba(0,0,0,0.06)':'rgba(255,255,255,0.04)';
+  divergenceChart.options.scales.x.ticks.color=isLight?'#737373':'#737373';
+  divergenceChart.options.scales.y.ticks.color=isLight?'#737373':'#737373';
+  divergenceChart.options.plugins.tooltip.backgroundColor=isLight?'rgba(255,255,255,0.95)':'rgba(5,5,5,0.9)';
+  divergenceChart.options.plugins.tooltip.titleColor=isLight?'#171717':'#e5e5e5';
+  divergenceChart.options.plugins.tooltip.bodyColor=isLight?'#525252':'#a3a3a3';
+  divergenceChart.update();
+}
+
+/* ── Snap Card ── */
+/* Scroll-driven gradient shift */
+const snapCard=document.getElementById('snapCard');
+const snapObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    const r=e.intersectionRatio;
+    snapCard.style.setProperty('--snap-opacity',r>0?Math.min(r*0.5,0.3):0);
+  });
+},{threshold:Array.from({length:20},(_,i)=>i/19)});
+snapObs.observe(snapCard);
+
+function copySnap(){
+  const text=document.getElementById('snapText').innerText;
+  navigator.clipboard.writeText(text).then(()=>{
+    const btn=document.getElementById('copyBtn');
+    btn.classList.add('copied');
+    btn.innerHTML='<span class="iconify snap-icon" data-icon="lucide:check"></span> Copied!';
+    setTimeout(()=>{btn.classList.remove('copied');btn.innerHTML='<span class="iconify snap-icon" data-icon="lucide:copy"></span> Copy'},2000);
+  });
+}
+
+function shareX(){
+  const text=encodeURIComponent(document.getElementById('snapText').innerText);
+  const url=encodeURIComponent(window.location.href);
+  window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`,'_blank','width=600,height=400');
+}
+
+function shareLinkedIn(){
+  const url=encodeURIComponent(window.location.href);
+  window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}`,'_blank','width=600,height=400');
+}
+
+/* ── Checklist Gauge ── */
+function updateGauge(){
+  const checks=document.querySelectorAll('#checklist input[type="checkbox"]');
+  const total=checks.length;
+  let done=0;
+  checks.forEach((c,i)=>{
+    const li=c.closest('li');
+    if(c.checked){done++;li.classList.add('checked')}else{li.classList.remove('checked')}
+  });
+  const pct=(done/total)*100;
+  document.getElementById('gaugeFill').style.width=pct+'%';
+  document.getElementById('gaugeLabel').textContent=`${done} of ${total} complete`;
+}
+</script>
+</body>
+</html>
