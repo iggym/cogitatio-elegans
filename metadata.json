@@ -1,5 +1,18 @@
 [
   {
+  "title": "Too Clean to Live",
+  "description": "The hospital didn't fail. It worked exactly as designed — and the design itself is the problem.",
+  "category": "medicine",
+  "date": "2025-07-12",
+  "slug": "too-clean-to-live.html"
+},{
+  "title": "The Unpaid Shift",
+  "description": "Self-service technologies didn't grant you autonomy. They outsourced the labor, the risk, and the overhead directly to your wallet.",
+  "category": "labor",
+  "date": "2026-05-02",
+  "slug": "unpaid-shift.html"
+},
+  {
   "title": "The Outsourced Mind",
   "description": "Every photo you take is a quiet contract with your hardware — a trade of internal, living memory for cold, external fidelity.",
   "category": "cognition",
