@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Too Clean to Live — Cogitatio Elegans</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:ital,wght@0,200;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+/* ── CSS Variables ── */
+:root {
+  --bg:#FAFAF7;--bg-rgb:250,250,247;--fg:#1A1A1A;--muted:#6B6B6B;
+  --accent:#C41E3A;--accent2:#D4A017;--card:#FFFFFF;--border:#E0E0E0;
+  --surface:#F0EDE8;--font-d:'DM Serif Display',serif;--font-b:'DM Sans',sans-serif;
+  --fs-base:17px;--lh:1.7;--max-w:680px;--rail-w:220px;--topbar-h:56px;
+}
+[data-theme="dark"]{
+  --bg:#111110;--bg-rgb:17,17,16;--fg:#E8E4DF;--muted:#8A8580;
+  --accent:#E63946;--accent2:#F0B429;--card:#1C1C1B;--border:#2E2E2D;
+  --surface:#181817;
+}
+
+/* ── Reset & Base ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;font-size:var(--fs-base)}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{font-family:var(--font-b);background:var(--bg);color:var(--fg);line-height:var(--lh);transition:background .4s,color .4s;overflow-x:hidden}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+img,svg,canvas{display:block;max-width:100%}
+::selection{background:var(--accent);color:#fff}
+
+/* ── Progress Bar ── */
+#progress{position:fixed;top:0;left:0;height:3px;width:0;z-index:9999;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .15s}
+
+/* ── Topbar ── */
+#topbar{position:sticky;top:0;z-index:100;height:var(--topbar-h);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  background:rgba(var(--bg-rgb),.82);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 1.5rem;transition:background .4s}
+.topbar-inner{display:flex;align-items:center;gap:1rem;width:100%;max-width:1400px;margin:0 auto}
+.home-link{font-family:var(--font-d);font-size:1.1rem;color:var(--fg);white-space:nowrap}
+.breadcrumb{font-size:.78rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
+.breadcrumb span{opacity:.5}
+.reading-time{font-size:.75rem;color:var(--muted);white-space:nowrap;font-weight:500}
+.ctrl-group{display:flex;align-items:center;gap:.4rem}
+.ctrl-btn{width:34px;height:34px;border:1px solid var(--border);border-radius:8px;background:var(--card);
+  color:var(--fg);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.8rem;
+  transition:all .2s}
+.ctrl-btn:hover{border-color:var(--accent);color:var(--accent)}
+.ctrl-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.menu-btn{display:none}
+@media(max-width:880px){.breadcrumb,.reading-time{display:none}.menu-btn{display:flex}}
+
+/* ── Layout ── */
+.wrap{display:grid;grid-template-columns:var(--rail-w) 1fr;max-width:1400px;margin:0 auto;min-height:100vh}
+#rail{position:sticky;top:var(--topbar-h);height:calc(100vh - var(--topbar-h));overflow-y:auto;
+  padding:2rem 1.2rem;border-right:1px solid var(--border);background:var(--bg);transition:background .4s}
+#rail::-webkit-scrollbar{width:0}
+.rail-inner{display:flex;flex-direction:column;gap:.25rem}
+.rail-link{font-size:.85rem;color:var(--muted);padding:.45rem .7rem;border-radius:8px;transition:all .2s;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rail-link:hover{color:var(--fg);background:var(--surface);text-decoration:none}
+.rail-link.active{color:var(--accent);background:rgba(var(--accent-rgb,196,30,58),.08);font-weight:700}
+main{padding:0 2rem 4rem;max-width:calc(var(--max-w) + 4rem);width:100%}
+
+/* ── Mobile Drawer ── */
+#scrim{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;opacity:0;pointer-events:none;transition:opacity .3s}
+#scrim.open{opacity:1;pointer-events:auto}
+@media(max-width:880px){
+  .wrap{grid-template-columns:1fr}
+  #rail{position:fixed;top:0;left:0;bottom:0;width:280px;z-index:300;transform:translateX(-100%);
+    transition:transform .3s ease;padding-top:calc(var(--topbar-h) + 1rem);border-right:1px solid var(--border)}
+  #rail.open{transform:translateX(0)}
+  main{padding:0 1.2rem 4rem}
+}
+
+/* ── Hero ── */
+.hero{position:relative;padding:5rem 0 3rem;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-60%;right:-30%;width:600px;height:600px;
+  background:radial-gradient(circle,rgba(var(--accent-rgb,196,30,58),.08) 0%,transparent 70%);
+  border-radius:50%;pointer-events:none}
+.hero-canvas-wrap{position:absolute;inset:0;pointer-events:none;opacity:.35}
+#heroCanvas{width:100%;height:100%}
+.hero h1{font-family:var(--font-d);font-size:clamp(2.4rem,5.5vw,3.8rem);line-height:1.1;
+  margin-bottom:1rem;position:relative;max-width:560px}
+.hero-sub{font-size:1.15rem;color:var(--muted);max-width:520px;line-height:1.6;position:relative;font-weight:400}
+
+/* ── Spectrum ── */
+.spectrum{margin:3rem 0 1rem;position:relative;background:var(--card);border:1px solid var(--border);
+  border-radius:16px;padding:2rem;transition:background .4s,border-color .4s}
+.spectrum-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem;gap:1rem}
+.spectrum-label{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+.spectrum-label.left{color:var(--accent2)}
+.spectrum-label.right{color:var(--accent)}
+.spectrum-track{position:relative;height:8px;border-radius:4px;background:var(--surface);margin-bottom:1.5rem;overflow:visible}
+.spectrum-fill{position:absolute;top:0;left:0;height:100%;border-radius:4px;
+  background:linear-gradient(90deg,var(--accent2),var(--accent));transition:width .2s;pointer-events:none}
+.spectrum-input{position:absolute;top:50%;left:0;width:100%;transform:translateY(-50%);
+  -webkit-appearance:none;appearance:none;background:transparent;cursor:pointer;height:28px;margin:0}
+.spectrum-input::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;
+  background:var(--fg);border:3px solid var(--card);box-shadow:0 2px 8px rgba(0,0,0,.25);cursor:grab;transition:transform .15s}
+.spectrum-input::-webkit-slider-thumb:hover{transform:scale(1.15)}
+.spectrum-input::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--fg);
+  border:3px solid var(--card);box-shadow:0 2px 8px rgba(0,0,0,.25);cursor:grab}
+.spectrum-visual{display:flex;align-items:center;gap:1rem;margin-bottom:1rem}
+.spectrum-icon{font-size:1.8rem;transition:opacity .3s}
+.spectrum-icon.left{color:var(--accent2)}
+.spectrum-icon.right{color:var(--accent)}
+.spectrum-bar{flex:1;height:12px;border-radius:6px;position:relative;overflow:hidden;
+  background:var(--surface)}
+.spectrum-bar-fill{height:100%;border-radius:6px;transition:width .2s;
+  background:linear-gradient(90deg,var(--accent2),var(--accent))}
+.spectrum-callout{font-size:.95rem;color:var(--muted);line-height:1.6;min-height:3.2rem;transition:opacity .3s}
+
+/* ── Article Sections ── */
+.section{margin-bottom:3.5rem}
+.section h2{font-family:var(--font-d);font-size:clamp(1.6rem,3.5vw,2.2rem);margin-bottom:1.2rem;
+  line-height:1.2;position:relative}
+.section h2::after{content:'';display:block;width:40px;height:3px;background:var(--accent);margin-top:.6rem;border-radius:2px}
+.section p{margin-bottom:1.2rem;max-width:var(--max-w)}
+.section strong{color:var(--accent);font-weight:700}
+.drop-cap::first-letter{float:left;font-family:var(--font-d);font-size:3.5rem;line-height:.85;
+  padding-right:.5rem;padding-top:.25rem;color:var(--accent)}
+
+/* ── Perspective Snap Card ── */
+.snap-card{position:relative;background:linear-gradient(135deg,var(--accent),#8B1A2B);
+  border-radius:16px;padding:2.5rem 2rem;margin:2.5rem 0;overflow:hidden;color:#fff}
+.snap-card::before{content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(var(--accent2-rgb,212,160,23),.15),transparent);pointer-events:none}
+.snap-quote{font-family:var(--font-d);font-size:clamp(1.3rem,3vw,1.8rem);line-height:1.35;margin-bottom:1.5rem;position:relative}
+.snap-actions{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap}
+.snap-btn{display:inline-flex;align-items:center;gap:.4rem;padding:.5rem 1rem;border-radius:8px;
+  border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.1);color:#fff;cursor:pointer;
+  font-size:.8rem;font-family:var(--font-b);transition:all .2s}
+.snap-btn:hover{background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.5)}
+.snap-btn:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.snap-copied{position:absolute;top:1rem;right:1rem;background:rgba(255,255,255,.2);padding:.3rem .8rem;
+  border-radius:6px;font-size:.75rem;opacity:0;transition:opacity .3s;pointer-events:none}
+.snap-copied.show{opacity:1}
+
+/* ── Canvas Diagram ── */
+.sim-wrap{background:var(--card);border:1px solid var(--border);border-radius:16px;
+  padding:1.5rem;margin:2.5rem 0;transition:background .4s,border-color .4s}
+.sim-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem}
+.sim-title{font-family:var(--font-d);font-size:1.2rem}
+.sim-controls{display:flex;gap:.5rem}
+.sim-btn{padding:.45rem 1rem;border-radius:8px;border:1px solid var(--border);background:var(--surface);
+  color:var(--fg);cursor:pointer;font-size:.82rem;font-family:var(--font-b);transition:all .2s}
+.sim-btn:hover{border-color:var(--accent);color:var(--accent)}
+.sim-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.sim-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+#simCanvas{width:100%;height:300px;border-radius:10px;background:var(--surface);cursor:crosshair}
+.sim-stats{display:flex;gap:1.5rem;margin-top:1rem;flex-wrap:wrap}
+.sim-stat{font-size:.82rem;color:var(--muted)}
+.sim-stat strong{color:var(--fg);font-weight:700}
+
+/* ── Chart ── */
+.chart-wrap{background:var(--card);border:1px solid var(--border);border-radius:16px;
+  padding:1.5rem;margin:2.5rem 0;transition:background .4s,border-color .4s}
+.chart-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem}
+.chart-title{font-family:var(--font-d);font-size:1.2rem}
+.chart-filters{display:flex;gap:.5rem;flex-wrap:wrap}
+.chart-filter{padding:.35rem .75rem;border-radius:6px;border:1px solid var(--border);background:var(--surface);
+  color:var(--muted);cursor:pointer;font-size:.75rem;font-family:var(--font-b);transition:all .2s}
+.chart-filter.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.chart-filter:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ── CTA / Action Card ── */
+.action{background:var(--card);border:1px solid var(--border);border-radius:16px;
+  padding:2rem;margin:2.5rem 0;transition:background .4s,border-color .4s}
+.action h3{font-family:var(--font-d);font-size:1.3rem;margin-bottom:.5rem}
+.action-sub{font-size:.9rem;color:var(--muted);margin-bottom:1.5rem}
+.checklist{list-style:none;display:flex;flex-direction:column;gap:.6rem;margin-bottom:1.5rem}
+.checklist li{display:flex;align-items:flex-start;gap:.75rem;font-size:.92rem;cursor:pointer}
+.checklist input[type="checkbox"]{appearance:none;-webkit-appearance:none;width:20px;height:20px;
+  border:2px solid var(--border);border-radius:6px;flex-shrink:0;margin-top:2px;cursor:pointer;
+  transition:all .2s;position:relative}
+.checklist input[type="checkbox"]:checked{background:var(--accent);border-color:var(--accent)}
+.checklist input[type="checkbox"]:checked::after{content:'✓';position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);color:#fff;font-size:.75rem;font-weight:700}
+.checklist input[type="checkbox"]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.gauge-wrap{display:flex;align-items:center;gap:1rem}
+.gauge-bar{flex:1;height:10px;border-radius:5px;background:var(--surface);overflow:hidden}
+.gauge-fill{height:100%;border-radius:5px;background:linear-gradient(90deg,var(--accent2),var(--accent));
+  transition:width .4s ease;width:0}
+.gauge-label{font-size:.82rem;color:var(--muted);white-space:nowrap;font-weight:500}
+
+/* ── Reveal Animation ── */
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .65s ease,transform .65s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+@media(prefers-reduced-motion:reduce){
+  .reveal{opacity:1;transform:none;transition:none}
+  .snap-card,.spectrum-fill,.gauge-fill{transition:none}
+}
+
+/* ── Footer ── */
+footer{border-top:1px solid var(--border);padding:2rem;text-align:center;color:var(--muted);font-size:.82rem}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(80px);
+  background:var(--fg);color:var(--bg);padding:.7rem 1.5rem;border-radius:10px;font-size:.85rem;
+  z-index:9999;opacity:0;transition:all .35s;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── Misc ── */
+.tag{display:inline-block;padding:.2rem .6rem;border-radius:5px;font-size:.72rem;font-weight:700;
+  text-transform:uppercase;letter-spacing:.05em;background:rgba(var(--accent-rgb,196,30,58),.1);color:var(--accent)}
+.section-divider{height:1px;background:var(--border);margin:3rem 0;border:none}
+.highlight{background:linear-gradient(180deg,transparent 55%,rgba(var(--accent-rgb,196,30,58),.12) 55%)}
+</style>
+</head>
+<body>
+
+<!-- Progress Bar -->
+<div id="progress" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+
+<!-- Topbar -->
+<header id="topbar">
+  <div class="topbar-inner">
+    <a href="https://iggym.github.io/cogitatio-elegans/" class="home-link" aria-label="Home">Cogitatio Elegans</a>
+    <nav class="breadcrumb" aria-label="Breadcrumb">Home <span>›</span> Medicine <span>›</span> Too Clean to Live</nav>
+    <span class="reading-time" id="readingTime"></span>
+    <div class="ctrl-group">
+      <button class="ctrl-btn" id="sizeToggle" aria-label="Toggle text size" title="Text size">Aa</button>
+      <button class="ctrl-btn" id="themeToggle" aria-label="Toggle theme" title="Toggle theme"><i class="fas fa-moon"></i></button>
+    </div>
+    <button class="ctrl-btn menu-btn" id="menuBtn" aria-label="Open navigation menu"><i class="fas fa-bars"></i></button>
+  </div>
+</header>
+
+<!-- Scrim overlay -->
+<div id="scrim" aria-hidden="true"></div>
+
+<!-- Main layout -->
+<div class="wrap">
+  <!-- Sidebar Rail -->
+  <nav id="rail" aria-label="Section navigation">
+    <div class="rail-inner">
+      <a href="#s1" class="rail-link active">Too Clean</a>
+      <a href="#s2" class="rail-link">Petri Dish</a>
+      <a href="#s3" class="rail-link">Nature Bites Back</a>
+      <a href="#s4" class="rail-link">Both Sides Now</a>
+      <a href="#s5" class="rail-link">Turning Tide</a>
+      <a href="#s6" class="rail-link">First Move</a>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main>
+    <article>
+
+      <!-- Hero -->
+      <section class="hero" id="hero">
+        <div class="hero-canvas-wrap"><canvas id="heroCanvas"></canvas></div>
+        <span class="tag">Perspective Shift</span>
+        <h1>Too Clean to Live</h1>
+        <p class="hero-sub">The hospital didn't fail. It worked exactly as designed — and the design itself is the problem.</p>
+
+        <!-- Spectrum Visualization -->
+        <div class="spectrum reveal">
+          <div class="spectrum-header">
+            <span class="spectrum-label left">Sterilization = Safety</span>
+            <span class="spectrum-label right">Sterilization = Evolution</span>
+          </div>
+          <div class="spectrum-visual">
+            <span class="spectrum-icon left"><i class="fas fa-shield-halved"></i></span>
+            <div class="spectrum-bar"><div class="spectrum-bar-fill" id="specBarFill" style="width:0%"></div></div>
+            <span class="spectrum-icon right"><i class="fas fa-biohazard"></i></span>
+          </div>
+          <div class="spectrum-track">
+            <div class="spectrum-fill" id="specFill" style="width:0%"></div>
+            <input type="range" min="0" max="100" value="0" class="spectrum-input" id="specSlider" aria-label="Perspective spectrum slider">
+          </div>
+          <p class="spectrum-callout" id="specCallout">Conventional wisdom holds that eliminating all microbes creates the safest environment for healing.</p>
+        </div>
+      </section>
+
+      <!-- Section 1: Opening Scene -->
+      <section id="s1" class="section reveal">
+        <h2>Too Clean</h2>
+        <p class="drop-cap">Room 412. The smell hits first — isopropyl alcohol and something faintly metallic. Maria Santos hasn't opened her eyes in three days. The monitors beep their steady rhythm, the IV drip counts down, and the bandages on her surgical wound are spotless. Everything in this room is sterile. Everything is doing exactly what modern medicine designed it to do.</p>
+        <p>And Maria is dying anyway.</p>
+        <p>The MRSA colonizing her bloodstream doesn't care about the alcohol swabs or the antibiotic cocktail or the HEPA-filtered air. It survived all of it. That's the one thing it was <strong>selected</strong> to do.</p>
+        <p>This is not a story about medical failure. It's a story about a kind of success so complete, so absolute, that it becomes indistinguishable from the catastrophe it was meant to prevent. The hospital that saved Maria's life during surgery is now the environment that is killing her. Not despite its cleanliness — <em>because of it</em>.</p>
+      </section>
+
+      <hr class="section-divider">
+
+      <!-- Section 2: The Bold Reframe -->
+      <section id="s2" class="section reveal">
+        <h2>Petri Dish</h2>
+        <p>What if the hospital didn't fail Maria? What if it worked exactly as designed — and the design itself is the problem?</p>
+        <p>Hyper-sterile clinical environments don't prevent the evolution of superbugs. They <strong>accelerate</strong> it. Every surface wiped clean of competing organisms, every broad-spectrum antibiotic deployed, every microbe eliminated without ecological nuance — these are not defenses. They are selection events. The hospital is not a sanctuary from infection. It is an evolutionary laboratory, and we are running the experiment on ourselves.</p>
+        <p>The logic is brutal in its simplicity: kill 99.9% of bacteria, and the 0.1% that survive are the ones that <em>can</em> survive. They now face zero competition for resources and unlimited space to multiply. You haven't cleaned the room. You've cleared the arena for the strongest contender.</p>
+
+        <!-- Selection Pressure Simulator -->
+        <div class="sim-wrap reveal">
+          <div class="sim-header">
+            <span class="sim-title">Selection Pressure Simulator</span>
+            <div class="sim-controls">
+              <button class="sim-btn" id="simSterilize">Apply Sterilization</button>
+              <button class="sim-btn" id="simReset">Reset</button>
+            </div>
+          </div>
+          <canvas id="simCanvas"></canvas>
+          <div class="sim-stats">
+            <div class="sim-stat">Total: <strong id="simTotal">0</strong></div>
+            <div class="sim-stat">Susceptible: <strong id="simSuc">0</strong></div>
+            <div class="sim-stat">Resistant: <strong id="simRes">0</strong></div>
+            <div class="sim-stat">Resistance: <strong id="simPct">0%</strong></div>
+          </div>
+        </div>
+
+        <p>Watch the simulator above. Hit "Apply Sterilization" and see what happens to the population. The green microbes — the ones antibiotics normally handle — vanish. The red ones don't just survive. They <em>thrive</em>, filling the vacuum left behind. This is evolution in real time, compressed into seconds. In a hospital, it plays out over weeks and months, but the mechanism is identical.</p>
+      </section>
+
+      <hr class="section-divider">
+
+      <!-- Section 3: Hidden Connections -->
+      <section id="s3" class="section reveal">
+        <h2>Nature Bites Back</h2>
+        <p>The principle isn't new. It's the same logic that governs forest management: suppress every small fire, and the underbrush grows thick until the inevitable inferno is unstoppable. It's the same logic that governs antibiotic use in concentrated animal feeding operations: dose the entire herd preventatively, and the only bacteria that survive are the ones that can metabolize your defense.</p>
+        <p>In every system where natural friction is removed, the survivors of that removal are not ordinary. They are the ones that <em>required</em> the friction to keep them in check.</p>
+        <p>This is the hidden architecture of fragility. The absolute eradication of environmental friction — whether microbial, competitive, or thermal — does not produce robust systems. It produces systems that are <strong>brittle</strong>, optimized for a single condition, and catastrophically vulnerable to any change in that condition. The cleaner the operating room, the more devastating the organism that eventually walks through the door.</p>
+
+        <!-- Perspective Snap Card -->
+        <div class="snap-card reveal" id="snapCard">
+          <div class="snap-copied" id="snapCopied">Copied</div>
+          <p class="snap-quote" id="snapQuote">The cleaner the battlefield, the more terrifying the survivors.</p>
+          <div class="snap-actions">
+            <button class="snap-btn" id="snapCopy" aria-label="Copy quote"><i class="fas fa-copy"></i> Copy</button>
+            <button class="snap-btn" id="snapX" aria-label="Share on X"><i class="fab fa-x-twitter"></i> Share</button>
+            <button class="snap-btn" id="snapLi" aria-label="Share on LinkedIn"><i class="fab fa-linkedin-in"></i> Share</button>
+          </div>
+        </div>
+
+        <p>The connection between forest fire suppression and antibiotic resistance isn't metaphorical. It's <em>structural</em>. Both systems exhibit the same dynamics: the removal of small, manageable perturbations creates the conditions for large, unmanageable ones. The question isn't whether this pattern exists. It's whether we're willing to see it in the spaces where we've been taught to see only progress.</p>
+      </section>
+
+      <hr class="section-divider">
+
+      <!-- Section 4: Credibility and Nuance -->
+      <section id="s4" class="section reveal">
+        <h2>Both Sides Now</h2>
+        <p>No one is arguing for dirty hospitals. The pre-antiseptic world was a horror show — surgical mortality rates that would make your stomach turn. Semmelweis was right to wash his hands. Lister was right to use carbolic acid. Florey and Chain were right to industrialize penicillin. The question isn't whether sterility saves lives. It does, and it has saved millions.</p>
+        <p>The question is whether the way we practice sterility — absolute, total, without ecological nuance — is creating a longer-term catastrophe that will erase those gains. The data is already speaking: the WHO lists antimicrobial resistance as one of the top ten global public health threats. An estimated <strong>1.27 million deaths</strong> were directly attributable to drug-resistant infections in 2019. That's more than malaria and HIV/AIDS combined. This isn't a future problem. It's a present one, and it's accelerating.</p>
+
+        <!-- Chart.js Visualization -->
+        <div class="chart-wrap reveal">
+          <div class="chart-header">
+            <span class="chart-title">The Escalation Curve</span>
+            <div class="chart-filters">
+              <button class="chart-filter on" data-set="consumption">Antibiotic Use</button>
+              <button class="chart-filter on" data-set="resistance">Resistance Rate</button>
+              <button class="chart-filter on" data-set="mrsa">MRSA Rate</button>
+            </div>
+          </div>
+          <canvas id="dataChart" height="280"></canvas>
+        </div>
+
+        <p>The chart above tells the story. Antibiotic consumption has climbed steadily — a mark of medical expansion into new territories. But resistance rates have climbed faster. The gap between the two curves is the measure of our growing vulnerability. Every dose that doesn't kill its target completely is not a partial victory. It's a training exercise for the enemy.</p>
+        <p>The counterargument deserves its due: correlation between hygiene intensity and resistance rates is not causation. Hospitals treat the sickest patients with the most compromised immune systems — of course resistance emerges there. But the directionality is clear. In environments where the broadest-spectrum antibiotics are deployed most liberally, resistance emerges fastest. The selection pressure is not incidental. <em>It is the mechanism.</em></p>
+      </section>
+
+      <hr class="section-divider">
+
+      <!-- Section 5: Narrative Agency -->
+      <section id="s5" class="section reveal">
+        <h2>Turning Tide</h2>
+        <p>The shift isn't from sterile to filthy. It's from <strong>blunt force to precision</strong>.</p>
+        <p>Antibiotic stewardship programs — where clinicians pause before prescribing, confirm bacterial versus viral etiology, and match the narrowest effective drug to the pathogen — have already reduced resistance rates in hospitals that adopt them. The UK's "Start Smart — Then Focus" program cut broad-spectrum antibiotic use by nearly 20% in participating trusts, and resistance rates followed.</p>
+        <p>Probiotic and microbiome-supportive therapies are showing that you can crowd out pathogens not by killing everything, but by filling ecological niches with benign competitors. It's the same principle as planting ground cover to prevent weeds: you don't fight nature. You <em>use</em> it.</p>
+        <p>Environmental diversity in clinical spaces — varied materials, airflow patterns, even controlled microbial exposure through bio-receptive surfaces — is being studied as a way to reduce the selection pressure that breeds superbugs. The hypothesis is simple: a more diverse microbial environment produces weaker selection pressure, because no single organism can dominate.</p>
+        <p>The lever isn't elimination. It's <strong>equilibrium</strong>.</p>
+      </section>
+
+      <hr class="section-divider">
+
+      <!-- Section 6: CTA -->
+      <section id="s6" class="section reveal">
+        <h2>First Move</h2>
+        <p>Before you accept any antibiotic prescription — for yourself or your child — ask one question: <em>"Is this necessary, or is it precautionary?"</em></p>
+        <p>That single question, asked millions of times, would apply more evolutionary pressure on the problem than any hospital sterilization protocol ever could. Because the most powerful selection pressure isn't the antibiotic. It's the <strong>decision to use one</strong>.</p>
+
+        <!-- Action Card -->
+        <div class="action reveal">
+          <h3>Your 24-Hour Action Checklist</h3>
+          <p class="action-sub">Each step is small. Together, they shift the equilibrium.</p>
+          <ul class="checklist" id="checklist">
+            <li><input type="checkbox" id="c1"><label for="c1">Ask your doctor: "Is this antibiotic necessary or precautionary?"</label></li>
+            <li><input type="checkbox" id="c2"><label for="c2">Complete the full course of any prescribed antibiotic — never stop early</label></li>
+            <li><input type="checkbox" id="c3"><label for="c3">Never use leftover antibiotics or share them with others</label></li>
+            <li><input type="checkbox" id="c4"><label for="c4">Use regular soap for routine handwashing, not antibacterial</label></li>
+            <li><input type="checkbox" id="c5"><label for="c5">Share this article with one person who has a prescription pending</label></li>
+          </ul>
+          <div class="gauge-wrap">
+            <div class="gauge-bar"><div class="gauge-fill" id="gaugeFill"></div></div>
+            <span class="gauge-label" id="gaugeLabel">0 of 5</span>
+          </div>
+        </div>
+      </section>
+
+    </article>
+  </main>
+</div>
+
+<footer>
+  <p>Cogitatio Elegans &mdash; Perspectives that shift the model.</p>
+</footer>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════════════
+   INITIALIZATION & GLOBALS
+   ══════════════════════════════════════════════ */
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ── Toast ── */
+function showToast(msg) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+/* ══════════════════════════════════════════════
+   THEME TOGGLE
+   ══════════════════════════════════════════════ */
+const themeBtn = $('#themeToggle');
+const iconEl = themeBtn.querySelector('i');
+function setTheme(dark) {
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  iconEl.className = dark ? 'fas fa-sun' : 'fas fa-moon';
+  // Update chart colors if chart exists
+  if (window.dataChart) updateChartTheme();
+}
+// Detect system preference
+const sysDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+setTheme(sysDark);
+themeBtn.addEventListener('click', () => {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  setTheme(!isDark);
+});
+
+/* ══════════════════════════════════════════════
+   TEXT SIZE TOGGLE
+   ══════════════════════════════════════════════ */
+const sizes = [15, 17, 20];
+let sizeIdx = 1;
+ $('#sizeToggle').addEventListener('click', () => {
+  sizeIdx = (sizeIdx + 1) % sizes.length;
+  document.documentElement.style.setProperty('--fs-base', sizes[sizeIdx] + 'px');
+  showToast(sizeIdx === 0 ? 'Small text' : sizeIdx === 1 ? 'Medium text' : 'Large text');
+});
+
+/* ══════════════════════════════════════════════
+   READING TIME
+   ══════════════════════════════════════════════ */
+(function calcReadingTime() {
+  const text = $('article').innerText;
+  const words = text.trim().split(/\s+/).length;
+  const mins = Math.ceil(words / 230);
+  $('#readingTime').textContent = mins + ' min read';
+})();
+
+/* ══════════════════════════════════════════════
+   SCROLL PROGRESS
+   ══════════════════════════════════════════════ */
+const progressBar = $('#progress');
+function updateProgress() {
+  const h = document.documentElement.scrollHeight - window.innerHeight;
+  const pct = h > 0 ? (window.scrollY / h) * 100 : 0;
+  progressBar.style.width = pct + '%';
+  progressBar.setAttribute('aria-valuenow', Math.round(pct));
+}
+window.addEventListener('scroll', updateProgress, { passive: true });
+
+/* ══════════════════════════════════════════════
+   SCROLLSPY (IntersectionObserver)
+   ══════════════════════════════════════════════ */
+const railLinks = $$('.rail-link');
+const sections = $$('section[id^="s"]');
+const spyObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      railLinks.forEach(l => l.classList.remove('active'));
+      const link = $(`.rail-link[href="#${e.target.id}"]`);
+      if (link) link.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -60% 0px' });
+sections.forEach(s => spyObs.observe(s));
+
+/* ══════════════════════════════════════════════
+   REVEAL ANIMATIONS
+   ══════════════════════════════════════════════ */
+if (!prefersReducedMotion) {
+  const revealObs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        revealObs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12 });
+  $$('.reveal').forEach(el => revealObs.observe(el));
+} else {
+  $$('.reveal').forEach(el => el.classList.add('visible'));
+}
+
+/* ══════════════════════════════════════════════
+   MOBILE DRAWER
+   ══════════════════════════════════════════════ */
+const rail = $('#rail');
+const scrim = $('#scrim');
+const menuBtn = $('#menuBtn');
+function openDrawer() { rail.classList.add('open'); scrim.classList.add('open'); }
+function closeDrawer() { rail.classList.remove('open'); scrim.classList.remove('open'); }
+menuBtn.addEventListener('click', openDrawer);
+scrim.addEventListener('click', closeDrawer);
+railLinks.forEach(l => l.addEventListener('click', closeDrawer));
+
+/* ══════════════════════════════════════════════
+   HERO CANVAS (Floating Microbes)
+   ══════════════════════════════════════════════ */
+(function heroAnim() {
+  const canvas = $('#heroCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let W, H, particles = [];
+  function resize() {
+    const rect = canvas.parentElement.getBoundingClientRect();
+    W = canvas.width = rect.width;
+    H = canvas.height = rect.height;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  for (let i = 0; i < 60; i++) {
+    particles.push({
+      x: Math.random() * 2000,
+      y: Math.random() * 600,
+      r: 2 + Math.random() * 5,
+      vx: (Math.random() - 0.5) * 0.4,
+      vy: (Math.random() - 0.5) * 0.3,
+      resistant: Math.random() < 0.25,
+      opacity: 0.2 + Math.random() * 0.4
+    });
+  }
+
+  function draw() {
+    if (prefersReducedMotion) return;
+    ctx.clearRect(0, 0, W, H);
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    particles.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      if (p.x < -10) p.x = W + 10;
+      if (p.x > W + 10) p.x = -10;
+      if (p.y < -10) p.y = H + 10;
+      if (p.y > H + 10) p.y = -10;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, Math.max(0.5, p.r), 0, Math.PI * 2);
+      if (p.resistant) {
+        ctx.fillStyle = isDark
+          ? `rgba(230,57,70,${p.opacity})`
+          : `rgba(196,30,58,${p.opacity})`;
+      } else {
+        ctx.fillStyle = isDark
+          ? `rgba(200,196,190,${p.opacity * 0.5})`
+          : `rgba(100,100,100,${p.opacity * 0.3})`;
+      }
+      ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+/* ══════════════════════════════════════════════
+   SPECTRUM SLIDER
+   ══════════════════════════════════════════════ */
+const specSlider = $('#specSlider');
+const specFill = $('#specFill');
+const specBarFill = $('#specBarFill');
+const specCallout = $('#specCallout');
+
+const callouts = [
+  { max: 15, text: "Conventional wisdom holds that eliminating all microbes creates the safest environment for healing." },
+  { max: 35, text: "But elimination without discrimination removes the competition that keeps dangerous organisms in check." },
+  { max: 55, text: "The fewer competitors that remain, the faster the survivors multiply. Sterility becomes a breeding ground." },
+  { max: 75, text: "Hyper-sterile environments function as evolutionary accelerators — selecting for the very resistance they aim to prevent." },
+  { max: 100, text: "The absolute eradication of environmental friction creates fragile systems that breed magnified systemic vulnerabilities." }
+];
+
+specSlider.addEventListener('input', () => {
+  const v = parseInt(specSlider.value);
+  specFill.style.width = v + '%';
+  specBarFill.style.width = v + '%';
+  // Update left/right icon opacity
+  const leftIcon = $('.spectrum-icon.left');
+  const rightIcon = $('.spectrum-icon.right');
+  leftIcon.style.opacity = 1 - v / 120;
+  rightIcon.style.opacity = v / 80;
+  // Update callout
+  for (const c of callouts) {
+    if (v <= c.max) { specCallout.textContent = c.text; break; }
+  }
+});
+
+/* ══════════════════════════════════════════════
+   SELECTION PRESSURE SIMULATOR (Canvas)
+   ══════════════════════════════════════════════ */
+(function simSetup() {
+  const canvas = $('#simCanvas');
+  const ctx = canvas.getContext('2d');
+  let microbes = [];
+  let animId = null;
+
+  function resizeCanvas() {
+    const rect = canvas.parentElement.getBoundingClientRect();
+    canvas.width = rect.width - 48; // padding
+    canvas.height = 300;
+  }
+  resizeCanvas();
+  window.addEventListener('resize', () => { resizeCanvas(); initSim(); });
+
+  function initSim() {
+    microbes = [];
+    const count = 60;
+    for (let i = 0; i < count; i++) {
+      microbes.push({
+        x: 20 + Math.random() * (canvas.width - 40),
+        y: 20 + Math.random() * (canvas.height - 40),
+        r: 5 + Math.random() * 4,
+        resistant: Math.random() < 0.2,
+        alive: true,
+        opacity: 1,
+        vx: (Math.random() - 0.5) * 0.6,
+        vy: (Math.random() - 0.5) * 0.6,
+        phase: Math.random() * Math.PI * 2
+      });
+    }
+    updateStats();
+  }
+
+  function updateStats() {
+    const alive = microbes.filter(m => m.alive);
+    const res = alive.filter(m => m.resistant);
+    const suc = alive.filter(m => !m.resistant);
+    $('#simTotal').textContent = alive.length;
+    $('#simSuc').textContent = suc.length;
+    $('#simRes').textContent = res.length;
+    $('#simPct').textContent = alive.length > 0 ? Math.round((res.length / alive.length) * 100) + '%' : '0%';
+  }
+
+  function drawSim() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const time = Date.now() * 0.001;
+
+    microbes.forEach(m => {
+      if (!m.alive && m.opacity <= 0) return;
+      // Movement
+      if (m.alive) {
+        m.x += m.vx + Math.sin(time + m.phase) * 0.15;
+        m.y += m.vy + Math.cos(time + m.phase) * 0.15;
+        // Bounce
+        if (m.x < m.r || m.x > canvas.width - m.r) m.vx *= -1;
+        if (m.y < m.r || m.y > canvas.height - m.r) m.vy *= -1;
+        m.x = Math.max(m.r, Math.min(canvas.width - m.r, m.x));
+        m.y = Math.max(m.r, Math.min(canvas.height - m.r, m.y));
+      } else {
+        m.opacity -= 0.02;
+        m.r = Math.max(0.1, m.r - 0.05);
+      }
+      if (m.opacity <= 0) return;
+
+      ctx.beginPath();
+      ctx.arc(m.x, m.y, Math.max(0.5, m.r), 0, Math.PI * 2);
+      if (m.resistant) {
+        ctx.fillStyle = isDark
+          ? `rgba(230,57,70,${m.opacity * 0.85})`
+          : `rgba(196,30,58,${m.opacity * 0.85})`;
+      } else {
+        ctx.fillStyle = isDark
+          ? `rgba(180,200,160,${m.opacity * 0.7})`
+          : `rgba(76,140,60,${m.opacity * 0.7})`;
+      }
+      ctx.fill();
+      // Glow for resistant
+      if (m.resistant && m.alive) {
+        ctx.beginPath();
+        ctx.arc(m.x, m.y, Math.max(0.5, m.r + 3), 0, Math.PI * 2);
+        ctx.fillStyle = isDark
+          ? `rgba(230,57,70,${m.opacity * 0.15})`
+          : `rgba(196,30,58,${m.opacity * 0.12})`;
+        ctx.fill();
+      }
+    });
+
+    updateStats();
+    animId = requestAnimationFrame(drawSim);
+  }
+
+  initSim();
+  if (!prefersReducedMotion) drawSim();
+  else { /* static draw */ drawSim(); cancelAnimationFrame(animId); }
+
+  // Hover interaction - highlight nearby microbes
+  canvas.addEventListener('mousemove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    microbes.forEach(m => {
+      if (!m.alive) return;
+      const dist = Math.hypot(m.x - mx, m.y - my);
+      if (dist < 30) {
+        m.r = Math.min(14, m.r + 0.3);
+      } else {
+        m.r = Math.max(5, m.r - 0.1);
+      }
+    });
+  });
+
+  // Sterilize button
+  $('#simSterilize').addEventListener('click', () => {
+    // Kill susceptible microbes
+    microbes.forEach(m => {
+      if (!m.resistant && m.alive) {
+        m.alive = false;
+      }
+    });
+    // After a delay, multiply resistant microbes
+    setTimeout(() => {
+      const resistant = microbes.filter(m => m.resistant && m.alive);
+      resistant.forEach(m => {
+        for (let i = 0; i < 3; i++) {
+          microbes.push({
+            x: m.x + (Math.random() - 0.5) * 40,
+            y: m.y + (Math.random() - 0.5) * 40,
+            r: 5 + Math.random() * 3,
+            resistant: true,
+            alive: true,
+            opacity: 0,
+            vx: (Math.random() - 0.5) * 0.6,
+            vy: (Math.random() - 0.5) * 0.6,
+            phase: Math.random() * Math.PI * 2
+          });
+        }
+      });
+      // Fade in new microbes
+      const fadeIn = () => {
+        microbes.forEach(m => {
+          if (m.alive && m.opacity < 1) m.opacity = Math.min(1, m.opacity + 0.05);
+        });
+        if (microbes.some(m => m.alive && m.opacity < 1)) requestAnimationFrame(fadeIn);
+      };
+      fadeIn();
+    }, 800);
+  });
+
+  // Reset button
+  $('#simReset').addEventListener('click', () => {
+    initSim();
+  });
+})();
+
+/* ══════════════════════════════════════════════
+   CHART.JS VISUALIZATION
+   ══════════════════════════════════════════════ */
+const chartData = {
+  labels: ['2000', '2004', '2008', '2012', '2016', '2020', '2024'],
+  datasets: {
+    consumption: {
+      label: 'Antibiotic Consumption (DDDs/1000)',
+      data: [15.2, 17.8, 20.1, 22.4, 24.0, 21.5, 23.2],
+      borderColor: '#D4A017',
+      backgroundColor: 'rgba(212,160,23,0.12)',
+      yAxisID: 'y',
+      tension: 0.35,
+      fill: true,
+      pointRadius: 4,
+      pointHoverRadius: 7,
+      borderWidth: 2.5
+    },
+    resistance: {
+      label: 'General Resistance Rate (%)',
+      data: [7.8, 12.3, 18.1, 25.4, 33.0, 40.2, 47.5],
+      borderColor: '#C41E3A',
+      backgroundColor: 'rgba(196,30,58,0.12)',
+      yAxisID: 'y1',
+      tension: 0.35,
+      fill: true,
+      pointRadius: 4,
+      pointHoverRadius: 7,
+      borderWidth: 2.5
+    },
+    mrsa: {
+      label: 'MRSA Resistance Rate (%)',
+      data: [4.5, 8.2, 14.0, 22.1, 30.5, 37.8, 44.9],
+      borderColor: '#8B7355',
+      backgroundColor: 'rgba(139,115,85,0.10)',
+      yAxisID: 'y1',
+      tension: 0.35,
+      fill: false,
+      pointRadius: 4,
+      pointHoverRadius: 7,
+      borderWidth: 2,
+      borderDash: [5, 3]
+    }
+  }
+};
+
+let dataChart;
+function createChart() {
+  const ctx = $('#dataChart').getContext('2d');
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const gridColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
+  const textColor = isDark ? '#8A8580' : '#6B6B6B';
+
+  dataChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: chartData.labels,
+      datasets: [
+        { ...chartData.datasets.consumption },
+        { ...chartData.datasets.resistance },
+        { ...chartData.datasets.mrsa }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: textColor, usePointStyle: true, padding: 16, font: { family: "'DM Sans',sans-serif", size: 11 } }
+        },
+        tooltip: {
+          backgroundColor: isDark ? '#1C1C1B' : '#fff',
+          titleColor: isDark ? '#E8E4DF' : '#1A1A1A',
+          bodyColor: isDark ? '#8A8580' : '#6B6B6B',
+          borderColor: isDark ? '#2E2E2D' : '#E0E0E0',
+          borderWidth: 1,
+          padding: 12,
+          cornerRadius: 10,
+          titleFont: { family: "'DM Sans',sans-serif", weight: '700' },
+          bodyFont: { family: "'DM Sans',sans-serif" }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: gridColor },
+          ticks: { color: textColor, font: { family: "'DM Sans',sans-serif", size: 11 } }
+        },
+        y: {
+          type: 'linear',
+          position: 'left',
+          title: { display: true, text: 'DDDs per 1000', color: textColor, font: { family: "'DM Sans',sans-serif", size: 11 } },
+          grid: { color: gridColor },
+          ticks: { color: textColor, font: { family: "'DM Sans',sans-serif", size: 11 } }
+        },
+        y1: {
+          type: 'linear',
+          position: 'right',
+          title: { display: true, text: 'Resistance %', color: textColor, font: { family: "'DM Sans',sans-serif", size: 11 } },
+          grid: { drawOnChartArea: false },
+          ticks: { color: textColor, font: { family: "'DM Sans',sans-serif", size: 11 } },
+          min: 0, max: 60
+        }
+      }
+    }
+  });
+}
+createChart();
+
+function updateChartTheme() {
+  if (!dataChart) return;
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const gridColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
+  const textColor = isDark ? '#8A8580' : '#6B6B6B';
+  dataChart.options.scales.x.grid.color = gridColor;
+  dataChart.options.scales.x.ticks.color = textColor;
+  dataChart.options.scales.y.grid.color = gridColor;
+  dataChart.options.scales.y.ticks.color = textColor;
+  dataChart.options.scales.y.title.color = textColor;
+  dataChart.options.scales.y1.ticks.color = textColor;
+  dataChart.options.scales.y1.title.color = textColor;
+  dataChart.options.plugins.legend.labels.color = textColor;
+  dataChart.options.plugins.tooltip.backgroundColor = isDark ? '#1C1C1B' : '#fff';
+  dataChart.options.plugins.tooltip.titleColor = isDark ? '#E8E4DF' : '#1A1A1A';
+  dataChart.options.plugins.tooltip.bodyColor = isDark ? '#8A8580' : '#6B6B6B';
+  dataChart.options.plugins.tooltip.borderColor = isDark ? '#2E2E2D' : '#E0E0E0';
+  dataChart.update('none');
+}
+
+// Chart filter toggles
+ $$('.chart-filter').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.classList.toggle('on');
+    const set = btn.dataset.set;
+    const idx = set === 'consumption' ? 0 : set === 'resistance' ? 1 : 2;
+    dataChart.data.datasets[idx].hidden = !btn.classList.contains('on');
+    dataChart.update();
+  });
+});
+
+/* ══════════════════════════════════════════════
+   PERSPECTIVE SNAP CARD — Copy & Share
+   ══════════════════════════════════════════════ */
+const snapQuote = $('#snapQuote').textContent.trim();
+const snapUrl = encodeURIComponent(window.location.href);
+const snapText = encodeURIComponent(snapQuote + ' — Too Clean to Live');
+
+ $('#snapCopy').addEventListener('click', () => {
+  navigator.clipboard.writeText(snapQuote).then(() => {
+    const c = $('#snapCopied');
+    c.classList.add('show');
+    setTimeout(() => c.classList.remove('show'), 1500);
+  }).catch(() => showToast('Copy failed — try manually'));
+});
+
+ $('#snapX').addEventListener('click', () => {
+  const url = `https://twitter.com/intent/tweet?text=${snapText}&url=${snapUrl}`;
+  window.open(url, '_blank', 'width=600,height=400');
+});
+
+ $('#snapLi').addEventListener('click', () => {
+  const url = `https://www.linkedin.com/sharing/share-offsite/?url=${snapUrl}`;
+  window.open(url, '_blank', 'width=600,height=400');
+});
+
+// Snap card gradient shift on scroll
+if (!prefersReducedMotion) {
+  const snapCard = $('#snapCard');
+  window.addEventListener('scroll', () => {
+    const rect = snapCard.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, 1 - rect.top / window.innerHeight));
+    const hueShift = pct * 30;
+    snapCard.style.filter = `hue-rotate(${hueShift}deg)`;
+  }, { passive: true });
+}
+
+/* ══════════════════════════════════════════════
+   CTA CHECKLIST & PROGRESS GAUGE
+   ══════════════════════════════════════════════ */
+const checkboxes = $$('.checklist input[type="checkbox"]');
+const gaugeFill = $('#gaugeFill');
+const gaugeLabel = $('#gaugeLabel');
+
+function updateGauge() {
+  const checked = $$('.checklist input:checked').length;
+  const total = checkboxes.length;
+  const pct = (checked / total) * 100;
+  gaugeFill.style.width = pct + '%';
+  gaugeLabel.textContent = `${checked} of ${total}`;
+  if (checked === total) showToast('All actions committed — the shift starts now.');
+}
+
+checkboxes.forEach(cb => cb.addEventListener('change', updateGauge));
+
+/* ══════════════════════════════════════════════
+   INIT CALL
+   ══════════════════════════════════════════════ */
+updateProgress();
+</script>
+</body>
+</html>
