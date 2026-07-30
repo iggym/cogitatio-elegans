@@ -1,5 +1,19 @@
 [
   {
+  "title": "Bread from Air",
+  "description": "The Haber-Bosch process fed four billion people — and tied every harvest to a fossil fuel withdrawal. The scarcity wasn't solved. It was disguised.",
+  "category": "agriculture",
+  "date": "2025-07-14",
+  "slug": "bread-from-air.html"
+},
+  {
+  "title": "The Map Eats the Territory",
+  "description": "By outsourcing spatial reasoning to algorithms, we are silently atrophying our brains and homogenizing our physical reality.",
+  "category": "geography",
+  "date": "2026-05-02",
+  "slug": "map-eats-territory.html"
+},
+  {
   "title": "Cold Comfort",
   "description": "Industrial refrigeration didn't preserve food freedom — it froze it. The cold chain centralized corporate control over human sustenance.",
   "category": "food-systems",
