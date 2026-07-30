@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Colonized Night</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #f8f9fa;
+            --text: #1a1a1a;
+            --secondary-text: #555;
+            --accent: #f39c12;
+            --accent-dim: rgba(243, 156, 18, 0.1);
+            --border: #ddd;
+            --card-bg: #fff;
+            --glass-bg: rgba(255, 255, 255, 0.8);
+            --shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+
+        [data-theme="dark"] {
+            --bg: #121212;
+            --text: #e0e0e0;
+            --secondary-text: #a0a0a0;
+            --accent: #f1c40f;
+            --accent-dim: rgba(241, 196, 15, 0.15);
+            --border: #333;
+            --card-bg: #1e1e1e;
+            --glass-bg: rgba(18, 18, 18, 0.8);
+            --shadow: 0 4px 20px rgba(0,0,0,0.4);
+        }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        #progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 4px;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent), #e74c3c);
+            z-index: 1000;
+            transition: width 0.1s;
+        }
+
+        #topbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            box-sizing: border-box;
+            z-index: 999;
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .home-link {
+            font-weight: 700;
+            color: var(--text);
+            text-decoration: none;
+            font-size: 1.1rem;
+        }
+
+        .breadcrumb {
+            font-size: 0.85rem;
+            color: var(--secondary-text);
+        }
+
+        .topbar-right {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .reading-time {
+            font-size: 0.8rem;
+            color: var(--secondary-text);
+            padding: 4px 8px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+        }
+
+        .btn-icon {
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.2s;
+        }
+
+        .btn-icon:hover {
+            background: var(--accent-dim);
+        }
+
+        #menu-btn {
+            display: none;
+        }
+
+        .wrap {
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 100px 24px 60px;
+            gap: 40px;
+        }
+
+        #rail {
+            position: sticky;
+            top: 100px;
+            height: fit-content;
+        }
+
+        #rail ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            border-left: 2px solid var(--border);
+        }
+
+        #rail li a {
+            display: block;
+            padding: 8px 16px;
+            color: var(--secondary-text);
+            text-decoration: none;
+            font-size: 0.9rem;
+            border-left: 2px solid transparent;
+            margin-left: -2px;
+            transition: all 0.2s;
+        }
+
+        #rail li a:hover {
+            color: var(--text);
+        }
+
+        #rail li a.active {
+            color: var(--accent);
+            border-left-color: var(--accent);
+            background: var(--accent-dim);
+        }
+
+        main {
+            max-width: 720px;
+        }
+
+        h1, h2, h3 {
+            line-height: 1.3;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        h2 {
+            font-size: 1.8rem;
+            margin-top: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        p {
+            font-size: 1.05rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .spectrum {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin: 2rem 0;
+            box-shadow: var(--shadow);
+        }
+
+        .spectrum-controls {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            font-weight: bold;
+            color: var(--secondary-text);
+        }
+
+        .spectrum-slider {
+            width: 100%;
+            margin: 1rem 0;
+            cursor: pointer;
+            accent-color: var(--accent);
+        }
+
+        .spectrum-output {
+            min-height: 60px;
+            padding: 16px;
+            border-radius: 8px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            font-size: 1.1rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .snap-card {
+            position: relative;
+            background: linear-gradient(135deg, var(--card-bg), var(--bg));
+            border-left: 4px solid var(--accent);
+            padding: 2rem;
+            margin: 3rem 0;
+            border-radius: 0 12px 12px 0;
+            box-shadow: var(--shadow);
+        }
+
+        .snap-text {
+            font-size: 1.4rem;
+            font-style: italic;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: var(--text);
+        }
+
+        .snap-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .copy-btn, .share-btn {
+            background: var(--accent-dim);
+            color: var(--accent);
+            border: 1px solid var(--accent);
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover, .share-btn:hover {
+            background: var(--accent);
+            color: var(--bg);
+        }
+
+        .copy-btn.copied {
+            background: #2ecc71;
+            color: white;
+            border-color: #2ecc71;
+        }
+
+        canvas {
+            max-width: 100%;
+            border-radius: 8px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+        }
+
+        .chart-container {
+            margin: 2.5rem 0;
+            padding: 20px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+        }
+
+        .chart-toggles {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .chart-toggle-btn {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--secondary-text);
+            padding: 6px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .chart-toggle-btn.active {
+            background: var(--accent);
+            color: var(--bg);
+            border-color: var(--accent);
+        }
+
+        .action {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-top: 2rem;
+            box-shadow: var(--shadow);
+        }
+
+        .checklist {
+            list-style: none;
+            padding: 0;
+        }
+
+        .checklist li {
+            display: flex;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+        }
+
+        .checklist li:last-child {
+            border-bottom: none;
+        }
+
+        .checklist input[type="checkbox"] {
+            margin-right: 15px;
+            width: 20px;
+            height: 20px;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+
+        .checklist label {
+            cursor: pointer;
+            flex-grow: 1;
+        }
+
+        .gauge-container {
+            margin-top: 20px;
+            height: 8px;
+            background: var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .gauge-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent), #2ecc71);
+            transition: width 0.4s ease;
+        }
+
+        .gauge-text {
+            text-align: right;
+            font-size: 0.85rem;
+            color: var(--secondary-text);
+            margin-top: 5px;
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        #scrim {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 998;
+        }
+
+        @media (max-width: 880px) {
+            .wrap {
+                grid-template-columns: 1fr;
+                padding: 90px 16px 40px;
+            }
+
+            #menu-btn {
+                display: block;
+            }
+
+            .reading-time, .breadcrumb {
+                display: none;
+            }
+
+            #rail {
+                position: fixed;
+                top: 0;
+                left: -260px;
+                height: 100%;
+                width: 240px;
+                background: var(--card-bg);
+                padding: 80px 20px 20px;
+                box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+                transition: left 0.3s ease;
+                z-index: 999;
+            }
+
+            #rail.open {
+                left: 0;
+            }
+
+            #scrim.open {
+                display: block;
+            }
+
+            h1 { font-size: 2rem; }
+            h2 { font-size: 1.5rem; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation: none !important;
+                transition: none !important;
+                scroll-behavior: auto !important;
+            }
+            .reveal {
+                opacity: 1;
+                transform: none;
+            }
+        }
+    </style>
+</head>
+<body data-theme="light">
+
+    <div id="progress"></div>
+    
+    <header id="topbar">
+        <div class="topbar-left">
+            <button id="menu-btn" class="btn-icon">☰</button>
+            <a href="https://iggym.github.io/cogitatio-elegans/" class="home-link">Cogitatio</a>
+            <span class="breadcrumb">/ Geography / The Colonized Night</span>
+        </div>
+        <div class="topbar-right">
+            <span id="reading-time" class="reading-time">5 min read</span>
+            <button id="font-decrease" class="btn-icon">A-</button>
+            <button id="font-increase" class="btn-icon">A+</button>
+            <button id="theme-toggle" class="btn-icon">🌙</button>
+        </div>
+    </header>
+
+    <div id="scrim"></div>
+
+    <div class="wrap">
+        <nav id="rail">
+            <ul>
+                <li><a href="#opening">Midnight Oil</a></li>
+                <li><a href="#reframe">Lighting Ledger</a></li>
+                <li><a href="#connections">Biological Bill</a></li>
+                <li><a href="#nuance">Shadows Doubt</a></li>
+                <li><a href="#agency">Dimming Lights</a></li>
+                <li><a href="#cta">Switch Flip</a></li>
+            </ul>
+        </nav>
+
+        <main>
+            <article>
+                <h1>The Colonized Night</h1>
+
+                <section id="opening" class="reveal">
+                    <h2>Burning the Midnight Oil</h2>
+                    <p>Imagine a textile worker in 19th-century Manchester. The sun has long since dipped below the horizon, but the factory floor is bathed in a harsh, unblinking glow. The advent of urban gas and electric street lighting is often remembered as a humanitarian triumph—a beacon of safety against the dangers of the dark. But stand in that worker's shoes. The light wasn't shielding them from the night; it was erasing it.</p>
+                    
+                    <div class="spectrum reveal">
+                        <div class="spectrum-controls">
+                            <span id="legacy-label">Safety & Humanity</span>
+                            <span id="shifted-label">Labor & Extraction</span>
+                        </div>
+                        <input type="range" min="0" max="100" value="50" class="spectrum-slider" id="spectrum-slider" aria-label="Perspective Spectrum">
+                        <div class="spectrum-output" id="spectrum-text">
+                            Drag to see how the purpose of street lighting shifts depending on who holds the power.
+                        </div>
+                    </div>
+                </section>
+
+                <section id="reframe" class="reveal">
+                    <h2>Lighting the Ledger</h2>
+                    <p>The conventional view insists that street lighting was primarily a municipal safety measure designed to suppress crime and protect citizens. This is comfortably incomplete. The Bold Reframe is that street lighting was heavily driven by industrial and municipal interests seeking to extend the working day, facilitate round-the-clock factory shifts, and stimulate urban commercial activity. The lightbulb was not a shield; it was a shift whistle.</p>
+                    <p>By turning night into an extension of the production cycle, municipal lighting effectively colonized human biological time for economic extraction.</p>
+                </section>
+
+                <section id="connections" class="reveal">
+                    <h2>The Biological Bill</h2>
+                    <p>We view the grid as a tool of modern convenience. We do not see the invisible tether it attached to our circadian biology. The hidden connection is that technologies designed to conquer darkness serve primarily to colonize human biological time for economic extraction.</p>
+                    
+                    <figure class="snap-card reveal" id="snap-card">
+                        <div class="snap-text" id="snap-quote">"We didn't banish the dark; we just sold the night."</div>
+                        <div class="snap-actions">
+                            <button class="copy-btn" id="copy-snap">Copy Quote</button>
+                            <button class="share-btn" id="share-x">Share on X</button>
+                            <button class="share-btn" id="share-linkedin">Share on LinkedIn</button>
+                        </div>
+                    </figure>
+
+                    <p>Hover over the nodes below to see how the introduction of artificial light rewired the urban ecosystem. Click a node to lock its connections.</p>
+                    <canvas id="networkCanvas" width="600" height="350" aria-label="Interactive network diagram of street lighting impacts"></canvas>
+                </section>
+
+                <section id="nuance" class="reveal">
+                    <h2>Shadows of Doubt</h2>
+                    <p>To acknowledge the extraction of labor is not to deny that street lighting reduced certain crimes or made navigation safer. The complexity lies in the priority. Safety was the highly effective marketing copy for a much deeper economic imperative. Municipalities didn't invest fortunes in gas lines just to help people walk home safely; they invested to keep factories running and storefronts open.</p>
+                    
+                    <div class="chart-container reveal">
+                        <div class="chart-toggles">
+                            <button class="chart-toggle-btn active" data-filter="both">Both</button>
+                            <button class="chart-toggle-btn" data-filter="labor">Labor Hours</button>
+                            <button class="chart-toggle-btn" data-filter="health">Health Impact</button>
+                        </div>
+                        <canvas id="impactChart"></canvas>
+                    </div>
+                </section>
+
+                <section id="agency" class="reveal">
+                    <h2>Dimming the Lights</h2>
+                    <p>Understanding the night as colonized territory changes how we interact with our own evenings. If the light is a tool of extraction, then darkness becomes an act of reclamation. We do not have to surrender our biology to the production cycle. Meaningful change starts with small, decisive choices about when we allow the light to dictate our wakefulness.</p>
+                </section>
+
+                <section id="cta" class="reveal">
+                    <h2>A Switch to Flip</h2>
+                    <p>Take back your biological night. Execute this one step within the next 24 hours:</p>
+                    
+                    <div class="action reveal">
+                        <ul class="checklist">
+                            <li>
+                                <input type="checkbox" id="task1">
+                                <label for="task1">Identify one screen or overhead light you can turn off by 9 PM tonight.</label>
+                            </li>
+                            <li>
+                                <input type="checkbox" id="task2">
+                                <label for="task2">Replace it with a warm, low-level light (like a candle or amber lamp).</label>
+                            </li>
+                            <li>
+                                <input type="checkbox" id="task3">
+                                <label for="task3">Spend 15 minutes in that low light, doing nothing productive.</label>
+                            </li>
+                        </ul>
+                        <div class="gauge-container">
+                            <div class="gauge-fill" id="gauge-fill"></div>
+                        </div>
+                        <div class="gauge-text" id="gauge-text">0% Reclaimed</div>
+                    </div>
+                </section>
+            </article>
+        </main>
+    </div>
+
+    <script>
+        // --- Reading Progress ---
+        const progress = document.getElementById('progress');
+        window.addEventListener('scroll', () => {
+            const scrollTotal = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const scrollPos = window.scrollY;
+            const percent = (scrollPos / scrollTotal) * 100;
+            progress.style.width = percent + '%';
+        });
+
+        // --- Topbar Controls ---
+        const html = document.documentElement;
+        const body = document.body;
+
+        // Theme Detection
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            body.setAttribute('data-theme', 'dark');
+            document.getElementById('theme-toggle').textContent = '☀️';
+        }
+
+        document.getElementById('theme-toggle').addEventListener('click', (e) => {
+            if (body.getAttribute('data-theme') === 'dark') {
+                body.setAttribute('data-theme', 'light');
+                e.target.textContent = '🌙';
+            } else {
+                body.setAttribute('data-theme', 'dark');
+                e.target.textContent = '☀️';
+            }
+        });
+
+        // Font Sizing
+        let fontSize = 16;
+        document.getElementById('font-increase').addEventListener('click', () => {
+            fontSize = Math.min(fontSize + 2, 22);
+            html.style.fontSize = fontSize + 'px';
+        });
+        document.getElementById('font-decrease').addEventListener('click', () => {
+            fontSize = Math.max(fontSize - 2, 12);
+            html.style.fontSize = fontSize + 'px';
+        });
+
+        // Mobile Menu
+        const rail = document.getElementById('rail');
+        const scrim = document.getElementById('scrim');
+        const menuBtn = document.getElementById('menu-btn');
+        
+        menuBtn.addEventListener('click', () => {
+            rail.classList.toggle('open');
+            scrim.classList.toggle('open');
+        });
+        scrim.addEventListener('click', () => {
+            rail.classList.remove('open');
+            scrim.classList.remove('open');
+        });
+
+        // --- Intersection Observers ---
+        const revealElements = document.querySelectorAll('.reveal');
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        revealElements.forEach(el => revealObserver.observe(el));
+
+        // Scrollspy
+        const sections = document.querySelectorAll('section');
+        const navLinks = document.querySelectorAll('#rail li a');
+
+        const spyObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const id = entry.target.getAttribute('id');
+                    navLinks.forEach(link => {
+                        link.classList.remove('active');
+                        if (link.getAttribute('href') === '#' + id) {
+                            link.classList.add('active');
+                        }
+                    });
+                }
+            });
+        }, { rootMargin: '-30% 0px -60% 0px' });
+
+        sections.forEach(sec => spyObserver.observe(sec));
+
+        // --- Spectrum Slider ---
+        const slider = document.getElementById('spectrum-slider');
+        const spectrumText = document.getElementById('spectrum-text');
+        
+        const legacyText = "Street lighting is a humanitarian triumph, protecting citizens from crime and the dangers of unlit streets.";
+        const shiftedText = "Street lighting is an industrial tool, extending factory shifts and colonizing biological time for economic output.";
+        const blendedText = "While safety was the stated goal, the primary function of lighting was to extend the production cycle into the night.";
+
+        slider.addEventListener('input', (e) => {
+            const val = e.target.value;
+            if (val < 33) {
+                spectrumText.textContent = legacyText;
+                spectrumText.style.color = '#3498db';
+            } else if (val > 66) {
+                spectrumText.textContent = shiftedText;
+                spectrumText.style.color = '#e74c3c';
+            } else {
+                spectrumText.textContent = blendedText;
+                spectrumText.style.color = 'var(--secondary-text)';
+            }
+        });
+
+        // --- Perspective Snap Share ---
+        const snapQuote = document.getElementById('snap-quote').innerText;
+        const currentUrl = window.location.href;
+        const shareText = encodeURIComponent(`${snapQuote} - Read more: `);
+
+        document.getElementById('copy-snap').addEventListener('click', (e) => {
+            navigator.clipboard.writeText(snapQuote).then(() => {
+                e.target.classList.add('copied');
+                e.target.innerText = 'Copied!';
+                setTimeout(() => {
+                    e.target.classList.remove('copied');
+                    e.target.innerText = 'Copy Quote';
+                }, 2000);
+            });
+        });
+
+        document.getElementById('share-x').addEventListener('click', () => {
+            window.open(`https://twitter.com/intent/tweet?text=${shareText}${encodeURIComponent(currentUrl)}`, '_blank');
+        });
+
+        document.getElementById('share-linkedin').addEventListener('click', () => {
+            window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(currentUrl)}`, '_blank');
+        });
+
+        // --- Checklist Gauge ---
+        const checkboxes = document.querySelectorAll('.checklist input[type="checkbox"]');
+        const gaugeFill = document.getElementById('gauge-fill');
+        const gaugeText = document.getElementById('gauge-text');
+
+        checkboxes.forEach(cb => cb.addEventListener('change', updateGauge));
+
+        function updateGauge() {
+            let checked = 0;
+            checkboxes.forEach(cb => { if(cb.checked) checked++; });
+            const percent = (checked / checkboxes.length) * 100;
+            gaugeFill.style.width = percent + '%';
+            gaugeText.textContent = Math.round(percent) + '% Reclaimed';
+        }
+
+        // --- Canvas Network Diagram ---
+        const canvas = document.getElementById('networkCanvas');
+        const ctx = canvas.getContext('2d');
+        let nodes = [
+            { x: 150, y: 175, r: 25, label: "Light", color: "#f39c12", active: false },
+            { x: 300, y: 100, r: 25, label: "Labor", color: "#e74c3c", active: false },
+            { x: 450, y: 175, r: 25, label: "Commerce", color: "#9b59b6", active: false },
+            { x: 300, y: 250, r: 25, label: "Biology", color: "#3498db", active: false }
+        ];
+        let edges = [[0, 1], [0, 2], [0, 3], [1, 2], [1, 3]];
+        let hoveredNode = -1;
+        let lockedNode = -1;
+        let animationFrame = 0;
+
+        function drawNetwork() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            animationFrame++;
+            
+            // Determine active node
+            let activeNode = lockedNode !== -1 ? lockedNode : hoveredNode;
+            
+            // Draw edges
+            edges.forEach(edge => {
+                const n1 = nodes[edge[0]];
+                const n2 = nodes[edge[1]];
+                let isHighlight = (activeNode === edge[0] || activeNode === edge[1]);
+                
+                ctx.beginPath();
+                ctx.moveTo(n1.x, n1.y);
+                ctx.lineTo(n2.x, n2.y);
+                ctx.strokeStyle = isHighlight ? '#f39c12' : 'rgba(100, 100, 100, 0.2)';
+                ctx.lineWidth = isHighlight ? 3 : 1;
+                
+                // Animated flow
+                if (isHighlight) {
+                    const dashLen = 10;
+                    const offset = (animationFrame % dashLen);
+                    ctx.setLineDash([5, 5]);
+                    ctx.lineDashOffset = -offset;
+                } else {
+                    ctx.setLineDash([]);
+                }
+                
+                ctx.stroke();
+            });
+            
+            ctx.setLineDash([]);
+
+            // Draw nodes
+            nodes.forEach((node, index) => {
+                let isActive = (index === activeNode);
+                let pulse = isActive ? Math.sin(animationFrame * 0.1) * 3 : 0;
+                
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, node.r + pulse, 0, Math.PI * 2);
+                ctx.fillStyle = isActive ? node.color : 'rgba(200, 200, 200, 0.5)';
+                ctx.fill();
+                ctx.strokeStyle = node.color;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Draw label
+                ctx.fillStyle = isActive ? '#fff' : '#333';
+                if (body.getAttribute('data-theme') === 'dark') {
+                     ctx.fillStyle = isActive ? '#fff' : '#ccc';
+                }
+                ctx.font = '12px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(node.label, node.x, node.y);
+            });
+            
+            requestAnimationFrame(drawNetwork);
+        }
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            hoveredNode = -1;
+            nodes.forEach((node, index) => {
+                const dist = Math.hypot(mouseX - node.x, mouseY - node.y);
+                if (dist < node.r) {
+                    hoveredNode = index;
+                    canvas.style.cursor = 'pointer';
+                }
+            });
+            if (hoveredNode === -1) canvas.style.cursor = 'default';
+        });
+
+        canvas.addEventListener('click', () => {
+            if (hoveredNode !== -1) {
+                lockedNode = (lockedNode === hoveredNode) ? -1 : hoveredNode;
+            } else {
+                lockedNode = -1;
+            }
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            hoveredNode = -1;
+        });
+
+        // Respect reduced motion
+        if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            drawNetwork();
+        } else {
+            drawNetwork(); // Draw once, no loop
+        }
+
+        // --- Chart.js Visualization ---
+        const chartCtx = document.getElementById('impactChart').getContext('2d');
+        let chart;
+        
+        const dataSets = {
+            labor: {
+                label: 'Avg Factory Labor Hours (Daily)',
+                data: [10, 12, 14, 16],
+                borderColor: '#e74c3c',
+                backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                yAxisID: 'y',
+            },
+            health: {
+                label: 'Circadian Disruption Index',
+                data: [1, 3, 6, 8],
+                borderColor: '#3498db',
+                backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                yAxisID: 'y1',
+            }
+        };
+
+        function buildChart(filter = 'both') {
+            let datasets = [];
+            if (filter === 'both' || filter === 'labor') datasets.push(dataSets.labor);
+            if (filter === 'both' || filter === 'health') datasets.push(dataSets.health);
+
+            if (chart) chart.destroy();
+
+            chart = new Chart(chartCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Pre-1800', 'Gas Era', 'Electric Era', 'Modern Era'],
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: filter === 'both' || filter === 'labor',
+                            position: 'left',
+                            title: { display: true, text: 'Labor Hours' }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: filter === 'both' || filter === 'health',
+                            position: 'right',
+                            title: { display: true, text: 'Disruption Index' },
+                            grid: { drawOnChartArea: false }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)'
+                        }
+                    }
+                }
+            });
+        }
+
+        buildChart('both');
+
+        document.querySelectorAll('.chart-toggle-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.chart-toggle-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                buildChart(e.target.getAttribute('data-filter'));
+            });
+        });
+
+        // --- Dynamic Reading Time ---
+        const wordCount = document.body.innerText.split(/\s+/).length;
+        const readTime = Math.ceil(wordCount / 200);
+        document.getElementById('reading-time').textContent = readTime + ' min read';
+    </script>
+</body>
+</html>
