@@ -1,4 +1,18 @@
 [
+{
+  "title": "Architectural Amnesia",
+  "description": "Air conditioning didn't just cool us down; it redrawn the map of the modern world and re-engineered our biology to require permanent synthetic dependency.",
+  "category": "climate",
+  "date": "2024-10-24",
+  "slug": "architectural-amnesia.html"
+},
+  {
+  "title": "Paper Never Died",
+  "description": "The computer didn't eliminate paper. It made creation so frictionless that we printed more than ever — and the paperless office became the paradox office.",
+  "category": "technology",
+  "date": "2025-07-12",
+  "slug": "paperless-office-paradox.html"
+},
   {
   "title": "The Appliance Paradox",
   "description": "Labor-saving devices didn't save time. They eliminated shared help, privatized the work, and made 'spotless' the new minimum.",
