@@ -1,5 +1,12 @@
 [
   {
+  "title": "The Outsourced Mind",
+  "description": "Every photo you take is a quiet contract with your hardware — a trade of internal, living memory for cold, external fidelity.",
+  "category": "cognition",
+  "date": "2026-05-02",
+  "slug": "the-outsourced-mind.html"
+},
+  {
   "title": "Golden Handcuffs",
   "description": "The 8-hour workday wasn't a victory wrestled from capitalists. It was an engineering spec for a consumer economy.",
   "category": "economy",
