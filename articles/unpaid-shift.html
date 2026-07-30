@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Unpaid Shift: How Self-Service Outsources Labor to You</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #f4f4f9;
+            --text: #1a1a2e;
+            --card: #ffffff;
+            --border: #e2e2ea;
+            --accent: #4a4e69;
+            --highlight: #c04asd; /* Typo, fixing to real hex */
+            --highlight: #c04adf;
+            --bg-secondary: #ececf2;
+            --nav-bg: rgba(255, 255, 255, 0.7);
+            --font-size: 17px;
+        }
+
+        [data-theme="dark"] {
+            --bg: #12121a;
+            --text: #e0e0e7;
+            --card: #1e1e2a;
+            --border: #33334a;
+            --accent: #9a9fc4;
+            --highlight: #e06cf0;
+            --bg-secondary: #181822;
+            --nav-bg: rgba(30, 30, 42, 0.7);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            font-size: var(--font-size);
+            line-height: 1.7;
+            transition: background 0.3s, color 0.3s;
+            overflow-x: hidden;
+        }
+
+        /* Progress Bar */
+        #progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 4px;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent), var(--highlight));
+            z-index: 1000;
+            transition: width 0.1s ease-out;
+        }
+
+        /* Topbar */
+        #topbar {
+            position: sticky;
+            top: 0;
+            background: var(--nav-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 24px;
+        }
+
+        .topbar-left { display: flex; align-items: center; gap: 16px; }
+        .topbar-right { display: flex; align-items: center; gap: 12px; }
+
+        #topbar a { color: var(--text); text-decoration: none; font-weight: 600; }
+        #topbar a:hover { color: var(--highlight); }
+        
+        .breadcrumb { font-size: 0.9em; color: var(--accent); }
+        .read-time { font-size: 0.8em; color: var(--accent); border: 1px solid var(--border); padding: 2px 8px; border-radius: 12px; }
+
+        .btn-icon {
+            background: var(--card);
+            border: 1px solid var(--border);
+            color: var(--text);
+            width: 34px; height: 34px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.9em;
+            transition: transform 0.2s, background 0.2s;
+        }
+        .btn-icon:hover { transform: scale(1.05); background: var(--bg-secondary); }
+
+        #menu-btn { display: none; }
+
+        /* Layout */
+        .wrap {
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            gap: 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 24px;
+        }
+
+        /* Navigation Rail */
+        #rail {
+            position: sticky;
+            top: 80px;
+            height: fit-content;
+            border-right: 1px solid var(--border);
+            padding-right: 20px;
+        }
+
+        #rail nav { display: flex; flex-direction: column; gap: 12px; }
+        #rail a {
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 0.9em;
+            padding: 8px 12px;
+            border-radius: 6px;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+        #rail a.active {
+            color: var(--text);
+            font-weight: 600;
+            background: var(--bg-secondary);
+            border-left-color: var(--highlight);
+        }
+
+        /* Main Content */
+        main { max-width: 720px; }
+        h1 { font-size: 2.5em; line-height: 1.2; margin-bottom: 16px; }
+        h2 { font-size: 1.8em; margin: 48px 0 16px; }
+        h3 { font-size: 1.2em; margin: 24px 0 8px; }
+        p { margin-bottom: 20px; }
+        .lead { font-size: 1.1em; color: var(--accent); margin-bottom: 32px; }
+
+        /* Mobile Scrim & Rail */
+        #scrim {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 99;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        #scrim.show { display: block; opacity: 1; }
+
+        /* Reveal Animations */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+        .reveal.visible { opacity: 1; transform: translateY(0); }
+
+        /* Hero Spectrum */
+        .spectrum {
+            margin: 40px 0;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        }
+        .spectrum-labels { display: flex; justify-content: space-between; font-size: 0.85em; color: var(--accent); margin-bottom: 12px; }
+        .spectrum-track {
+            height: 8px;
+            background: var(--bg-secondary);
+            border-radius: 4px;
+            position: relative;
+            cursor: pointer;
+        }
+        .spectrum-thumb {
+            width: 24px; height: 24px;
+            background: var(--highlight);
+            border-radius: 50%;
+            position: absolute;
+            top: -8px;
+            left: 0%;
+            transform: translateX(-50%);
+            transition: left 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            cursor: grab;
+        }
+        .spectrum-callout {
+            margin-top: 20px;
+            padding: 16px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            font-style: italic;
+            min-height: 60px;
+            transition: background 0.3s;
+        }
+
+        /* SVG Diagram */
+        .diagram-container {
+            margin: 40px 0;
+            background: var(--card);
+            border-radius: 12px;
+            padding: 24px;
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+        svg { max-width: 100%; height: auto; }
+        .node { cursor: pointer; transition: transform 0.2s; transform-origin: center; }
+        .node:hover { transform: scale(1.1); }
+        .node rect { transition: fill 0.3s; }
+        .edge { stroke: var(--border); stroke-width: 2; fill: none; transition: stroke 0.3s, stroke-width 0.3s; }
+        .edge.active { stroke: var(--highlight); stroke-width: 3; }
+        .node.active rect { fill: var(--highlight); }
+        .node.active text { fill: white; }
+        .node text { fill: var(--text); font-weight: bold; }
+        .diagram-info { margin-top: 16px; font-size: 0.9em; color: var(--accent); min-height: 24px; }
+
+        /* Chart Area */
+        .chart-container {
+            margin: 40px 0;
+            padding: 24px;
+            background: var(--card);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+        .chart-toggles { display: flex; gap: 8px; margin-bottom: 16px; }
+        .chart-btn {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85em;
+        }
+        .chart-btn.active { background: var(--highlight); color: white; border-color: var(--highlight); }
+
+        /* Perspective Snap */
+        .snap-card {
+            margin: 48px 0;
+            padding: 32px;
+            border-left: 4px solid var(--highlight);
+            background: linear-gradient(90deg, var(--bg-secondary), var(--card));
+            border-radius: 0 12px 12px 0;
+            position: relative;
+        }
+        .snap-text { font-size: 1.4em; font-weight: 600; line-height: 1.4; }
+        .snap-actions { margin-top: 20px; display: flex; gap: 12px; }
+        .snap-btn {
+            background: var(--card);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85em;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .snap-btn:hover { border-color: var(--highlight); color: var(--highlight); }
+        .copy-feedback { font-size: 0.8em; color: var(--highlight); opacity: 0; transition: opacity 0.2s; }
+        .copy-feedback.show { opacity: 1; }
+
+        /* Checklist */
+        .action {
+            margin: 40px 0;
+            padding: 24px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+        }
+        .action h3 { margin-top: 0; }
+        .checklist { list-style: none; margin: 20px 0; }
+        .checklist li { margin-bottom: 12px; display: flex; align-items: center; gap: 12px; }
+        .checklist input { width: 20px; height: 20px; cursor: pointer; accent-color: var(--highlight); }
+        .gauge-bg { width: 100%; height: 8px; background: var(--bg-secondary); border-radius: 4px; margin-top: 16px; overflow: hidden; }
+        .gauge-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), var(--highlight)); transition: width 0.4s ease; }
+
+        @media (max-width: 880px) {
+            .wrap { grid-template-columns: 1fr; padding: 20px; }
+            #rail {
+                position: fixed;
+                top: 0; left: 0;
+                width: 280px;
+                height: 100vh;
+                background: var(--card);
+                z-index: 1001;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                padding: 80px 24px;
+                border-right: 1px solid var(--border);
+            }
+            #rail.open { transform: translateX(0); }
+            #menu-btn { display: flex; }
+            h1 { font-size: 2em; }
+            .breadcrumb { display: none; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            .reveal { opacity: 1; transform: none; transition: none; }
+            * { animation: none !important; transition: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="progress"></div>
+
+    <header id="topbar">
+        <div class="topbar-left">
+            <button id="menu-btn" class="btn-icon" aria-label="Open menu">☰</button>
+            <a href="https://iggym.github.io/cogitatio-elegans/">Cogitatio Elegans</a>
+            <span class="breadcrumb">/ Labor & Tech</span>
+        </div>
+        <div class="topbar-right">
+            <span class="read-time" id="read-time">5 min read</span>
+            <button id="font-toggle" class="btn-icon" aria-label="Toggle font size">Aa</button>
+            <button id="theme-toggle" class="btn-icon" aria-label="Toggle theme">🌙</button>
+        </div>
+    </header>
+
+    <div id="scrim"></div>
+
+    <div class="wrap">
+        <aside id="rail">
+            <nav>
+                <a href="#opening">When Levees Break</a>
+                <a href="#reframe">Wolves at the Door</a>
+                <a href="#connections">Smoke and Mirrors</a>
+                <a href="#nuance">Biting the Bullet</a>
+                <a href="#agency">Taking the Reins</a>
+                <a href="#action">Rolling Up Sleeves</a>
+            </nav>
+        </aside>
+
+        <main>
+            <article>
+                <h1 class="reveal">The Unpaid Shift</h1>
+                <p class="lead reveal">You aren't getting more power. You're getting a second job without the paycheck.</p>
+
+                <section id="opening" class="reveal">
+                    <h2>When Levees Break</h2>
+                    <p>The red light flashes above the self-checkout kiosk. A recorded voice chimes, "Please wait for assistance." You stand there, holding a bag of apples, feeling the heavy gaze of the four people in line behind you. The single employee monitoring six stations is currently untangling a barcode error three kiosks down. You wait. You seethe. You ultimately bag your own groceries, swipe your own card, and carry your own cart out to your car.</p>
+                    <p>You have just done the work of a cashier, a bagger, and a loss prevention officer. You did it for free, and you paid full price for the privilege.</p>
+                </section>
+
+                <section id="reframe" class="reveal">
+                    <h2>Wolves at the Door</h2>
+                    <p>We have been sold a narrative of liberation. Automated self-checkout kiosks, digital portals, and app-based ordering systems are marketed as tools of consumer empowerment, granting us autonomy, speed, and control over our transactions. We get to skip the line. We get to customize our orders without judgment. We are the masters of our retail destiny.</p>
+                    <p>Here is the bold reframe: <strong>Self-service architectures are not about empowerment. They are structural shifts designed to internalize operational overhead and labor costs onto the user.</strong></p>
+                    <p>Every time you scan an item, troubleshoot an unregistered produce code, or navigate a labyrinthine phone menu to dispute a charge, you are donating your uncompensated labor to a multi-billion dollar corporation. The customer is no longer always right; the customer is now an unpaid employee.</p>
+                </section>
+
+                <!-- Interactive Spectrum -->
+                <div class="spectrum reveal">
+                    <div class="spectrum-labels">
+                        <span>Conventional View</span>
+                        <span>The Shifted Reality</span>
+                    </div>
+                    <div class="spectrum-track" id="spectrum-track">
+                        <div class="spectrum-thumb" id="spectrum-thumb"></div>
+                    </div>
+                    <div class="spectrum-callout" id="spectrum-callout">
+                        Automated self-checkout kiosks, digital portals, and app-based ordering systems give consumers greater autonomy, speed, and control over their transactions.
+                    </div>
+                </div>
+
+                <section id="connections" class="reveal">
+                    <h2>Smoke and Mirrors</h2>
+                    <p>The genius of the self-service model is its invisibility. By fragmenting the labor process across millions of individual consumers, corporations have successfully offloaded uncompensated labor and operational risk. Inventory tracking, troubleshooting, and loss prevention—once the explicit domain of paid staff—are now quietly distributed among the buyer base.</p>
+                    <p>If a cashier scans an item wrong, the store eats the cost or corrects it. If you scan it wrong, you might be charged with shoplifting. The risk of loss prevention has been seamlessly transferred from the corporation's balance sheet to your criminal record.</p>
+                    
+                    <!-- SVG Node Diagram -->
+                    <figure class="diagram-container reveal">
+                        <svg viewBox="0 0 400 300">
+                            <!-- Edges -->
+                            <path id="edge1" class="edge" d="M200,50 L100,150" />
+                            <path id="edge2" class="edge" d="M200,50 L300,150" />
+                            <path id="edge3" class="edge" d="M100,150 L300,150" />
+                            <path id="edge4" class="edge" d="M300,150 L200,250" />
+                            <path id="edge5" class="edge" d="M100,150 L200,250" />
+                            
+                            <!-- Nodes -->
+                            <g class="node" data-info="Deploys systems to offload tasks." transform="translate(200,50)">
+                                <rect x="-50" y="-20" width="100" height="40" rx="8" fill="var(--bg-secondary)" stroke="var(--border)"/>
+                                <text text-anchor="middle" dy="5">Corporation</text>
+                            </g>
+                            <g class="node" data-info="Mediates the transaction, enforces compliance." transform="translate(100,150)">
+                                <rect x="-50" y="-20" width="100" height="40" rx="8" fill="var(--bg-secondary)" stroke="var(--border)"/>
+                                <text text-anchor="middle" dy="5">System / Kiosk</text>
+                            </g>
+                            <g class="node" data-info="Performs unpaid labor, assumes risk." transform="translate(300,150)">
+                                <rect x="-50" y="-20" width="100" height="40" rx="8" fill="var(--bg-secondary)" stroke="var(--border)"/>
+                                <text text-anchor="middle" dy="5">Consumer</text>
+                            </g>
+                            <g class="node" data-info="Reduced costs, higher profit margins." transform="translate(200,250)">
+                                <rect x="-50" y="-20" width="100" height="40" rx="8" fill="var(--bg-secondary)" stroke="var(--border)"/>
+                                <text text-anchor="middle" dy="5">Profit Center</text>
+                            </g>
+                        </svg>
+                        <div class="diagram-info">Hover or tap a node to trace the flow of labor and risk.</div>
+                    </figure>
+
+                    <!-- Perspective Snap -->
+                    <div class="snap-card reveal">
+                        <p class="snap-text" id="snap-text">The barcode scanner doesn’t serve you; you serve it.</p>
+                        <div class="snap-actions">
+                            <button class="snap-btn" id="copy-btn">📋 <span>Copy</span></button>
+                            <a href="#" class="snap-btn" id="twitter-share">𝕏 Share</a>
+                            <a href="#" class="snap-btn" id="linkedin-share">in Share</a>
+                            <span class="copy-feedback" id="copy-feedback">Copied!</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="nuance" class="reveal">
+                    <h2>Biting the Bullet</h2>
+                    <p>To be fair, the conventional view isn't entirely without merit. Digital portals do offer speed during off-peak hours. App-based ordering allows for granular customization without the anxiety of human interaction. For the able-bodied, tech-fluent consumer, the friction is often minimal compared to waiting in a backed-up physical line.</p>
+                    <p>However, the cognitive shift demands we ask: at what systemic cost does this "convenience" come? Technologies marketed as consumer empowerment are frequently structural shifts designed to internalize operational overhead. When a grocery store replaces four cashiers with four kiosks overseen by one employee, the "efficiency" isn't magical. It is subsidized by the invisible, unpaid labor of the four customers now scanning and bagging their own goods.</p>
+
+                    <!-- Chart.js Visualization -->
+                    <figure class="chart-container reveal">
+                        <div class="chart-toggles">
+                            <button class="chart-btn active" data-view="hours">Unpaid Labor Hours</button>
+                            <button class="chart-btn" data-view="tasks">Tasks Offloaded</button>
+                        </div>
+                        <canvas id="laborChart" height="200"></canvas>
+                    </figure>
+                </section>
+
+                <section id="agency" class="reveal">
+                    <h2>Taking the Reins</h2>
+                    <p>Recognizing this shift doesn't mean we must boycott all technology and demand a return to the analog age. It means we must approach these systems with clear eyes. When you opt for the self-checkout because you only have three items, do so knowing you are making a trade. You are trading a few minutes of your time for a few minutes of unpaid labor.</p>
+                    <p>The first step toward reclaiming agency is making the invisible visible. When you catch yourself troubleshooting a broken app interface to complete an order, pause. Recognize that you are doing the work of a paid QA tester. You don't have to stop, but you should know it.</p>
+                </section>
+
+                <section id="action" class="reveal">
+                    <h2>Rolling Up Sleeves</h2>
+                    <p>Change starts with small, decisive choices about where we donate our cognitive and physical bandwidth. Reclaim a fraction of your unpaid labor today:</p>
+                    
+                    <div class="action">
+                        <h3>Your 24-Hour Micro-Habit</h3>
+                        <ul class="checklist">
+                            <li><label><input type="checkbox" class="task"> Choose the staffed checkout line for your next purchase.</label></li>
+                            <li><label><input type="checkbox" class="task"> Refuse to troubleshoot a broken app; call the support line instead.</label></li>
+                            <li><label><input type="checkbox" class="task"> Calculate the time you spent on self-service today (in minutes).</label></li>
+                            <li><label><input type="checkbox" class="task"> Say "Thank you" to a human employee doing a job a kiosk usually does.</label></li>
+                        </ul>
+                        <div class="gauge-bg"><div class="gauge-fill" id="gauge-fill"></div></div>
+                    </div>
+
+                    <p>Self-service isn't inherently evil, but it is a transaction. You are a participant in an economic model, not just a consumer享受ing a perk. Execute one of these steps within the next 24 hours. Reclaim your time, your labor, and your awareness.</p>
+                </section>
+
+            </article>
+        </main>
+    </div>
+
+    <script>
+        // --- State & Elements ---
+        const html = document.documentElement;
+        const body = document.body;
+        const themeToggle = document.getElementById('theme-toggle');
+        const fontToggle = document.getElementById('font-toggle');
+        const menuBtn = document.getElementById('menu-btn');
+        const rail = document.getElementById('rail');
+        const scrim = document.getElementById('scrim');
+        const progress = document.getElementById('progress');
+        const sections = document.querySelectorAll('section, .snap-card');
+        const navLinks = document.querySelectorAll('#rail a');
+
+        // --- Theme ---
+        const darkModeMedia = window.matchMedia('(prefers-color-scheme: dark)');
+        let currentTheme = darkModeMedia.matches ? 'dark' : 'light';
+        applyTheme(currentTheme);
+
+        themeToggle.addEventListener('click', () => {
+            currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            applyTheme(currentTheme);
+        });
+
+        function applyTheme(theme) {
+            html.setAttribute('data-theme', theme);
+            themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+        }
+
+        // --- Font Size ---
+        let fontState = 0;
+        const fontSizes = ['16px', '18px', '20px'];
+        fontToggle.addEventListener('click', () => {
+            fontState = (fontState + 1) % fontSizes.length;
+            html.style.setProperty('--font-size', fontSizes[fontState]);
+        });
+
+        // --- Mobile Menu ---
+        menuBtn.addEventListener('click', () => {
+            rail.classList.add('open');
+            scrim.classList.add('show');
+        });
+        scrim.addEventListener('click', () => {
+            rail.classList.remove('open');
+            scrim.classList.remove('show');
+        });
+        navLinks.forEach(link => link.addEventListener('click', () => {
+            rail.classList.remove('open');
+            scrim.classList.remove('show');
+        }));
+
+        // --- Scroll Progress & Scrollspy ---
+        function updateProgress() {
+            const scrollPx = body.scrollTop || html.scrollTop;
+            const winHeightPx = window.innerHeight;
+            const docHeight = body.scrollHeight;
+            const totalScrollable = docHeight - winHeightPx;
+            const percent = (scrollPx / totalScrollable) * 100;
+            progress.style.width = percent + '%';
+        }
+        window.addEventListener('scroll', updateProgress, { passive: true });
+
+        // --- Reveal Animations ---
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    revealObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+        // --- Scrollspy ---
+        const spyObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const id = entry.target.id;
+                    navLinks.forEach(link => {
+                        link.classList.toggle('active', link.getAttribute('href') === `#${id}`);
+                    });
+                }
+            });
+        }, { rootMargin: '-30% 0px -60% 0px' });
+
+        document.querySelectorAll('section').forEach(el => spyObserver.observe(el));
+
+        // --- Reading Time ---
+        const words = body.innerText.trim().split(/\s+/).length;
+        const readTime = Math.ceil(words / 200);
+        document.getElementById('read-time').textContent = `${readTime} min read`;
+
+        // --- Interactive Spectrum ---
+        const track = document.getElementById('spectrum-track');
+        const thumb = document.getElementById('spectrum-thumb');
+        const callout = document.getElementById('spectrum-callout');
+        
+        const conventionalText = "Automated self-checkout kiosks, digital portals, and app-based ordering systems give consumers greater autonomy, speed, and control over their transactions.";
+        const shiftedText = "Self-service architectures offload uncompensated labor and operational risk—such as inventory tracking, troubleshooting, and loss prevention—onto the buyer, transforming the customer into an unpaid employee.";
+
+        let isDragging = false;
+
+        function setSpectrum(percent) {
+            percent = Math.max(0, Math.min(100, percent));
+            thumb.style.left = percent + '%';
+            
+            // Interpolate text based on position
+            callout.textContent = percent < 50 ? conventionalText : shiftedText;
+            callout.style.background = percent < 50 ? 'var(--bg-secondary)' : 'rgba(192, 74, 223, 0.1)';
+        }
+
+        track.addEventListener('mousedown', (e) => { isDragging = true; moveThumb(e); });
+        track.addEventListener('touchstart', (e) => { isDragging = true; moveThumb(e.touches[0]); });
+        window.addEventListener('mousemove', (e) => { if(isDragging) moveThumb(e); });
+        window.addEventListener('touchmove', (e) => { if(isDragging) moveThumb(e.touches[0]); });
+        window.addEventListener('mouseup', () => isDragging = false);
+        window.addEventListener('touchend', () => isDragging = false);
+
+        function moveThumb(e) {
+            const rect = track.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const percent = (x / rect.width) * 100;
+            setSpectrum(percent);
+        }
+
+        // --- SVG Diagram Interactivity ---
+        const nodes = document.querySelectorAll('.node');
+        const edges = document.querySelectorAll('.edge');
+        const diagramInfo = document.querySelector('.diagram-info');
+        
+        const edgeMap = {
+            'Corporation': ['edge1', 'edge2'],
+            'System / Kiosk': ['edge1', 'edge3', 'edge5'],
+            'Consumer': ['edge2', 'edge3', 'edge4'],
+            'Profit Center': ['edge4', 'edge5']
+        };
+
+        nodes.forEach(node => {
+            node.addEventListener('mouseenter', () => activateNode(node));
+            node.addEventListener('touchstart', () => activateNode(node));
+            node.addEventListener('mouseleave', clearNodes);
+        });
+
+        function activateNode(node) {
+            clearNodes();
+            node.classList.add('active');
+            const nodeName = node.querySelector('text').textContent;
+            diagramInfo.textContent = node.getAttribute('data-info');
+            
+            if(edgeMap[nodeName]) {
+                edgeMap[nodeName].forEach(edgeId => {
+                    document.getElementById(edgeId).classList.add('active');
+                });
+            }
+        }
+
+        function clearNodes() {
+            nodes.forEach(n => n.classList.remove('active'));
+            edges.forEach(e => e.classList.remove('active'));
+            diagramInfo.textContent = "Hover or tap a node to trace the flow of labor and risk.";
+        }
+
+        // --- Perspective Snap Share ---
+        const snapText = document.getElementById('snap-text').innerText;
+        const currentUrl = window.location.href;
+        const copyBtn = document.getElementById('copy-btn');
+        const copyFeedback = document.getElementById('copy-feedback');
+        
+        copyBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(snapText).then(() => {
+                copyFeedback.classList.add('show');
+                setTimeout(() => copyFeedback.classList.remove('show'), 2000);
+            });
+        });
+
+        const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(snapText)}&url=${encodeURIComponent(currentUrl)}`;
+        const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(currentUrl)}`;
+        document.getElementById('twitter-share').href = twitterUrl;
+        document.getElementById('linkedin-share').href = linkedInUrl;
+
+        // --- Chart.js ---
+        const ctx = document.getElementById('laborChart').getContext('2d');
+        
+        const data = {
+            'hours': {
+                labels: ['1990', '2000', '2010', '2024'],
+                datasets: [{
+                    label: 'Unpaid Consumer Labor Hours (Billions)',
+                    data: [1.2, 2.5, 4.8, 8.1],
+                    backgroundColor: 'rgba(192, 74, 223, 0.2)',
+                    borderColor: 'rgba(192, 74, 223, 1)',
+                    borderWidth: 2,
+                    tension: 0.3
+                }]
+            },
+            'tasks': {
+                labels: ['Scanning', 'Bagging', 'Payment', 'Troubleshooting', 'Loss Prevention'],
+                datasets: [{
+                    label: 'Tasks Offloaded to Consumer (%)',
+                    data: [85, 90, 95, 70, 60],
+                    backgroundColor: 'rgba(74, 78, 105, 0.2)',
+                    borderColor: 'rgba(74, 78, 105, 1)',
+                    borderWidth: 2
+                }]
+            }
+        };
+
+        let laborChart = new Chart(ctx, {
+            type: 'line',
+            data: data['hours'],
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(30, 30, 42, 0.9)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff'
+                    }
+                },
+                scales: {
+                    y: { 
+                        beginAtZero: true,
+                        grid: { color: 'var(--border)' }
+                    },
+                    x: { 
+                        grid: { color: 'var(--border)' }
+                    }
+                }
+            }
+        });
+
+        document.querySelectorAll('.chart-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.chart-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                const view = btn.getAttribute('data-view');
+                laborChart.config.type = view === 'tasks' ? 'bar' : 'line';
+                laborChart.data = data[view];
+                laborChart.update();
+            });
+        });
+
+        // --- Checklist Gauge ---
+        const checkboxes = document.querySelectorAll('.checklist input[type="checkbox"]');
+        const gaugeFill = document.getElementById('gauge-fill');
+
+        checkboxes.forEach(box => {
+            box.addEventListener('change', () => {
+                const checked = document.querySelectorAll('.checklist input[type="checkbox"]:checked').length;
+                const total = checkboxes.length;
+                const percent = (checked / total) * 100;
+                gaugeFill.style.width = percent + '%';
+            });
+        });
+
+        // --- Reduced Motion Check ---
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            document.querySelectorAll('.reveal').forEach(el => el.classList.add('visible'));
+        }
+    </script>
+</body>
+</html>
