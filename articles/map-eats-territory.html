@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Map Eats the Territory | Cogitatio Elegans</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #fafaf8;
+            --text: #1a1a1a;
+            --text-muted: #555;
+            --accent: #2d5af5;
+            --accent-2: #f5522d;
+            --card-bg: #ffffff;
+            --border: #e5e5e2;
+            --topbar-bg: rgba(250, 250, 248, 0.75);
+            --font-size: 18px;
+        }
+
+        [data-theme="dark"] {
+            --bg: #121212;
+            --text: #f5f5f5;
+            --text-muted: #aaa;
+            --accent: #4d7aff;
+            --accent-2: #ff704d;
+            --card-bg: #1e1e1e;
+            --border: #333;
+            --topbar-bg: rgba(18, 18, 18, 0.75);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            font-size: var(--font-size);
+            line-height: 1.7;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        #progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 4px;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent), var(--accent-2));
+            z-index: 1000;
+            transition: width 0.1s ease-out;
+        }
+
+        #topbar {
+            position: sticky;
+            top: 0;
+            background: var(--topbar-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            z-index: 900;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1.5rem;
+        }
+
+        .topbar-left { display: flex; align-items: center; gap: 1rem; }
+        .home-link { font-weight: 800; text-decoration: none; color: var(--text); font-size: 1.1rem; letter-spacing: -0.5px; }
+        .breadcrumb { font-size: 0.85rem; color: var(--text-muted); }
+        .topbar-right { display: flex; align-items: center; gap: 1.25rem; }
+        .read-time { font-size: 0.8rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+        
+        .controls { display: flex; gap: 0.5rem; }
+        .btn-ctrl {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 0.3rem 0.6rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: transform 0.2s, background 0.2s;
+        }
+        .btn-ctrl:hover { transform: translateY(-2px); background: var(--border); }
+
+        #menu-btn { display: none; font-size: 1.5rem; background: none; border: none; color: var(--text); cursor: pointer; }
+
+        #scrim {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 800;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        #scrim.active { opacity: 1; pointer-events: auto; }
+
+        .wrap {
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            max-width: 1200px;
+            margin: 0 auto;
+            gap: 2rem;
+            padding: 0 1.5rem;
+        }
+
+        #rail {
+            position: sticky;
+            top: 70px;
+            height: calc(100vh - 70px);
+            overflow-y: auto;
+            padding-top: 2rem;
+        }
+        #rail nav { display: flex; flex-direction: column; gap: 0.5rem; border-left: 2px solid var(--border); padding-left: 1rem; }
+        #rail a {
+            text-decoration: none;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            transition: color 0.2s, transform 0.2s;
+        }
+        #rail a:hover { color: var(--text); transform: translateX(4px); }
+        #rail a.active { color: var(--accent); font-weight: 600; }
+
+        main {
+            padding: 2rem 0 6rem 0;
+            max-width: 70ch;
+        }
+
+        h1 { font-size: clamp(2.2rem, 5vw, 3.5rem); line-height: 1.1; margin-bottom: 1rem; letter-spacing: -1px; }
+        h2 { font-size: 1.8rem; margin: 3rem 0 1rem 0; letter-spacing: -0.5px; }
+        p { margin-bottom: 1.5rem; }
+        a.inline-link { color: var(--accent); text-decoration: none; border-bottom: 2px solid var(--accent-2); }
+        
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+        .reveal.visible { opacity: 1; transform: translateY(0); }
+
+        /* Hero Spectrum */
+        .spectrum {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+        }
+        .spectrum-labels { display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem; }
+        .spectrum-bar { height: 8px; background: var(--border); border-radius: 4px; position: relative; margin-bottom: 1rem; }
+        .spectrum-fill { position: absolute; left: 0; top: 0; height: 100%; width: 50%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); border-radius: 4px; transition: width 0.2s; }
+        .spectrum-slider { width: 100%; cursor: pointer; accent-color: var(--accent); }
+        .spectrum-callout { font-style: italic; color: var(--text-muted); min-height: 3rem; border-top: 1px solid var(--border); padding-top: 1rem; margin-top: 1rem;}
+
+        /* SVG Canvas */
+        .diagram-container {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+        }
+        svg { width: 100%; height: auto; cursor: pointer; }
+        .node { fill: var(--border); stroke: var(--text-muted); stroke-width: 2; transition: all 0.3s; }
+        .node.active { fill: var(--accent); stroke: var(--text); }
+        .node-label { fill: var(--text-muted); font-size: 12px; text-anchor: middle; pointer-events: none; transition: all 0.3s; }
+        .node.active + .node-label { fill: var(--text); font-weight: bold; }
+        .link { stroke: var(--border); stroke-width: 2; transition: all 0.3s; }
+        .link.active { stroke: var(--accent-2); stroke-width: 3; }
+
+        /* Chart */
+        .chart-wrapper { position: relative; height: 400px; width: 100%; margin: 2rem 0; }
+        .chart-toggles { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+        .chart-toggle { background: var(--card-bg); border: 1px solid var(--border); color: var(--text-muted); padding: 0.4rem 0.8rem; border-radius: 20px; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; }
+        .chart-toggle.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+        /* Perspective Snap */
+        .snap-card {
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            color: white;
+            padding: 2rem;
+            border-radius: 12px;
+            margin: 2.5rem 0;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .snap-text { font-size: 1.5rem; font-weight: 700; line-height: 1.3; margin-bottom: 1.5rem; }
+        .snap-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        .snap-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: background 0.2s;
+        }
+        .snap-btn:hover { background: rgba(255,255,255,0.4); }
+        .copied-msg { font-size: 0.8rem; opacity: 0; transition: opacity 0.3s; }
+        .copied-msg.show { opacity: 1; }
+
+        /* Checklist */
+        .action {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+        }
+        .checklist { list-style: none; margin-bottom: 1rem; }
+        .checklist li { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; cursor: pointer; }
+        .checklist input { width: 20px; height: 20px; accent-color: var(--accent); cursor: pointer; }
+        .checklist label { cursor: pointer; }
+        .checklist input:checked + label { text-decoration: line-through; color: var(--text-muted); }
+        .progress-gauge { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+        .progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width 0.4s ease; }
+        .progress-text { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem; text-align: right; }
+
+        @media (max-width: 880px) {
+            .wrap { grid-template-columns: 1fr; }
+            #menu-btn { display: block; }
+            #rail {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100vh;
+                width: 280px;
+                background: var(--bg);
+                border-right: 1px solid var(--border);
+                z-index: 900;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                padding: 5rem 1.5rem 1.5rem 1.5rem;
+            }
+            #rail.open { transform: translateX(0); }
+            .topbar-right .controls, .read-time { display: none; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            .reveal { opacity: 1; transform: none; transition: none; }
+            #progress { transition: none; }
+            * { animation: none !important; }
+        }
+    </style>
+</head>
+<body>
+    <div id="progress"></div>
+    
+    <header id="topbar">
+        <div class="topbar-left">
+            <button id="menu-btn">☰</button>
+            <a href="https://iggym.github.io/cogitatio-elegans/" class="home-link">Cogitatio Elegans</a>
+            <span class="breadcrumb">/ Geography & Cognition</span>
+        </div>
+        <div class="topbar-right">
+            <span class="read-time" id="read-time">~ 5 min read</span>
+            <div class="controls">
+                <button class="btn-ctrl" id="font-toggle">A+</button>
+                <button class="btn-ctrl" id="theme-toggle">🌙</button>
+            </div>
+        </div>
+    </header>
+
+    <div id="scrim"></div>
+
+    <div class="wrap">
+        <aside id="rail">
+            <nav>
+                <a href="#opening">Blindly Following the Dot</a>
+                <a href="#reframe">Outsourcing Our Minds</a>
+                <a href="#connections">Killing the Serendipity</a>
+                <a href="#nuance">A Necessary Evil</a>
+                <a href="#agency">Waking the Hippocampus</a>
+                <a href="#cta">Take the Wheel</a>
+            </nav>
+        </aside>
+
+        <main>
+            <article>
+                <section id="opening" class="reveal">
+                    <h1>The Map Eats the Territory</h1>
+                    <p class="breadcrumb" style="margin-bottom: 2rem;">By Cogitatio Elegans | 2026-05-02</p>
+                    <p>You are standing at an intersection in a city you’ve never visited. The sun is setting, casting long, unfamiliar shadows. Instead of looking up at the street signs, observing the slope of the hill, or noting the distinct neon sign of the corner diner, your face is angled down. You are staring at a glowing blue dot inside a digital map, trusting an algorithm to narrate your reality turn by turn. You arrive at your destination efficiently, but if asked to draw the route you just took, or describe what the neighborhood looked like, you would draw a blank. You weren't really there. You were just cargo.</p>
+                </section>
+
+                <section id="reframe" class="reveal">
+                    <h2>Outsourcing Our Minds</h2>
+                    
+                    <div class="spectrum" id="hero-spectrum">
+                        <div class="spectrum-labels">
+                            <span>Conventional View</span>
+                            <span>Shifted View</span>
+                        </div>
+                        <div class="spectrum-bar"><div class="spectrum-fill" id="spec-fill"></div></div>
+                        <input type="range" min="0" max="100" value="50" class="spectrum-slider" id="spec-slider">
+                        <div class="spectrum-callout" id="spec-callout">
+                            GPS eliminates the anxiety of getting lost, making travel efficient and seamless.
+                        </div>
+                    </div>
+
+                    <p>The conventional wisdom is that GPS navigation and digital mapping apps are pure triumphs of modern convenience. They eliminate the anxiety of getting lost, making travel efficient and seamless. But this comfort masks a silent theft. By outsourcing spatial reasoning to algorithms, GPS atrophies the brain’s internal mapping capacity and strips cities of accidental discovery, homogenizing how humans experience and remember physical space.</p>
+                    <p>We think we are using a tool to navigate the world. In reality, the tool is navigating us, bypassing the very cognitive faculties that make us capable of independent spatial reasoning. Tools that optimize logistical efficiency can atrophy intrinsic cognitive faculties and flatten our relationship with physical reality.</p>
+                </section>
+
+                <section id="connections" class="reveal">
+                    <h2>Killing the Serendipity</h2>
+                    <p>There is a hidden connection between the gray matter in your skull and the concrete on your street. The hippocampus—the brain region responsible for spatial memory and navigation—operates like a muscle. When we actively navigate, building mental maps through landmarks and dead reckoning, the hippocampus stays robust. When we passively follow a blue line, it begins to weaken.</p>
+                    
+                    <div class="diagram-container">
+                        <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:1rem;">Hover over the nodes to see how passive navigation bypasses cognitive faculties:</p>
+                        <svg viewBox="0 0 400 200">
+                            <!-- Links -->
+                            <line class="link" id="link-1" x1="60" y1="100" x2="200" y2="60" />
+                            <line class="link" id="link-2" x1="60" y1="100" x2="200" y2="140" />
+                            <line class="link" id="link-3" x1="200" y1="60" x2="340" y2="100" />
+                            <line class="link" id="link-4" x1="200" y1="140" x2="340" y2="100" />
+                            
+                            <!-- Nodes -->
+                            <circle class="node" id="node-input" cx="60" cy="100" r="25" data-targets="link-1,link-2,node-hippo,node-gps"/>
+                            <text class="node-label" x="60" y="105">Environment</text>
+
+                            <circle class="node" id="node-hippo" cx="200" cy="60" r="25" data-targets="link-1,link-3,node-input,node-map"/>
+                            <text class="node-label" x="200" y="65">Hippocampus</text>
+
+                            <circle class="node" id="node-gps" cx="200" cy="140" r="25" data-targets="link-2,link-4,node-input,node-map"/>
+                            <text class="node-label" x="200" y="145">GPS App</text>
+
+                            <circle class="node" id="node-map" cx="340" cy="100" r="25" data-targets="link-3,link-4,node-hippo,node-gps"/>
+                            <text class="node-label" x="340" y="105">Spatial Map</text>
+                        </svg>
+                    </div>
+
+                    <p>But the atrophy isn't just internal. When everyone follows the same algorithmic logic to avoid traffic or find the fastest route, we stop discovering the fringes. We bypass the quirky local café, the hidden park, the sudden vista. Cities become homogenized transit corridors optimized for speed rather than experience. We lose the accidental discovery that makes a place feel alive.</p>
+                    
+                    <div class="snap-card" id="snap-card">
+                        <p class="snap-text" id="snap-text">"We traded a cognitive muscle for a glowing dot, and called it progress."</p>
+                        <div class="snap-actions">
+                            <button class="snap-btn" id="copy-btn">📋 Copy</button>
+                            <button class="snap-btn" id="share-x">𝕏 Share on X</button>
+                            <button class="snap-btn" id="share-linkedin">in Share on LinkedIn</button>
+                            <span class="copied-msg" id="copied-msg">Copied to clipboard!</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="nuance" class="reveal">
+                    <h2>A Necessary Evil</h2>
+                    <p>Let us acknowledge the counterargument: GPS is, in many contexts, a literal lifesaver. It prevents missed flights, guides ambulances through gridlock, and democratizes travel for those with severe spatial anxiety or visual impairments. The logistical efficiency is undeniable.</p>
+                    <p>But logistical efficiency is not the sum total of human existence. The reference materials make the cognitive shift clear: while the tool solves a logistical problem, it creates a cognitive one. We must separate the utility of arriving on time from the cost of how we arrive. The convenience of never being lost is purchased with the cognitive capacity to ever find our own way.</p>
+                    
+                    <div class="chart-wrapper">
+                        <div class="chart-toggles">
+                            <button class="chart-toggle active" data-filter="both">Both</button>
+                            <button class="chart-toggle" data-filter="active">Active Navigators</button>
+                            <button class="chart-toggle" data-filter="passive">Passive Navigators</button>
+                        </div>
+                        <canvas id="spatialChart"></canvas>
+                    </div>
+                </section>
+
+                <section id="agency" class="reveal">
+                    <h2>Waking the Hippocampus</h2>
+                    <p>Meaningful change does not require throwing your phone into the sea. It requires small, decisive choices to re-engage your intrinsic cognitive faculties. If the hippocampus is a muscle, you must choose to exercise it. This means occasionally allowing yourself to be inefficient, to be surprised, to be momentarily lost.</p>
+                    <p>Narrative agency over your physical environment begins the moment you look up from the screen. It requires intentional disorientation—trusting your own senses to build a mental model of the space you occupy.</p>
+                </section>
+
+                <section id="cta" class="reveal">
+                    <h2>Take the Wheel</h2>
+                    <p>The most decisive step you can take is incredibly simple. Reclaim your last mile.</p>
+                    
+                    <div class="action">
+                        <p style="font-weight:600; margin-bottom:1rem;">Your 24-Hour Micro-Habit Checklist:</p>
+                        <ul class="checklist" id="checklist">
+                            <li><input type="checkbox" id="t1"><label for="t1">Turn off GPS for the final 3 blocks of your next walk or drive.</label></li>
+                            <li><input type="checkbox" id="t2"><label for="t2">Identify and commit to memory one distinct architectural landmark near your home or office.</label></li>
+                            <li><input type="checkbox" id="t3"><label for="t3">Take a deliberately "inefficient" route to a familiar destination today.</label></li>
+                        </ul>
+                        <div class="progress-gauge"><div class="progress-fill" id="progress-fill"></div></div>
+                        <div class="progress-text" id="progress-text">0/3 Completed</div>
+                    </div>
+                    <p>Do not let a glowing dot dictate your relationship with the physical world. Your brain is the original map. Use it or lose it.</p>
+                </section>
+            </article>
+        </main>
+    </div>
+
+    <script>
+        // --- Progress Bar ---
+        const progress = document.getElementById('progress');
+        window.addEventListener('scroll', () => {
+            const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+            const scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const percent = (scrollTop / scrollHeight) * 100;
+            progress.style.width = percent + '%';
+        });
+
+        // --- Reading Time ---
+        const text = document.body.innerText;
+        const words = text.trim().split(/\s+/).length;
+        const time = Math.ceil(words / 200);
+        document.getElementById('read-time').innerText = `~ ${time} min read`;
+
+        // --- Mobile Menu ---
+        const menuBtn = document.getElementById('menu-btn');
+        const rail = document.getElementById('rail');
+        const scrim = document.getElementById('scrim');
+        menuBtn.addEventListener('click', () => {
+            rail.classList.add('open');
+            scrim.classList.add('active');
+        });
+        scrim.addEventListener('click', () => {
+            rail.classList.remove('open');
+            scrim.classList.remove('active');
+        });
+
+        // --- Theme & Font Toggle ---
+        const themeBtn = document.getElementById('theme-toggle');
+        const html = document.documentElement;
+        
+        function applyTheme(theme) {
+            if (theme === 'dark') {
+                html.setAttribute('data-theme', 'dark');
+                themeBtn.innerText = '☀️';
+            } else {
+                html.removeAttribute('data-theme');
+                themeBtn.innerText = '🌙';
+            }
+        }
+        
+        // System preference
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            applyTheme('dark');
+        }
+        
+        themeBtn.addEventListener('click', () => {
+            const isDark = html.getAttribute('data-theme') === 'dark';
+            applyTheme(isDark ? 'light' : 'dark');
+        });
+
+        let fontSizes = [16, 18, 20, 22];
+        let currentFontIndex = 1;
+        const fontBtn = document.getElementById('font-toggle');
+        fontBtn.addEventListener('click', () => {
+            currentFontIndex = (currentFontIndex + 1) % fontSizes.length;
+            document.documentElement.style.setProperty('--font-size', fontSizes[currentFontIndex] + 'px');
+        });
+
+        // --- Intersection Observer for Reveals & Scrollspy ---
+        const reveals = document.querySelectorAll('.reveal');
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) entry.target.classList.add('visible');
+            });
+        }, { threshold: 0.1 });
+
+        reveals.forEach(r => revealObserver.observe(r));
+
+        const sections = document.querySelectorAll('section');
+        const navLinks = document.querySelectorAll('#rail a');
+        const spyObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const id = entry.target.id;
+                    navLinks.forEach(link => {
+                        link.classList.toggle('active', link.getAttribute('href') === `#${id}`);
+                    });
+                }
+            });
+        }, { rootMargin: '-40% 0px -55% 0px' });
+
+        sections.forEach(sec => spyObserver.observe(sec));
+
+        // --- Hero Spectrum ---
+        const slider = document.getElementById('spec-slider');
+        const specFill = document.getElementById('spec-fill');
+        const specCallout = document.getElementById('spec-callout');
+        const spectrumTexts = [
+            "GPS eliminates the anxiety of getting lost, making travel efficient and seamless.",
+            "GPS provides logistical utility but begins to bypass active spatial processing.",
+            "By outsourcing spatial reasoning to algorithms, GPS atrophies the brain’s internal mapping capacity.",
+            "Algorithms strip cities of accidental discovery, homogenizing how humans experience physical reality."
+        ];
+
+        slider.addEventListener('input', (e) => {
+            const val = e.target.value;
+            specFill.style.width = val + '%';
+            const index = Math.min(Math.floor(val / 25), 3);
+            specCallout.innerText = spectrumTexts[index];
+        });
+
+        // --- SVG Interactive Diagram ---
+        const svgNodes = document.querySelectorAll('.node');
+        svgNodes.forEach(node => {
+            node.addEventListener('mouseover', () => {
+                const targets = node.dataset.targets.split(',');
+                targets.forEach(t => {
+                    const el = document.getElementById(t);
+                    if(el) el.classList.add('active');
+                });
+            });
+            node.addEventListener('mouseout', () => {
+                const targets = node.dataset.targets.split(',');
+                targets.forEach(t => {
+                    const el = document.getElementById(t);
+                    if(el) el.classList.remove('active');
+                });
+            });
+        });
+
+        // --- Snap Card Share ---
+        const snapText = document.getElementById('snap-text').innerText;
+        const copyBtn = document.getElementById('copy-btn');
+        const copiedMsg = document.getElementById('copied-msg');
+        const currentUrl = window.location.href;
+
+        copyBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(`${snapText} ${currentUrl}`).then(() => {
+                copiedMsg.classList.add('show');
+                setTimeout(() => copiedMsg.classList.remove('show'), 2000);
+            });
+        });
+
+        document.getElementById('share-x').addEventListener('click', () => {
+            const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(snapText)}&url=${encodeURIComponent(currentUrl)}`;
+            window.open(url, '_blank');
+        });
+
+        document.getElementById('share-linkedin').addEventListener('click', () => {
+            const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(currentUrl)}`;
+            window.open(url, '_blank');
+        });
+
+        // --- Chart.js ---
+        const ctx = document.getElementById('spatialChart').getContext('2d');
+        let chart;
+        
+        const data = {
+            labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+            datasets: [
+                {
+                    label: 'Active Navigators (Hippocampus Activity)',
+                    data: [85, 86, 88, 90],
+                    borderColor: '#2d5af5',
+                    backgroundColor: 'rgba(45, 90, 245, 0.1)',
+                    fill: true,
+                    tension: 0.3
+                },
+                {
+                    label: 'Passive Navigators (GPS Dependent)',
+                    data: [80, 75, 68, 60],
+                    borderColor: '#f5522d',
+                    backgroundColor: 'rgba(245, 82, 45, 0.1)',
+                    fill: true,
+                    tension: 0.3
+                }
+            ]
+        };
+
+        function renderChart(filter = 'both') {
+            let datasets = [];
+            if (filter === 'both' || filter === 'active') {
+                datasets.push(data.datasets[0]);
+            }
+            if (filter === 'both' || filter === 'passive') {
+                datasets.push(data.datasets[1]);
+            }
+            
+            if (chart) chart.destroy();
+            
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: { labels: data.labels, datasets: datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            titleFont: { size: 14 },
+                            bodyFont: { size: 12 },
+                        },
+                        legend: { labels: { color: getComputedStyle(document.body).color } }
+                    },
+                    scales: {
+                        x: { ticks: { color: getComputedStyle(document.body).color }, grid: { color: 'rgba(128,128,128,0.2)' } },
+                        y: { ticks: { color: getComputedStyle(document.body).color }, grid: { color: 'rgba(128,128,128,0.2)' } }
+                    }
+                }
+            });
+        }
+        renderChart();
+
+        document.querySelectorAll('.chart-toggle').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.chart-toggle').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                renderChart(btn.dataset.filter);
+            });
+        });
+
+        // --- Checklist Progress ---
+        const checks = document.querySelectorAll('#checklist input[type="checkbox"]');
+        const progressFill = document.getElementById('progress-fill');
+        const progressText = document.getElementById('progress-text');
+
+        checks.forEach(check => {
+            check.addEventListener('change', () => {
+                let completed = 0;
+                checks.forEach(c => { if(c.checked) completed++; });
+                const percent = (completed / checks.length) * 100;
+                progressFill.style.width = percent + '%';
+                progressText.innerText = `${completed}/${checks.length} Completed`;
+            });
+        });
+
+    </script>
+</body>
+</html>
