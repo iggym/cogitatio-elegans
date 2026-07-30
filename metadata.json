@@ -1,5 +1,18 @@
 [
   {
+  "title": "Silence by Subscription",
+  "description": "Noise-canceling headphones didn't save us from chaotic open offices. They enabled them, offloading architectural cost-cutting directly onto the worker's nervous system.",
+  "category": "architecture",
+  "date": "2026-05-02",
+  "slug": "silence-by-subscription.html"
+},{
+  "title": "The Cold Chain Conquest",
+  "description": "Industrial refrigeration didn't just preserve our food; it froze out local farmers and centralized corporate control over human sustenance.",
+  "category": "geography",
+  "date": "2026-05-02",
+  "slug": "cold-chain-conquest.html"
+},
+  {
   "title": "The Colonized Night",
   "description": "Urban street lighting wasn't a humanitarian triumph to banish crime; it was an industrial tool to extend the factory shift and colonize human biological time.",
   "category": "geography",
