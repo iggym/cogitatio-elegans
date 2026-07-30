@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Great Deflection | Automated Support Attrition</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #fafaf9;
+            --bg-alt: #f4f4f3;
+            --text: #1c1917;
+            --text-muted: #57534e;
+            --border: #e7e5e4;
+            --accent: #d4502e;
+            --accent-alt: #2e7d32;
+            --glass: rgba(255, 255, 255, 0.75);
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --radius: 12px;
+        }
+
+        [data-theme="dark"] {
+            --bg: #0c0a09;
+            --bg-alt: #1c1917;
+            --text: #fafaf9;
+            --text-muted: #a8a29e;
+            --border: #292524;
+            --accent: #f97316;
+            --accent-alt: #4ade80;
+            --glass: rgba(12, 10, 9, 0.8);
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: Georgia, 'Times New Roman', serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            font-size: 18px;
+        }
+
+        /* Progress Bar */
+        #progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 4px;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent), var(--accent-alt));
+            z-index: 1000;
+            transition: width 0.1s ease-out;
+        }
+
+        /* Topbar */
+        #topbar {
+            position: fixed;
+            top: 4px;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            padding: 0 2rem;
+        }
+
+        .topbar-inner {
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .brand {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            font-weight: 700;
+            color: var(--text);
+            text-decoration: none;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .topbar-controls {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 0.9rem;
+        }
+
+        .breadcrumb { color: var(--text-muted); display: none; }
+        
+        @media (min-width: 768px) {
+            .breadcrumb { display: block; }
+        }
+
+        .control-btn {
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 0.3rem 0.6rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .control-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+        #menu-btn { display: block; }
+        @media (min-width: 881px) { #menu-btn { display: none; } }
+
+        /* Layout */
+        .wrap {
+            max-width: 1400px;
+            margin: 84px auto 0;
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            gap: 3rem;
+            padding: 2rem;
+        }
+
+        /* Rail */
+        #rail {
+            position: sticky;
+            top: 84px;
+            height: calc(100vh - 100px);
+            overflow-y: auto;
+            padding-right: 1rem;
+            border-right: 1px solid var(--border);
+        }
+
+        #rail ul { list-style: none; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+        #rail a {
+            text-decoration: none;
+            color: var(--text-muted);
+            display: block;
+            padding: 0.5rem 0.5rem;
+            border-left: 3px solid transparent;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        #rail a:hover { color: var(--text); }
+        #rail a.active {
+            color: var(--accent);
+            border-left-color: var(--accent);
+            font-weight: 600;
+            background: var(--bg-alt);
+        }
+
+        /* Mobile Drawer */
+        #scrim {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            z-index: 998;
+        }
+        #scrim.open { opacity: 1; pointer-events: all; }
+
+        /* Main Content */
+        main {
+            max-width: 720px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        h1, h2, h3 {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            line-height: 1.2;
+            margin-bottom: 1rem;
+        }
+
+        h1 { font-size: 2.5rem; margin-bottom: 2rem; }
+        h2 { font-size: 1.8rem; margin-top: 3rem; margin-bottom: 1.5rem; }
+
+        p { margin-bottom: 1.5rem; }
+        
+        section { margin-bottom: 4rem; padding-bottom: 2rem; border-bottom: 1px solid var(--border); }
+        section:last-child { border-bottom: none; }
+
+        /* Reveal Animation */
+        .reveal {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Spectrum Slider */
+        .spectrum {
+            background: var(--bg-alt);
+            padding: 2rem;
+            border-radius: var(--radius);
+            margin: 2rem 0;
+            border: 1px solid var(--border);
+        }
+        .spectrum-labels {
+            display: flex;
+            justify-content: space-between;
+            font-family: -apple-system, sans-serif;
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+        .spectrum-labels span:first-child { color: var(--accent-alt); }
+        .spectrum-labels span:last-child { color: var(--accent); text-align: right; }
+        
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            background: linear-gradient(90deg, var(--accent-alt), var(--accent));
+            border-radius: 4px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            background: var(--text);
+            border: 3px solid var(--bg);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+        }
+        .spectrum-output {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: var(--bg);
+            border-left: 4px solid var(--accent);
+            font-family: -apple-system, sans-serif;
+            font-size: 0.95rem;
+            min-height: 60px;
+            transition: border-color 0.3s;
+        }
+
+        /* SVG Diagram */
+        .diagram-container {
+            background: var(--bg-alt);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 2rem;
+            margin: 2rem 0;
+            overflow-x: auto;
+        }
+        .svg-node { cursor: pointer; transition: all 0.3s; }
+        .svg-node:hover circle, .svg-node.active circle { fill: var(--accent); stroke-width: 3; }
+        .svg-node:hover text, .svg-node.active text { fill: var(--bg); font-weight: bold; }
+        .svg-path { stroke: var(--text-muted); stroke-width: 2; fill: none; transition: all 0.3s; }
+        .svg-path.active { stroke: var(--accent); stroke-width: 4; }
+
+        /* Snap Card */
+        .snap-card {
+            position: relative;
+            background: linear-gradient(135deg, var(--bg-alt), var(--bg));
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 3rem 2rem;
+            margin: 3rem 0;
+            text-align: center;
+            overflow: hidden;
+        }
+        .snap-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(212, 80, 46, 0.15), transparent 40%);
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .snap-quote {
+            font-size: 1.6rem;
+            font-weight: bold;
+            font-family: -apple-system, sans-serif;
+            color: var(--text);
+            margin-bottom: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+        .snap-controls {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            position: relative;
+            z-index: 1;
+        }
+        .snap-btn {
+            background: var(--text);
+            color: var(--bg);
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: -apple-system, sans-serif;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: transform 0.2s;
+        }
+        .snap-btn:hover { transform: translateY(-2px); }
+
+        /* Chart Container */
+        .chart-wrapper {
+            background: var(--bg-alt);
+            padding: 1.5rem;
+            border-radius: var(--radius);
+            margin: 2rem 0;
+            border: 1px solid var(--border);
+        }
+        .chart-toggles {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            font-family: -apple-system, sans-serif;
+        }
+        .chart-toggle {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        .chart-toggle.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+        /* Action Checklist */
+        .action {
+            background: var(--bg-alt);
+            padding: 2rem;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+        }
+        .progress-bar-bg {
+            width: 100%;
+            height: 10px;
+            background: var(--border);
+            border-radius: 5px;
+            margin: 1rem 0;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--accent-alt);
+            transition: width 0.4s ease;
+        }
+        .checklist label {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 0.5rem 0;
+            cursor: pointer;
+            font-family: -apple-system, sans-serif;
+            font-size: 1rem;
+        }
+        .checklist input { width: 20px; height: 20px; accent-color: var(--accent-alt); }
+
+        /* Typography helpers */
+        .fig-header {
+            font-family: -apple-system, sans-serif;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        @media (max-width: 880px) {
+            .wrap {
+                grid-template-columns: 1fr;
+                padding: 1rem;
+            }
+            #rail {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100%;
+                width: 280px;
+                background: var(--bg);
+                z-index: 999;
+                transform: translateX(-100%);
+                transition: transform 0.3s;
+                padding: 80px 1rem 1rem;
+                border-right: 1px solid var(--border);
+            }
+            #rail.open { transform: translateX(0); }
+            h1 { font-size: 2rem; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+            .reveal { opacity: 1; transform: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="progress"></div>
+    
+    <header id="topbar">
+        <div class="topbar-inner">
+            <a href="https://iggym.github.io/cogitatio-elegans/" class="brand">⌂ Cogitatio Elegans</a>
+            <div class="topbar-controls">
+                <span class="breadcrumb">Psychology / Technology</span>
+                <span id="read-time">5 min read</span>
+                <button class="control-btn" id="font-toggle">A+</button>
+                <button class="control-btn" id="theme-toggle">◐</button>
+                <button class="control-btn" id="menu-btn">☰</button>
+            </div>
+        </div>
+    </header>
+
+    <div id="scrim"></div>
+
+    <div class="wrap">
+        <nav id="rail">
+            <ul>
+                <li><a href="#opening" class="active">Trapped in Loop</a></li>
+                <li><a href="#reframe">The Great Deflection</a></li>
+                <li><a href="#connections">Running Circles</a></li>
+                <li><a href="#data">By the Numbers</a></li>
+                <li><a href="#nuance">Walls Have Ears</a></li>
+                <li><a href="#action">Beat the System</a></li>
+            </ul>
+        </nav>
+
+        <main>
+            <article>
+                <section id="opening" class="reveal">
+                    <div class="fig-header">Opening Scene</div>
+                    <h1>Trapped in the Loop</h1>
+                    <p>It is 11:42 PM. The blue light of your phone burns your retina as you stare at the chat window. You have been wronged—a defective product, a phantom charge, a service that simply does not work. You type your grievance into the void. "I need a refund for order 8849."</p>
+                    <p>The three animated dots bounce merrily. <em>"I understand you're having an issue with a charge,"</em> the bot replies. <em>"To help me better assist you, please select from the following options: 1. Billing, 2. Technical Support, 3. Track my order."</em></p>
+                    <p>You type "Refund." The dots bounce again. <em>"I'm sorry, I didn't quite get that. Let's try again."</em> The cycle repeats. You feel your blood pressure rise, a specific, exhausting frustration settling in. You are not interacting with a service; you are fighting a current.</p>
+                </section>
+
+                <section id="reframe" class="reveal">
+                    <div class="fig-header">The Bold Reframe</div>
+                    <h2>The Great Deflection</h2>
+                    <p>We are sold the narrative that automated support chatbots and interactive voice menus provide 24/7 access to problem resolution. This is a comforting lie. These systems function primarily as psychological friction walls designed to exhaust consumer persistence. They do not exist to solve your problem; they exist to ensure you give up before a human has to.</p>
+                    <p>Customer-facing automation technologies often act as administrative buffers engineered to deflect corporate accountability. By effectively weaponizing user frustration, these systems suppress complaints, returns, and support costs.</p>
+                    
+                    <div class="spectrum">
+                        <div class="spectrum-labels">
+                            <span>Efficiency Tool</span>
+                            <span>Deflection Wall</span>
+                        </div>
+                        <input type="range" min="0" max="100" value="50" id="spectrum-slider" aria-label="Perspective Spectrum">
+                        <div class="spectrum-output" id="spectrum-text">
+                            Drag the slider to shift your perspective.
+                        </div>
+                    </div>
+                </section>
+
+                <section id="connections" class="reveal">
+                    <div class="fig-header">The Hidden Connections</div>
+                    <h2>Running Circles</h2>
+                    <p>The user experience of a support bot feels like a broken tool. In reality, it is a perfectly calibrated machine. The endless loops of "I didn't understand that" are not bugs; they are features of a filtration system. The system connects your complaint to an attrition model, calculating how many hurdles you will face before you surrender.</p>
+                    <p>It is a bureaucratic maze disguised as a convenience feature. You are not navigating a support tree; you are running an obstacle course designed by cost-benefit analysts.</p>
+                    
+                    <div class="snap-card" id="snapCard">
+                        <p class="snap-quote" id="snapQuote">The chatbot isn't answering your question; it's waiting for you to give up.</p>
+                        <div class="snap-controls">
+                            <button class="snap-btn" id="copyBtn">📋 Copy</button>
+                            <button class="snap-btn" id="shareXBtn">𝕏 Share</button>
+                            <button class="snap-btn" id="shareInBtn">in Share</button>
+                        </div>
+                    </div>
+
+                    <div class="diagram-container">
+                        <div class="fig-header" style="text-align:center; margin-bottom:1rem;">Interactive System Map: Click a Node</div>
+                        <svg width="100%" height="250" viewBox="0 0 600 250" id="systemSvg">
+                            <!-- Paths -->
+                            <path id="path-1" class="svg-path" d="M100,125 L250,125" />
+                            <path id="path-2" class="svg-path" d="M350,125 L500,125" />
+                            <path id="path-3" class="svg-path" d="M300,100 L300,50" />
+                            <path id="path-4" class="svg-path" d="M300,150 L300,200" />
+                            
+                            <!-- Nodes -->
+                            <g class="svg-node" data-node="1" data-paths="path-1">
+                                <circle cx="50" cy="125" r="40" fill="var(--bg)" stroke="var(--text-muted)" stroke-width="2"/>
+                                <text x="50" y="130" text-anchor="middle" fill="var(--text)" font-family="sans-serif" font-size="12">Issue</text>
+                            </g>
+                            <g class="svg-node" data-node="2" data-paths="path-1,path-2,path-3,path-4">
+                                <circle cx="300" cy="125" r="50" fill="var(--bg)" stroke="var(--text-muted)" stroke-width="2"/>
+                                <text x="300" y="125" text-anchor="middle" fill="var(--text)" font-family="sans-serif" font-size="12">Friction</text>
+                                <text x="300" y="140" text-anchor="middle" fill="var(--text)" font-family="sans-serif" font-size="12">Wall</text>
+                            </g>
+                            <g class="svg-node" data-node="3" data-paths="path-3">
+                                <circle cx="300" cy="30" r="20" fill="var(--bg)" stroke="var(--text-muted)" stroke-width="2"/>
+                                <text x="300" y="35" text-anchor="middle" fill="var(--text)" font-family="sans-serif" font-size="10">Agent</text>
+                            </g>
+                            <g class="svg-node" data-node="4" data-paths="path-2,path-4">
+                                <circle cx="550" cy="125" r="40" fill="var(--bg)" stroke="var(--text-muted)" stroke-width="2"/>
+                                <text x="550" y="130" text-anchor="middle" fill="var(--text)" font-family="sans-serif" font-size="12">Give Up</text>
+                            </g>
+                        </svg>
+                        <p style="text-align:center; margin-top:1rem; font-size:0.9rem; color:var(--text-muted);" id="svg-caption">
+                            The system is designed to route you toward attrition, not resolution.
+                        </p>
+                    </div>
+                </section>
+
+                <section id="data" class="reveal">
+                    <div class="fig-header">Dynamic Visualization</div>
+                    <h2>By the Numbers</h2>
+                    <p>When we visualize the gap between user intent and system outcome, the "efficiency" narrative collapses. The data reveals a stark reality: the primary metric of success for automated systems is not resolution, but deflection.</p>
+                    
+                    <div class="chart-wrapper">
+                        <div class="chart-toggles">
+                            <button class="chart-toggle active" data-filter="retail">Retail</button>
+                            <button class="chart-toggle" data-filter="tech">Tech</button>
+                            <button class="chart-toggle" data-filter="telecom">Telecom</button>
+                        </div>
+                        <canvas id="attritionChart"></canvas>
+                    </div>
+                </section>
+
+                <section id="nuance" class="reveal">
+                    <div class="fig-header">Credibility and Nuance</div>
+                    <h2>Walls Have Ears</h2>
+                    <p>One must acknowledge the counterargument: these systems do handle high volumes of mundane queries. Password resets and order tracking are legitimate use cases for automation. However, acknowledging this utility does not negate the primary function. The moment a query requires nuance, accountability, or financial restitution, the system seamlessly transitions from a convenience tool to a defense mechanism.</p>
+                    <p>The friction is not a byproduct of technical limitations; it is the deliberate engineering of an administrative buffer. By the time you finally reach a human agent—if you make it that far—you are exhausted, compliant, and statistically less likely to demand full restitution.</p>
+                </section>
+
+                <section id="action" class="reveal">
+                    <div class="fig-header">Narrative Agency</div>
+                    <h2>Beat the System</h2>
+                    <p>You do not have to play their game. By recognizing the friction wall for what it is, you can adopt strategies to circumvent it. The system relies on your exhaustion; deny it that fuel.</p>
+                    
+                    <div class="action">
+                        <div class="fig-header">24-Hour Action Plan</div>
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill" id="actionProgress"></div>
+                        </div>
+                        <div class="checklist">
+                            <label><input type="checkbox" class="action-check"> Document everything via email before engaging the bot.</label>
+                            <label><input type="checkbox" class="action-check"> Refuse to engage with loops; ask for "supervisor" immediately.</label>
+                            <label><input type="checkbox" class="action-check"> Use executive escalation emails if the wall persists.</label>
+                            <label><input type="checkbox" class="action-check"> File a complaint with the BBB or regulatory body.</label>
+                        </div>
+                        <p id="action-status" style="margin-top:1rem; font-family:sans-serif; font-size:0.9rem; color:var(--accent-alt);">0% Complete</p>
+                    </div>
+                    <p style="margin-top:2rem;"><strong>Your step today:</strong> Stop typing into the void. Pick up the phone, bypass the IVR by pressing '0' repeatedly, or find the executive escalation contact. Break the loop.</p>
+                </section>
+            </article>
+        </main>
+    </div>
+
+    <script>
+        // --- Progress & Scrollspy ---
+        const progress = document.getElementById('progress');
+        const sections = document.querySelectorAll('section');
+        const railLinks = document.querySelectorAll('#rail a');
+
+        window.addEventListener('scroll', () => {
+            const winHeight = window.innerHeight;
+            const docHeight = document.documentElement.scrollHeight;
+            const scrollTop = window.scrollY;
+            const scrollPercent = (scrollTop / (docHeight - winHeight)) * 100;
+            progress.style.width = scrollPercent + '%';
+        });
+
+        // --- Reveal Observer ---
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) entry.target.classList.add('visible');
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+        // --- Scrollspy Observer ---
+        const spyObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const id = entry.target.id;
+                    railLinks.forEach(link => {
+                        link.classList.toggle('active', link.getAttribute('href') === `#${id}`);
+                    });
+                }
+            });
+        }, { rootMargin: '-30% 0px -60% 0px' });
+
+        sections.forEach(section => spyObserver.observe(section));
+
+        // --- Theme & Font Toggle ---
+        const themeToggle = document.getElementById('theme-toggle');
+        const fontToggle = document.getElementById('font-toggle');
+        const root = document.documentElement;
+
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (prefersDark) root.setAttribute('data-theme', 'dark');
+
+        themeToggle.addEventListener('click', () => {
+            const current = root.getAttribute('data-theme');
+            root.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+        });
+
+        let fontSize = 18;
+        fontToggle.addEventListener('click', () => {
+            fontSize = fontSize === 18 ? 20 : (fontSize === 20 ? 16 : 18);
+            document.body.style.fontSize = fontSize + 'px';
+        });
+
+        // --- Mobile Menu ---
+        const menuBtn = document.getElementById('menu-btn');
+        const rail = document.getElementById('rail');
+        const scrim = document.getElementById('scrim');
+
+        function toggleMenu() {
+            rail.classList.toggle('open');
+            scrim.classList.toggle('open');
+        }
+        menuBtn.addEventListener('click', toggleMenu);
+        scrim.addEventListener('click', toggleMenu);
+        railLinks.forEach(link => link.addEventListener('click', () => {
+            if (window.innerWidth < 880) toggleMenu();
+        }));
+
+        // --- Spectrum Slider ---
+        const slider = document.getElementById('spectrum-slider');
+        const spectrumText = document.getElementById('spectrum-text');
+        const spectrumData = {
+            0: "These systems provide seamless, 24/7 access to problem resolution, maximizing service efficiency.",
+            50: "A mix of genuine support and operational bottlenecks that frustrate both user and company.",
+            100: "Psychological friction walls designed to exhaust consumer persistence and suppress complaints."
+        };
+
+        function updateSpectrum() {
+            const val = parseInt(slider.value);
+            let key = val < 33 ? 0 : (val < 66 ? 50 : 100);
+            spectrumText.textContent = spectrumData[key];
+            spectrumText.style.borderLeftColor = val < 33 ? 'var(--accent-alt)' : (val < 66 ? 'var(--text-muted)' : 'var(--accent)');
+        }
+        slider.addEventListener('input', updateSpectrum);
+        updateSpectrum();
+
+        // --- SVG Interactive Diagram ---
+        const svgNodes = document.querySelectorAll('.svg-node');
+        const svgCaption = document.getElementById('svg-caption');
+        const nodeDescriptions = {
+            1: "The customer enters with a valid issue.",
+            2: "The automated wall processes the query, creating friction.",
+            3: "Rarely, a human agent is reached (usually after high friction).",
+            4: "Most commonly, the user gives up, saving the company money."
+        };
+
+        svgNodes.forEach(node => {
+            node.addEventListener('click', () => {
+                svgNodes.forEach(n => n.classList.remove('active'));
+                document.querySelectorAll('.svg-path').forEach(p => p.classList.remove('active'));
+                
+                node.classList.add('active');
+                const paths = node.getAttribute('data-paths').split(',');
+                paths.forEach(pId => {
+                    const path = document.getElementById(pId);
+                    if(path) path.classList.add('active');
+                });
+                
+                svgCaption.textContent = nodeDescriptions[node.getAttribute('data-node')];
+            });
+        });
+
+        // --- Snap Card Share & Copy ---
+        const snapCard = document.getElementById('snapCard');
+        const snapQuote = document.getElementById('snapQuote').innerText;
+        const url = window.location.href;
+
+        snapCard.addEventListener('mousemove', (e) => {
+            const rect = snapCard.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            snapCard.style.setProperty('--mx', `${x}px`);
+            snapCard.style.setProperty('--my', `${y}px`);
+        });
+
+        document.getElementById('copyBtn').addEventListener('click', () => {
+            navigator.clipboard.writeText(`"${snapQuote}" - ${url}`);
+            const btn = document.getElementById('copyBtn');
+            btn.innerText = '✓ Copied!';
+            setTimeout(() => btn.innerText = '📋 Copy', 2000);
+        });
+
+        document.getElementById('shareXBtn').addEventListener('click', () => {
+            const text = encodeURIComponent(`"${snapQuote}"`);
+            const shareUrl = `https://twitter.com/intent/tweet?text=${text}&url=${encodeURIComponent(url)}`;
+            window.open(shareUrl, '_blank', 'width=600,height=400');
+        });
+
+        document.getElementById('shareInBtn').addEventListener('click', () => {
+            const text = encodeURIComponent(`"${snapQuote}"`);
+            const shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}&summary=${text}`;
+            window.open(shareUrl, '_blank', 'width=600,height=400');
+        });
+
+        // --- Checklist Progress ---
+        const checks = document.querySelectorAll('.action-check');
+        const progressFill = document.getElementById('actionProgress');
+        const actionStatus = document.getElementById('action-status');
+
+        checks.forEach(check => {
+            check.addEventListener('change', () => {
+                const checkedCount = document.querySelectorAll('.action-check:checked').length;
+                const percent = (checkedCount / checks.length) * 100;
+                progressFill.style.width = percent + '%';
+                actionStatus.textContent = `${percent}% Complete`;
+                if (percent === 100) actionStatus.textContent = "100% Complete - You've bypassed the wall!";
+            });
+        });
+
+        // --- Chart.js Visualization ---
+        const ctx = document.getElementById('attritionChart').getContext('2d');
+        const chartData = {
+            retail: { resolved: 15, deferred: 30, abandoned: 55 },
+            tech: { resolved: 20, deferred: 35, abandoned: 45 },
+            telecom: { resolved: 10, deferred: 25, abandoned: 65 }
+        };
+
+        function getThemeColors() {
+            const isDark = root.getAttribute('data-theme') === 'dark';
+            return {
+                text: isDark ? '#fafaf9' : '#1c1917',
+                grid: isDark ? '#292524' : '#e7e5e4'
+            };
+        }
+
+        const attritionChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Resolved by Bot', 'Deferred to Human', 'Abandoned (Attrited)'],
+                datasets: [{
+                    label: 'Customer Outcome %',
+                    data: [chartData.retail.resolved, chartData.retail.deferred, chartData.retail.abandoned],
+                    backgroundColor: ['#2e7d32', '#f97316', '#d4502e'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.raw + '% of interactions';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: { color: getThemeColors().text, callback: value => value + '%' },
+                        grid: { color: getThemeColors().grid }
+                    },
+                    x: {
+                        ticks: { color: getThemeColors().text },
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+
+        document.querySelectorAll('.chart-toggle').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.chart-toggle').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const filter = btn.getAttribute('data-filter');
+                attritionChart.data.datasets[0].data = [
+                    chartData[filter].resolved,
+                    chartData[filter].deferred,
+                    chartData[filter].abandoned
+                ];
+                attritionChart.update();
+            });
+        });
+
+        // Update chart on theme change
+        const observer = new MutationObserver(() => {
+            const colors = getThemeColors();
+            attritionChart.options.scales.y.ticks.color = colors.text;
+            attritionChart.options.scales.y.grid.color = colors.grid;
+            attritionChart.options.scales.x.ticks.color = colors.text;
+            attritionChart.update();
+        });
+        observer.observe(root, { attributes: true });
+    </script>
+</body>
+</html>
