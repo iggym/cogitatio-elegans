@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Maze Is the Message</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;900&family=Source+Sans+3:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f0f11;--surface:#1a1a1a;--surface2:#222224;--border:rgba(255,255,255,0.08);
+  --text:#e7e5e4;--text2:#d6d3d1;--muted:#a8a29e;--dim:#78716c;
+  --accent:#f59e0b;--accent2:#fbbf24;--accent-dim:rgba(245,158,11,0.15);
+  --red:#ef4444;--red-dim:rgba(239,68,68,0.15);--green:#22c55e;--green-dim:rgba(34,197,94,0.15);
+  --font-display:'Playfair Display',serif;--font-body:'Source Sans 3',sans-serif;--font-mono:'JetBrains Mono',monospace;
+  --fs-base:16px;--lh:1.6;
+}
+body.light{
+  --bg:#f5f5f0;--surface:#ffffff;--surface2:#f0f0eb;--border:rgba(0,0,0,0.1);
+  --text:#1a1a1a;--text2:#2d2d2d;--muted:#6b7280;--dim:#9ca3af;
+  --accent-dim:rgba(245,158,11,0.12);--red-dim:rgba(239,68,68,0.1);--green-dim:rgba(34,197,94,0.1);
+}
+html{scroll-behavior:smooth;font-size:var(--fs-base)}
+body{font-family:var(--font-body);background:var(--bg);color:var(--text);line-height:var(--lh);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body.size-sm{--fs-base:14px}
+body.size-md{--fs-base:16px}
+body.size-lg{--fs-base:18px}
+a{color:var(--accent);text-decoration:none;transition:color .2s}
+a:hover{color:var(--accent2)}
+::selection{background:var(--accent);color:#000}
+
+/* Progress */
+#progress{position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--red));z-index:1001;width:0;transition:width .1s linear}
+
+/* Topbar */
+#topbar{position:sticky;top:0;z-index:100;background:rgba(15,15,17,0.8);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:0 24px;height:56px;display:flex;align-items:center;gap:16px;font-size:13px}
+body.light #topbar{background:rgba(245,245,240,0.85)}
+#topbar .home{font-family:var(--font-mono);font-size:12px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
+#topbar .home:hover{color:var(--accent)}
+#topbar .sep{color:var(--dim);user-select:none}
+#topbar .breadcrumb{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#topbar .reading-time{font-family:var(--font-mono);font-size:11px;color:var(--dim);margin-left:auto;white-space:nowrap}
+#topbar .controls{display:flex;gap:6px;align-items:center}
+#topbar .ctrl-btn{background:var(--surface);border:1px solid var(--border);color:var(--muted);width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;font-family:var(--font-mono);transition:all .2s}
+#topbar .ctrl-btn:hover{color:var(--accent);border-color:var(--accent)}
+#topbar .ctrl-btn.active{background:var(--accent);color:#000;border-color:var(--accent)}
+#menu-btn{display:none}
+
+/* Scrim */
+#scrim{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:90;opacity:0;pointer-events:none;transition:opacity .3s}
+#scrim.open{opacity:1;pointer-events:auto}
+
+/* Layout */
+.wrap{display:grid;grid-template-columns:220px 1fr;max-width:1200px;margin:0 auto;min-height:100vh}
+#rail{position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto;padding:32px 20px;border-right:1px solid var(--border);scrollbar-width:none}
+#rail::-webkit-scrollbar{display:none}
+#rail .rail-label{font-family:var(--font-mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-bottom:20px}
+#rail a{display:block;padding:8px 12px;margin-bottom:2px;border-radius:8px;color:var(--muted);font-size:14px;font-weight:500;transition:all .2s;border-left:2px solid transparent}
+#rail a:hover{color:var(--text);background:var(--surface)}
+#rail a.active{color:var(--accent);background:var(--accent-dim);border-left-color:var(--accent)}
+
+main{padding:40px 48px 80px;max-width:720px;min-width:0}
+
+/* Hero */
+.hero{margin-bottom:64px}
+.hero .tag{font-family:var(--font-mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin-bottom:16px}
+.hero h1{font-family:var(--font-display);font-size:clamp(36px,6vw,60px);font-weight:700;line-height:1.05;letter-spacing:-.02em;margin-bottom:20px;color:var(--text)}
+.hero .subtitle{font-size:20px;font-weight:300;color:var(--muted);line-height:1.5;max-width:560px}
+.hero .meta{display:flex;gap:16px;margin-top:24px;font-family:var(--font-mono);font-size:11px;color:var(--dim);letter-spacing:.04em}
+
+/* Spectrum */
+.spectrum{margin:48px 0;border:1px solid var(--border);border-radius:16px;overflow:hidden;background:var(--surface)}
+.spectrum-header{padding:20px 24px 12px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.spectrum-header .label{font-family:var(--font-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.spectrum-toggle{display:flex;background:var(--bg);border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+.spectrum-toggle button{padding:8px 18px;font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;border:none;background:transparent;color:var(--muted);cursor:pointer;transition:all .3s}
+.spectrum-toggle button.active{background:var(--accent);color:#000;font-weight:600}
+.spectrum-body{padding:24px;min-height:120px;position:relative}
+.spectrum-panel{display:none;animation:fadeIn .4s ease}
+.spectrum-panel.active{display:block}
+.spectrum-panel .sp-title{font-family:var(--font-display);font-size:22px;font-weight:600;margin-bottom:8px}
+.spectrum-panel .sp-text{color:var(--text2);font-size:15px;line-height:1.7}
+.spectrum-panel.conventional .sp-title{color:var(--green)}
+.spectrum-panel.reframe .sp-title{color:var(--red)}
+.spectrum-panel.reframe .sp-text{border-left:3px solid var(--red);padding-left:16px}
+
+/* Sections */
+.section{margin-bottom:64px}
+.section h2{font-family:var(--font-display);font-size:clamp(28px,4vw,36px);font-weight:600;line-height:1.15;letter-spacing:-.01em;margin-bottom:24px;color:var(--text)}
+.section h3{font-family:var(--font-display);font-size:22px;font-weight:600;margin:32px 0 16px;color:var(--text)}
+.section p{margin-bottom:20px;color:var(--text2);font-size:17px;line-height:1.75}
+.section .dropcap::first-letter{float:left;font-family:var(--font-display);font-size:3.5em;line-height:.8;padding-right:12px;padding-top:4px;color:var(--accent);font-weight:700}
+
+/* Snap Card */
+.snap-card{position:relative;margin:40px 0;padding:32px;border-radius:16px;background:linear-gradient(135deg,var(--surface2),var(--surface));border:1px solid var(--border);overflow:hidden}
+.snap-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--red),var(--accent));background-size:200% 100%;animation:gradientShift 4s ease infinite}
+.snap-card .snap-quote{font-family:var(--font-display);font-size:clamp(20px,3vw,26px);font-weight:600;line-height:1.4;color:var(--text);margin-bottom:16px;font-style:italic}
+.snap-card .snap-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.snap-card .snap-btn{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-size:12px;font-family:var(--font-mono);cursor:pointer;transition:all .2s}
+.snap-card .snap-btn:hover{color:var(--accent);border-color:var(--accent)}
+.snap-card .snap-btn.copied{background:var(--green-dim);color:var(--green);border-color:var(--green)}
+.snap-card .snap-label{font-family:var(--font-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:12px}
+
+/* Canvas */
+.diagram-container{margin:40px 0;border:1px solid var(--border);border-radius:16px;overflow:hidden;background:var(--surface)}
+.diagram-container .diagram-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.diagram-container .diagram-header span{font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.diagram-container .diagram-hint{font-size:11px;color:var(--dim);font-family:var(--font-mono)}
+#funnel-canvas{width:100%;display:block;cursor:crosshair}
+.diagram-tooltip{position:absolute;background:rgba(15,15,17,0.95);border:1px solid var(--accent);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--text);pointer-events:none;opacity:0;transition:opacity .2s;z-index:10;max-width:220px;font-family:var(--font-body)}
+body.light .diagram-tooltip{background:rgba(255,255,255,0.98)}
+
+/* Chart */
+.chart-container{margin:40px 0;border:1px solid var(--border);border-radius:16px;overflow:hidden;background:var(--surface);padding:24px}
+.chart-container .chart-header{margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.chart-container .chart-title{font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.chart-container .chart-note{font-size:12px;color:var(--dim);font-style:italic;margin-top:12px;text-align:center}
+.chart-filters{display:flex;gap:6px}
+.chart-filters button{padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:11px;font-family:var(--font-mono);cursor:pointer;transition:all .2s}
+.chart-filters button.active{background:var(--accent);color:#000;border-color:var(--accent)}
+
+/* Action */
+.action{margin:48px 0;padding:32px;border-radius:16px;background:linear-gradient(135deg,var(--accent-dim),var(--surface));border:1px solid rgba(245,158,11,0.2)}
+.action h2{color:var(--accent);font-family:var(--font-display);font-size:clamp(24px,3.5vw,32px);font-weight:600;margin-bottom:16px}
+.action p{margin-bottom:24px;color:var(--text2);font-size:16px}
+.checklist{list-style:none;margin-bottom:24px}
+.checklist li{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);font-size:15px;color:var(--text2)}
+.checklist li:last-child{border-bottom:none}
+.checklist input[type="checkbox"]{appearance:none;-webkit-appearance:none;width:22px;height:22px;min-width:22px;border:2px solid var(--dim);border-radius:6px;cursor:pointer;position:relative;margin-top:2px;transition:all .2s}
+.checklist input[type="checkbox"]:checked{background:var(--accent);border-color:var(--accent)}
+.checklist input[type="checkbox"]:checked::after{content:'✓';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#000;font-size:13px;font-weight:700}
+.checklist input[type="checkbox"]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.progress-bar{height:8px;background:var(--surface);border-radius:4px;overflow:hidden;margin-top:8px}
+.progress-bar .fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:4px;transition:width .4s ease;width:0}
+.progress-label{font-family:var(--font-mono);font-size:11px;color:var(--dim);margin-top:8px;letter-spacing:.06em}
+
+/* Reveal */
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .7s ease,transform .7s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+
+/* Footer */
+footer{border-top:1px solid var(--border);padding:32px 48px;font-size:13px;color:var(--dim);display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px}
+footer a{color:var(--muted)}
+
+/* Animations */
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes gradientShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+
+/* Responsive */
+@media(max-width:880px){
+  .wrap{grid-template-columns:1fr}
+  #rail{position:fixed;top:56px;left:0;bottom:0;width:260px;z-index:95;background:var(--bg);transform:translateX(-100%);transition:transform .3s ease;border-right:1px solid var(--border)}
+  #rail.open{transform:translateX(0)}
+  #menu-btn{display:flex}
+  main{padding:24px 20px 60px}
+  #topbar .breadcrumb{display:none}
+  .hero .meta{flex-wrap:wrap}
+  .chart-container{padding:16px}
+  .snap-card .snap-actions{gap:6px}
+}
+@media(max-width:480px){
+  .spectrum-toggle button{padding:6px 12px;font-size:10px}
+  .snap-card .snap-quote{font-size:18px}
+}
+
+/* Reduced Motion */
+@media(prefers-reduced-motion:reduce){
+  .reveal{opacity:1;transform:none;transition:none}
+  #progress{transition:none}
+  .snap-card::before{animation:none}
+  html{scroll-behavior:auto}
+  *{animation-duration:0.01ms!important;transition-duration:0.01ms!important}
+}
+</style>
+</head>
+<body class="size-md">
+
+<div id="progress"></div>
+
+<header id="topbar">
+  <a href="https://iggym.github.io/cogitatio-elegans/" class="home">Cogitatio</a>
+  <span class="sep">/</span>
+  <span class="breadcrumb">The Maze Is the Message</span>
+  <span class="reading-time" id="reading-time"></span>
+  <div class="controls">
+    <button class="ctrl-btn" id="size-sm" title="Small text" aria-label="Small text">A<sup>-</sup></button>
+    <button class="ctrl-btn active" id="size-md" title="Medium text" aria-label="Medium text">A</button>
+    <button class="ctrl-btn" id="size-lg" title="Large text" aria-label="Large text">A<sup>+</sup></button>
+    <button class="ctrl-btn" id="theme-toggle" title="Toggle theme" aria-label="Toggle theme">☀</button>
+    <button class="ctrl-btn" id="menu-btn" title="Menu" aria-label="Open navigation">☰</button>
+  </div>
+</header>
+
+<div id="scrim"></div>
+
+<div class="wrap">
+  <nav id="rail" aria-label="Section navigation">
+    <div class="rail-label">Contents</div>
+    <a href="#s1" data-section="s1">Left on Read</a>
+    <a href="#s2" data-section="s2">Smoke and Mirrors</a>
+    <a href="#s3" data-section="s3">Tangled Web</a>
+    <a href="#s4" data-section="s4">Flip Side</a>
+    <a href="#s5" data-section="s5">Fighting Chance</a>
+    <a href="#s6" data-section="s6">Your Move</a>
+  </nav>
+
+  <main>
+    <article>
+      <!-- Hero -->
+      <header class="hero">
+        <div class="tag">Perspective Shift</div>
+        <h1>The Maze Is the Message</h1>
+        <p class="subtitle">Automated support wasn't built to help you. It was built to outlast you.</p>
+        <div class="meta">
+          <span>Technology</span>
+          <span>·</span>
+          <span>July 2025</span>
+          <span>·</span>
+          <span id="word-count"></span>
+        </div>
+      </header>
+
+      <!-- Spectrum Toggle -->
+      <div class="spectrum reveal">
+        <div class="spectrum-header">
+          <span class="label">Perspective Lens</span>
+          <div class="spectrum-toggle">
+            <button class="active" data-view="conventional">The Promise</button>
+            <button data-view="reframe">The Reality</button>
+          </div>
+        </div>
+        <div class="spectrum-body">
+          <div class="spectrum-panel conventional active">
+            <div class="sp-title">24/7 Access & Efficiency</div>
+            <p class="sp-text">Automated support chatbots and interactive voice menus provide round-the-clock access to problem resolution. They reduce wait times, route inquiries efficiently, and deliver service at scale—freeing human agents for complex cases while ensuring no customer is turned away after business hours.</p>
+          </div>
+          <div class="spectrum-panel reframe">
+            <div class="sp-title">Attrition by Design</div>
+            <p class="sp-text">These systems function primarily as psychological friction walls designed to exhaust consumer persistence, effectively weaponizing user frustration to suppress complaints, returns, and support costs. The loop isn't a glitch. The maze is the point.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 1 -->
+      <section id="s1" class="section reveal">
+        <h2>Left on Read</h2>
+        <p class="dropcap">It's 2:47 PM on a Tuesday. Margaret has been on hold for forty-three minutes. Before that, she spent eleven minutes navigating a phone tree that asked her to "say or press" her way through seven branches, none of which described her problem. The recorded voice—warm, professional, almost human—keeps thanking her for her patience.</p>
+        <p>She has been disconnected twice. Each time, she called back. Each time, she started from the beginning. The same menu. The same options. The same hold music, wrapping around itself like a Möbius strip of synthetic reassurance.</p>
+        <p>Margaret is not unusual. She is not unlucky. She is the design.</p>
+        <p>Every year, consumers spend an estimated 1.2 billion hours on hold. That number is not an accident. It is an output—a predictable result of systems engineered to produce exactly this experience: a long, exhausting, demoralizing wait that makes giving up feel like the rational choice.</p>
+      </section>
+
+      <!-- Section 2 -->
+      <section id="s2" class="section reveal">
+        <h2>Smoke and Mirrors</h2>
+        <p>Here is the claim that changes everything about how you see that phone tree, that chatbot, that endlessly looping support portal: <strong>these systems function primarily as psychological friction walls designed to exhaust consumer persistence, effectively weaponizing user frustration to suppress complaints, returns, and support costs.</strong></p>
+        <p>The wait is not a bug. The loop is not a glitch. The maze is the point.</p>
+        <p>When a company deploys an "AI-powered assistant" that cycles you through three rounds of "I understand your frustration" before offering a link you already tried, it is not failing to help you. It is succeeding at something else entirely. It is converting your complaint into a data point about "customer engagement." It is absorbing your energy, resetting your urgency, and quietly, efficiently, reducing the probability that you will ever reach a human being empowered to fix your problem.</p>
+        <p>The system does not need to solve your issue. It needs to make solving your issue more expensive—in time, in patience, in emotional currency—than living with the problem itself.</p>
+      </section>
+
+      <!-- Snap Card -->
+      <div class="snap-card reveal">
+        <div class="snap-label">Perspective Snap</div>
+        <div class="snap-quote" id="snap-text">The hold music isn't for your comfort. It's the soundtrack of your surrender.</div>
+        <div class="snap-actions">
+          <button class="snap-btn" id="copy-btn" aria-label="Copy quote">📋 Copy</button>
+          <button class="snap-btn" id="share-x" aria-label="Share on X">𝕏 Share</button>
+          <button class="snap-btn" id="share-li" aria-label="Share on LinkedIn">in Share</button>
+        </div>
+      </div>
+
+      <!-- Section 3 -->
+      <section id="s3" class="section reveal">
+        <h2>Tangled Web</h2>
+        <p>Consider what connects: the phone tree that never quite has the right option. The chatbot that responds to your detailed complaint with a list of FAQ links. The callback feature that's always "unavailable." The satisfaction survey that arrives before your problem is resolved. The "press 1 for urgent" option that routes you to the same hold queue as pressing 3.</p>
+        <p>These are not separate failures. They are interconnected components of a single system—an attrition architecture. Customer-facing automation technologies often act as <strong>administrative buffers engineered to deflect corporate accountability</strong>. Each layer adds friction. Each loop reduces the population of complainants. Each "I didn't quite catch that" is a small, deliberate erosion of your will to continue.</p>
+        <p>The brilliance of the design is its deniability. No single step is obviously hostile. A phone menu is just organization. A chatbot is just efficiency. A hold queue is just high call volume. Only when you step back and trace the full path—the entire funnel from complaint to surrender—does the architecture become visible.</p>
+      </section>
+
+      <!-- Interactive Canvas Diagram -->
+      <div class="diagram-container reveal">
+        <div class="diagram-header">
+          <span>Attrition Funnel · Interactive</span>
+          <span class="diagram-hint">Hover nodes · Click for detail</span>
+        </div>
+        <div style="position:relative">
+          <canvas id="funnel-canvas" height="420"></canvas>
+          <div class="diagram-tooltip" id="diagram-tooltip"></div>
+        </div>
+      </div>
+
+      <!-- Section 4 -->
+      <section id="s4" class="section reveal">
+        <h2>Flip Side</h2>
+        <p>To be fair, not every automated system is a trap. Some genuinely route you faster. Some chatbots resolve simple queries in seconds. A 24/7 support portal does provide access outside business hours. The technology itself is neutral—what matters is the incentive structure behind it.</p>
+        <p>When a company measures support success by "cost per contact" rather than "first-contact resolution," the system's design follows the metric. When executives are rewarded for reducing call center headcount, the "AI-powered assistant" that cycles most callers back to the website isn't a failure—it's performing exactly as intended.</p>
+        <p>The nuance matters. Not every phone tree is a weapon. But every phone tree is shaped by the question: "How do we reduce the cost of hearing from you?" And the answer to that question, more often than not, is: "Make it harder for you to reach us."</p>
+        <p>The data below illustrates the gap between what customers expect at each stage of the support journey and what the attrition architecture actually delivers.</p>
+      </section>
+
+      <!-- Chart.js -->
+      <div class="chart-container reveal">
+        <div class="chart-header">
+          <span class="chart-title">Customer Attrition · Conceptual Model</span>
+          <div class="chart-filters">
+            <button class="active" data-dataset="both">Both</button>
+            <button data-dataset="expected">Expected</button>
+            <button data-dataset="actual">Actual</button>
+          </div>
+        </div>
+        <canvas id="attrition-chart" height="280"></canvas>
+        <div class="chart-note">Illustrative model based on the reference claim that these systems "suppress complaints, returns, and support costs" through attrition.</div>
+      </div>
+
+      <!-- Section 5 -->
+      <section id="s5" class="section reveal">
+        <h2>Fighting Chance</h2>
+        <p>But here's what the attrition wall depends on: your silence. Every person who gives up after the third transfer is a data point confirming the system works. Every complaint abandoned mid-chatbot is a cost saved. The architecture only holds if you stop pushing.</p>
+        <p>The countermeasure is stubborn, specific, and small. Document everything. When the chatbot fails, screenshot the transcript. When the phone tree disconnects you, note the time and the branch. When the support portal logs you out after twenty minutes of filling in forms, save your text before you hit submit.</p>
+        <p>File complaints with your state's consumer protection office. These agencies track patterns, and patterns force regulatory attention. Use the company's own channels against them: post the transcript on social media, reference the specific timestamp of your disconnection. The system is designed to absorb individual complaints. It is not designed to absorb documented, public, patterned evidence.</p>
+        <p>One screenshot won't bring down a wall. But a thousand screenshots, filed in a thousand complaints, aggregated into a pattern that a regulator can't ignore—that changes the math. The wall wins when walking away costs less than pushing through. Make pushing through cost less. Make the wall expensive to maintain.</p>
+      </section>
+
+      <!-- Section 6 / CTA -->
+      <section id="s6" class="action reveal">
+        <h2>Your Move</h2>
+        <p>Within the next 24 hours, find one automated system that's wearing you down. Don't abandon the interaction. Document it. Then file a complaint with the Consumer Financial Protection Bureau or your state attorney general's office. The wall wins when you walk away. Make them count the cost of keeping you out.</p>
+        <ul class="checklist">
+          <li><input type="checkbox" id="c1"><label for="c1">Identify one automated system that's wearing you down</label></li>
+          <li><input type="checkbox" id="c2"><label for="c2">Document the interaction — screenshots, timestamps, notes</label></li>
+          <li><input type="checkbox" id="c3"><label for="c3">File a complaint at consumerfinance.gov or your state AG office</label></li>
+          <li><input type="checkbox" id="c4"><label for="c4">Share this article with someone who's been stuck on hold</label></li>
+        </ul>
+        <div class="progress-bar"><div class="fill" id="progress-fill"></div></div>
+        <div class="progress-label" id="progress-label">0 of 4 actions completed</div>
+      </section>
+    </article>
+  </main>
+</div>
+
+<footer>
+  <span>© 2025 Cogitatio Elegans</span>
+  <span><a href="https://iggym.github.io/cogitatio-elegans/">Return Home</a></span>
+</footer>
+
+<script>
+/* ─── Reading Time & Word Count ─── */
+(function(){
+  const article = document.querySelector('article');
+  const text = article.innerText;
+  const words = text.trim().split(/\s+/).length;
+  const mins = Math.max(1, Math.round(words / 230));
+  document.getElementById('reading-time').textContent = mins + ' min read';
+  document.getElementById('word-count').textContent = words.toLocaleString() + ' words';
+})();
+
+/* ─── Scroll Progress ─── */
+(function(){
+  const bar = document.getElementById('progress');
+  function update(){
+    const h = document.documentElement.scrollHeight - window.innerHeight;
+    const pct = h > 0 ? (window.scrollY / h) * 100 : 0;
+    bar.style.width = pct + '%';
+  }
+  window.addEventListener('scroll', update, {passive:true});
+  update();
+})();
+
+/* ─── Scrollspy ─── */
+(function(){
+  const links = document.querySelectorAll('#rail a[data-section]');
+  const sections = [];
+  links.forEach(l => {
+    const sec = document.getElementById(l.dataset.section);
+    if(sec) sections.push({el:sec, link:l});
+  });
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if(e.isIntersecting){
+        links.forEach(l => l.classList.remove('active'));
+        const match = sections.find(s => s.el === e.target);
+        if(match) match.link.classList.add('active');
+      }
+    });
+  },{rootMargin:'-20% 0px -60% 0px'});
+  sections.forEach(s => obs.observe(s.el));
+})();
+
+/* ─── Reveal on Scroll ─── */
+(function(){
+  const els = document.querySelectorAll('.reveal');
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if(e.isIntersecting){
+        e.target.classList.add('visible');
+        obs.unobserve(e.target);
+      }
+    });
+  },{threshold:0.12});
+  els.forEach(el => obs.observe(el));
+})();
+
+/* ─── Mobile Menu ─── */
+(function(){
+  const btn = document.getElementById('menu-btn');
+  const rail = document.getElementById('rail');
+  const scrim = document.getElementById('scrim');
+  function toggle(){
+    rail.classList.toggle('open');
+    scrim.classList.toggle('open');
+  }
+  btn.addEventListener('click', toggle);
+  scrim.addEventListener('click', toggle);
+  rail.querySelectorAll('a').forEach(a => a.addEventListener('click', ()=>{
+    rail.classList.remove('open');
+    scrim.classList.remove('open');
+  }));
+})();
+
+/* ─── Text Size Toggle ─── */
+(function(){
+  const sizes = ['size-sm','size-md','size-lg'];
+  const btns = {sm:document.getElementById('size-sm'),md:document.getElementById('size-md'),lg:document.getElementById('size-lg')};
+  function set(key){
+    sizes.forEach(s => document.body.classList.remove(s));
+    document.body.classList.add('size-'+key);
+    Object.values(btns).forEach(b=>b.classList.remove('active'));
+    btns[key].classList.add('active');
+  }
+  btns.sm.addEventListener('click',()=>set('sm'));
+  btns.md.addEventListener('click',()=>set('md'));
+  btns.lg.addEventListener('click',()=>set('lg'));
+})();
+
+/* ─── Theme Toggle ─── */
+(function(){
+  const btn = document.getElementById('theme-toggle');
+  const stored = localStorage.getItem('theme');
+  if(stored==='light') document.body.classList.add('light');
+  else if(stored==='dark') document.body.classList.remove('light');
+  else if(window.matchMedia('(prefers-color-scheme:light)').matches) document.body.classList.add('light');
+  btn.addEventListener('click',()=>{
+    document.body.classList.toggle('light');
+    localStorage.setItem('theme', document.body.classList.contains('light')?'light':'dark');
+    btn.textContent = document.body.classList.contains('light')?'☾':'☀';
+    if(attritionChart) updateChartTheme();
+  });
+  btn.textContent = document.body.classList.contains('light')?'☾':'☀';
+})();
+
+/* ─── Spectrum Toggle ─── */
+(function(){
+  const btns = document.querySelectorAll('.spectrum-toggle button');
+  const panels = document.querySelectorAll('.spectrum-panel');
+  btns.forEach(b => b.addEventListener('click',()=>{
+    btns.forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    panels.forEach(p=>p.classList.remove('active'));
+    document.querySelector('.spectrum-panel.'+b.dataset.view).classList.add('active');
+  }));
+})();
+
+/* ─── Snap Card: Copy & Share ─── */
+(function(){
+  const quote = document.getElementById('snap-text').innerText;
+  const url = encodeURIComponent(window.location.href);
+  const copyBtn = document.getElementById('copy-btn');
+  copyBtn.addEventListener('click',()=>{
+    navigator.clipboard.writeText(quote).then(()=>{
+      copyBtn.classList.add('copied');
+      copyBtn.textContent='✓ Copied';
+      setTimeout(()=>{copyBtn.classList.remove('copied');copyBtn.textContent='📋 Copy'},2000);
+    });
+  });
+  document.getElementById('share-x').addEventListener('click',()=>{
+    const text = encodeURIComponent('"'+quote+'"');
+    window.open('https://x.com/intent/tweet?text='+text+'&url='+url,'_blank','width=550,height=420');
+  });
+  document.getElementById('share-li').addEventListener('click',()=>{
+    window.open('https://www.linkedin.com/sharing/share-offsite/?url='+url,'_blank','width=550,height=420');
+  });
+})();
+
+/* ─── Interactive Canvas: Attrition Funnel ─── */
+(function(){
+  const canvas = document.getElementById('funnel-canvas');
+  const ctx = canvas.getContext('2d');
+  const tooltip = document.getElementById('diagram-tooltip');
+  const container = canvas.parentElement;
+  let W, H, dpr, nodes, edges, hoveredNode = null;
+
+  const nodeData = [
+    {id:'problem',label:'Customer Problem',x:.5,y:.07,r:28,color:'#f59e0b',desc:'The issue that prompted the call. The system\'s first job is to categorize it into a box that may not fit.'},
+    {id:'menu',label:'Phone Menu',x:.5,y:.2,r:26,color:'#d97706',desc:'Seven branches. None describe your problem. Each misdirect adds friction and reduces the chance you\'ll continue.'},
+    {id:'hold',label:'Hold Queue',x:.33,y:.37,r:24,color:'#b45309',desc:'Average hold: 12 minutes. The music is not a courtesy. It\'s a waiting room designed to thin the crowd.'},
+    {id:'chatbot',label:'Chatbot Loop',x:.67,y:.37,r:24,color:'#b45309',desc:'"I understand your frustration." Three rounds of this before a link you already tried. Each loop is a filter.'},
+    {id:'more',label:'More Menus',x:.5,y:.54,r:22,color:'#92400e',desc:'Transferred to a new department. New menus. Same goal. The cumulative friction is the feature.'},
+    {id:'agent',label:'Agent Transfer',x:.28,y:.72,r:16,color:'#f59e0b',desc:'The narrow gate. Only a fraction reach this point. The agent has 6 minutes to resolve your issue.'},
+    {id:'resolution',label:'Resolution',x:.15,y:.9,r:14,color:'#22c55e',desc:'The end of the funnel. Statistically unlikely. The system has worked—not for you, but as designed.'},
+    {id:'abandoned',label:'Gave Up',x:.72,y:.74,r:38,color:'#ef4444',desc:'The largest node. The system\'s true output. Each abandoned complaint is a cost saved and a problem deflected.'},
+  ];
+
+  const edgeData = [
+    {from:'problem',to:'menu'},{from:'menu',to:'hold'},{from:'menu',to:'chatbot'},
+    {from:'hold',to:'more'},{from:'chatbot',to:'more'},{from:'more',to:'agent'},
+    {from:'more',to:'abandoned'},{from:'agent',to:'resolution'},
+  ];
+
+  function resize(){
+    dpr = window.devicePixelRatio || 1;
+    W = container.clientWidth;
+    H = 420;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    nodes = nodeData.map(n=>({...n, px:n.x*W, py:n.y*H}));
+    draw();
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    const isLight = document.body.classList.contains('light');
+
+    // Draw edges
+    edges = edgeData.map(e=>{
+      const from = nodes.find(n=>n.id===e.from);
+      const to = nodes.find(n=>n.id===e.to);
+      if(!from||!to) return null;
+      const isHighlighted = hoveredNode && (hoveredNode.id===from.id || hoveredNode.id===to.id);
+      ctx.beginPath();
+      ctx.moveTo(from.px, from.py);
+      ctx.lineTo(to.px, to.py);
+      ctx.strokeStyle = isHighlighted ? (isLight?'rgba(245,158,11,0.8)':'rgba(245,158,11,0.6)') : (isLight?'rgba(0,0,0,0.1)':'rgba(255,255,255,0.08)');
+      ctx.lineWidth = isHighlighted ? 2.5 : 1.5;
+      ctx.stroke();
+
+      // Arrow
+      const angle = Math.atan2(to.py-from.py, to.px-from.px);
+      const dist = Math.hypot(to.px-from.px, to.py-from.py);
+      const arrowDist = dist - to.r - 6;
+      const ax = from.px + Math.cos(angle)*arrowDist;
+      const ay = from.py + Math.sin(angle)*arrowDist;
+      ctx.beginPath();
+      ctx.moveTo(ax,ay);
+      ctx.lineTo(ax-8*Math.cos(angle-0.35), ay-8*Math.sin(angle-0.35));
+      ctx.lineTo(ax-8*Math.cos(angle+0.35), ay-8*Math.sin(angle+0.35));
+      ctx.closePath();
+      ctx.fillStyle = isHighlighted ? 'rgba(245,158,11,0.7)' : (isLight?'rgba(0,0,0,0.15)':'rgba(255,255,255,0.12)');
+      ctx.fill();
+      return {from,to};
+    }).filter(Boolean);
+
+    // Draw nodes
+    nodes.forEach(n=>{
+      const isHovered = hoveredNode && hoveredNode.id===n.id;
+      const isConnected = hoveredNode && edges.some(e=>(e.from.id===n.id||e.to.id===n.id)&&n.id!==hoveredNode.id);
+      const dimmed = hoveredNode && !isHovered && !isConnected;
+
+      // Glow
+      if(isHovered){
+        ctx.beginPath();
+        ctx.arc(n.px, n.py, n.r+10, 0, Math.PI*2);
+        const grad = ctx.createRadialGradient(n.px,n.py,n.r,n.px,n.py,n.r+10);
+        grad.addColorStop(0, n.color+'40');
+        grad.addColorStop(1, 'transparent');
+        ctx.fillStyle = grad;
+        ctx.fill();
+      }
+
+      // Circle
+      ctx.beginPath();
+      ctx.arc(n.px, n.py, n.r, 0, Math.PI*2);
+      ctx.fillStyle = dimmed ? (isLight?'rgba(0,0,0,0.04)':'rgba(255,255,255,0.04)') : n.color+'25';
+      ctx.fill();
+      ctx.strokeStyle = dimmed ? (isLight?'rgba(0,0,0,0.08)':'rgba(255,255,255,0.06)') : n.color;
+      ctx.lineWidth = isHovered ? 3 : 2;
+      ctx.stroke();
+
+      // Label
+      ctx.font = (isHovered?'600':'500')+' 11px "Source Sans 3", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = dimmed ? (isLight?'rgba(0,0,0,0.2)':'rgba(255,255,255,0.2)') : (isLight?'#1a1a1a':'#e7e5e4');
+      ctx.fillText(n.label, n.px, n.py);
+    });
+  }
+
+  function getMouseNode(e){
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    for(let i=nodes.length-1;i>=0;i--){
+      const n=nodes[i];
+      if(Math.hypot(mx-n.px, my-n.py) <= n.r+4) return n;
+    }
+    return null;
+  }
+
+  canvas.addEventListener('mousemove',e=>{
+    const n = getMouseNode(e);
+    if(n !== hoveredNode){
+      hoveredNode = n;
+      draw();
+      if(n){
+        tooltip.innerHTML = '<strong style="color:'+n.color+'">'+n.label+'</strong><br><span style="color:var(--text2);font-size:12px;line-height:1.5">'+n.desc+'</span>';
+        tooltip.style.opacity = '1';
+        const rect = canvas.getBoundingClientRect();
+        const cRect = container.getBoundingClientRect();
+        let tx = e.clientX - cRect.left + 12;
+        let ty = e.clientY - cRect.top - 10;
+        if(tx + 220 > cRect.width) tx = tx - 240;
+        if(ty < 0) ty = 10;
+        tooltip.style.left = tx+'px';
+        tooltip.style.top = ty+'px';
+      } else {
+        tooltip.style.opacity = '0';
+      }
+    } else if(n){
+      const cRect = container.getBoundingClientRect();
+      let tx = e.clientX - cRect.left + 12;
+      let ty = e.clientY - cRect.top - 10;
+      if(tx + 220 > cRect.width) tx = tx - 240;
+      if(ty < 0) ty = 10;
+      tooltip.style.left = tx+'px';
+      tooltip.style.top = ty+'px';
+    }
+  });
+
+  canvas.addEventListener('mouseleave',()=>{
+    hoveredNode = null;
+    tooltip.style.opacity = '0';
+    draw();
+  });
+
+  canvas.addEventListener('click',e=>{
+    const n = getMouseNode(e);
+    if(n){
+      tooltip.innerHTML = '<strong style="color:'+n.color+'">'+n.label+'</strong><br><span style="color:var(--text2);font-size:12px;line-height:1.5">'+n.desc+'</span>';
+      tooltip.style.opacity = '1';
+    }
+  });
+
+  window.addEventListener('resize', resize);
+  resize();
+})();
+
+/* ─── Chart.js: Attrition Chart ─── */
+let attritionChart;
+(function(){
+  const ctx = document.getElementById('attrition-chart').getContext('2d');
+  const labels = ['Initial Contact','Phone Menu','Hold Queue','Chatbot Loop','Transfer','Agent Reached','Resolution'];
+  const expected = [100,92,82,75,65,55,50];
+  const actual = [100,85,55,30,15,8,5];
+
+  attritionChart = new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        {label:'Expected Resolution %',data:expected,backgroundColor:'rgba(34,197,94,0.35)',borderColor:'#22c55e',borderWidth:1.5,borderRadius:4},
+        {label:'Actual Resolution %',data:actual,backgroundColor:'rgba(239,68,68,0.35)',borderColor:'#ef4444',borderWidth:1.5,borderRadius:4},
+      ]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{labels:{color:document.body.classList.contains('light')?'#1a1a1a':'#a8a29e',font:{family:"'Source Sans 3',sans-serif",size:12},boxWidth:12,padding:16}},
+        tooltip:{backgroundColor:'rgba(15,15,17,0.92)',titleFont:{family:"'Source Sans 3',sans-serif",size:13},bodyFont:{family:"'Source Sans 3',sans-serif",size:12},borderColor:'rgba(245,158,11,0.3)',borderWidth:1,cornerRadius:8,padding:10}
+      },
+      scales:{
+        x:{ticks:{color:document.body.classList.contains('light')?'#6b7280':'#78716c',font:{family:"'Source Sans 3',sans-serif",size:10}},grid:{color:'rgba(255,255,255,0.04)'}},
+        y:{ticks:{color:document.body.classList.contains('light')?'#6b7280':'#78716c',font:{family:"'Source Sans 3',sans-serif",size:11},callback:v=>v+'%'},grid:{color:'rgba(255,255,255,0.06)'},min:0,max:100}
+      }
+    }
+  });
+
+  // Chart filters
+  document.querySelectorAll('.chart-filters button').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('.chart-filters button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      const ds = btn.dataset.dataset;
+      attritionChart.data.datasets[0].hidden = ds==='actual';
+      attritionChart.data.datasets[1].hidden = ds==='expected';
+      attritionChart.update();
+    });
+  });
+})();
+
+function updateChartTheme(){
+  if(!attritionChart) return;
+  const isLight = document.body.classList.contains('light');
+  const tickColor = isLight?'#6b7280':'#78716c';
+  const gridColor = isLight?'rgba(0,0,0,0.06)':'rgba(255,255,255,0.06)';
+  attritionChart.options.scales.x.ticks.color = tickColor;
+  attritionChart.options.scales.y.ticks.color = tickColor;
+  attritionChart.options.scales.x.grid.color = gridColor;
+  attritionChart.options.scales.y.grid.color = gridColor;
+  attritionChart.options.plugins.legend.labels.color = isLight?'#1a1a1a':'#a8a29e';
+  attritionChart.update();
+}
+
+/* ─── Checklist Progress ─── */
+(function(){
+  const checks = document.querySelectorAll('.checklist input[type="checkbox"]');
+  const fill = document.getElementById('progress-fill');
+  const label = document.getElementById('progress-label');
+  checks.forEach(c=>{
+    c.addEventListener('change',()=>{
+      const total = checks.length;
+      const done = [...checks].filter(x=>x.checked).length;
+      fill.style.width = ((done/total)*100)+'%';
+      label.textContent = done + ' of ' + total + ' actions completed' + (done===total?' — all done!':'');
+    });
+  });
+})();
+</script>
+</body>
+</html>
