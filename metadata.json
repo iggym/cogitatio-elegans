@@ -1,5 +1,18 @@
 [
   {
+  "title": "The Factory's Bell",
+  "description": "We didn't adopt the alarm clock to wake up on time. We adopted it to force our biology into industrial compliance.",
+  "category": "history",
+  "date": "2024-05-16",
+  "slug": "factory-bell.html"
+},{
+  "title": "The Great Deflection",
+  "description": "Automated support isn't a 24/7 efficiency tool; it's a psychological friction wall engineered to exhaust your persistence.",
+  "category": "technology",
+  "date": "2026-05-02",
+  "slug": "the-great-deflection.html"
+},
+  {
   "title": "The Maze Is the Message",
   "description": "Automated support wasn't built to help you. It was built to outlast you.",
   "category": "technology",
