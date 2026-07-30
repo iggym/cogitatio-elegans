@@ -1,5 +1,19 @@
 [
   {
+  "title": "The Maze Is the Message",
+  "description": "Automated support wasn't built to help you. It was built to outlast you.",
+  "category": "technology",
+  "date": "2025-07-11",
+  "slug": "maze-is-the-message.html"
+},
+  {
+  "title": "Blind Spot",
+  "description": "How home security cameras monetize paranoia and dissolve the organic trust that actually keeps communities safe.",
+  "category": "technology",
+  "date": "2025-07-12",
+  "slug": "blind-spot.html"
+},
+  {
   "title": "Bread from Air",
   "description": "The Haber-Bosch process fed four billion people — and tied every harvest to a fossil fuel withdrawal. The scarcity wasn't solved. It was disguised.",
   "category": "agriculture",
