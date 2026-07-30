@@ -1,5 +1,19 @@
 [
   {
+  "title": "The Appliance Paradox",
+  "description": "Labor-saving devices didn't save time. They eliminated shared help, privatized the work, and made 'spotless' the new minimum.",
+  "category": "technology",
+  "date": "2026-07-11",
+  "slug": "appliance-paradox.html"
+},
+  {
+  "title": "The Hook Within",
+  "description": "Mass literacy wasn't a gift — it was a mechanism. The state didn't free minds; it made them legible.",
+  "category": "education",
+  "date": "2025-07-12",
+  "slug": "mass-literacy-public-schooling.html"
+},
+  {
     "title": "You Are the Crop",
     "description": "What if the company, the church, and the nation were never your tools - but predators that learned to farm you so gently you mistook it for belonging?",
     "category": "social",
