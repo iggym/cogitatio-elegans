@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Cold Chain Conquest</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #f4f4f9;
+            --bg-alt: #ffffff;
+            --text: #1a1a2e;
+            --text-muted: #555;
+            --accent: #0066cc;
+            --accent-2: #ff3366;
+            --border: #ddd;
+            --glass: rgba(255, 255, 255, 0.7);
+            --shadow: 0 4px 20px rgba(0,0,0,0.08);
+            --font-scale: 1;
+        }
+
+        [data-theme="dark"] {
+            --bg: #0f0f1a;
+            --bg-alt: #1a1a2e;
+            --text: #f4f4f9;
+            --text-muted: #aaa;
+            --accent: #4da6ff;
+            --accent-2: #ff5577;
+            --border: #333;
+            --glass: rgba(26, 26, 46, 0.7);
+            --shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            overflow-x: hidden;
+        }
+
+        /* Progress Bar */
+        #progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 4px;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent), var(--accent-2));
+            z-index: 1000;
+            transition: width 0.1s ease-out;
+        }
+
+        /* Glassmorphism Topbar */
+        #topbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            z-index: 999;
+        }
+
+        .topbar-left, .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .home-link {
+            font-weight: 800;
+            color: var(--text);
+            text-decoration: none;
+            font-size: 1.1rem;
+            letter-spacing: -0.5px;
+        }
+
+        .breadcrumb {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .reading-time {
+            font-size: 0.8rem;
+            background: var(--bg-alt);
+            padding: 4px 8px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .btn-icon {
+            background: var(--bg-alt);
+            border: 1px solid var(--border);
+            color: var(--text);
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            transition: transform 0.2s;
+        }
+
+        .btn-icon:hover {
+            transform: scale(1.1);
+        }
+
+        #menu-btn {
+            display: none;
+        }
+
+        /* Layout */
+        .wrap {
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding-top: 80px;
+        }
+
+        /* Navigation Rail */
+        #rail {
+            position: sticky;
+            top: 80px;
+            height: calc(100vh - 80px);
+            padding: 24px;
+            border-right: 1px solid var(--border);
+        }
+
+        #rail nav {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        #rail a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            padding: 8px 12px;
+            border-radius: 6px;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+
+        #rail a:hover {
+            color: var(--text);
+            background: var(--bg-alt);
+        }
+
+        #rail a.active {
+            color: var(--accent);
+            border-left: 3px solid var(--accent);
+            font-weight: 600;
+            background: var(--bg-alt);
+        }
+
+        /* Main Content */
+        main {
+            padding: 40px 60px 100px 60px;
+            max-width: 720px;
+            margin: 0 auto;
+            font-size: calc(1.05rem * var(--font-scale));
+        }
+
+        h1, h2, h3 {
+            line-height: 1.2;
+            margin-bottom: 24px;
+            font-weight: 800;
+        }
+
+        h1 {
+            font-size: calc(2.5rem * var(--font-scale));
+            margin-top: 40px;
+        }
+
+        h2 {
+            font-size: calc(1.8rem * var(--font-scale));
+            margin-top: 60px;
+        }
+
+        p {
+            margin-bottom: 24px;
+        }
+
+        strong {
+            color: var(--accent);
+        }
+
+        /* Reveal Animation */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Hero Spectrum */
+        .spectrum {
+            background: var(--bg-alt);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 32px;
+            margin: 40px 0;
+            box-shadow: var(--shadow);
+        }
+
+        .spectrum-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .spectrum-input {
+            width: 100%;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 8px;
+            background: linear-gradient(90deg, var(--accent), var(--accent-2));
+            border-radius: 4px;
+            outline: none;
+        }
+
+        .spectrum-input::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--text);
+            border: 3px solid var(--bg-alt);
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+
+        .spectrum-callout {
+            margin-top: 20px;
+            padding: 16px;
+            background: var(--bg);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            text-align: center;
+            font-weight: 500;
+            min-height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Interactive Node Canvas */
+        .canvas-container {
+            margin: 40px 0;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            background: var(--bg-alt);
+            position: relative;
+        }
+
+        #networkCanvas {
+            width: 100%;
+            height: 400px;
+            display: block;
+            cursor: pointer;
+        }
+
+        .canvas-caption {
+            padding: 12px 20px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border);
+            text-align: center;
+        }
+
+        /* Chart Container */
+        .chart-container {
+            margin: 40px 0;
+            padding: 24px;
+            background: var(--bg-alt);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+        }
+
+        .chart-toggles {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .chart-toggle-btn {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .chart-toggle-btn.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        /* Perspective Snap Card */
+        .snap-card {
+            position: relative;
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            color: white;
+            padding: 48px 32px;
+            border-radius: 16px;
+            margin: 60px 0;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .snap-card-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .snap-card p {
+            font-size: calc(1.5rem * var(--font-scale));
+            font-weight: 700;
+            margin-bottom: 32px;
+            line-height: 1.3;
+            font-style: italic;
+        }
+
+        .snap-actions {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .snap-btn {
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 24px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.2s;
+        }
+
+        .snap-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .snap-btn.copied {
+            background: rgba(255,255,255,0.9);
+            color: var(--accent);
+        }
+
+        /* CTA Checklist */
+        .action {
+            background: var(--bg-alt);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 32px;
+            margin-top: 40px;
+        }
+
+        .checklist {
+            list-style: none;
+            margin: 24px 0;
+        }
+
+        .checklist li {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .checklist input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+
+        .progress-gauge-container {
+            height: 8px;
+            background: var(--bg);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 16px;
+        }
+
+        .progress-gauge {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent), var(--accent-2));
+            transition: width 0.4s ease;
+        }
+
+        .progress-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 8px;
+            text-align: right;
+        }
+
+        /* Mobile Drawer */
+        #scrim {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 998;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        #scrim.active {
+            display: block;
+            opacity: 1;
+        }
+
+        /* Responsive */
+        @media (max-width: 880px) {
+            .wrap {
+                grid-template-columns: 1fr;
+            }
+
+            #menu-btn {
+                display: flex;
+            }
+
+            #rail {
+                position: fixed;
+                top: 60px;
+                left: 0;
+                width: 280px;
+                height: calc(100vh - 60px);
+                background: var(--bg-alt);
+                z-index: 999;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                padding-top: 40px;
+            }
+
+            #rail.open {
+                transform: translateX(0);
+            }
+
+            main {
+                padding: 20px;
+            }
+
+            .breadcrumb {
+                display: none;
+            }
+        }
+
+        /* Reduced Motion */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation: none !important;
+                transition: none !important;
+                scroll-behavior: auto !important;
+            }
+            .reveal {
+                opacity: 1;
+                transform: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="progress"></div>
+
+    <header id="topbar">
+        <div class="topbar-left">
+            <button id="menu-btn" class="btn-icon" aria-label="Open menu">☰</button>
+            <a href="https://iggym.github.io/cogitatio-elegans/" class="home-link">Cogitatio Elegans</a>
+            <span class="breadcrumb">/ Geography & Systems</span>
+        </div>
+        <div class="topbar-right">
+            <span id="reading-time" class="reading-time">5 min read</span>
+            <button id="font-toggle" class="btn-icon" aria-label="Increase text size">A+</button>
+            <button id="theme-toggle" class="btn-icon" aria-label="Toggle theme">🌗</button>
+        </div>
+    </header>
+
+    <div id="scrim"></div>
+
+    <div class="wrap">
+        <aside id="rail">
+            <nav>
+                <a href="#opening">Cold Comfort</a>
+                <a href="#reframe">The Frost Bite</a>
+                <a href="#connections">Degrees of Separation</a>
+                <a href="#nuance">Chilling Effect</a>
+                <a href="#agency">Thawing Out</a>
+            </nav>
+        </aside>
+
+        <main>
+            <article>
+                <h1 class="reveal">The Cold Chain Conquest</h1>
+                
+                <section id="opening" class="reveal">
+                    <p>Dew clings to the mesh sides of the transport truck as it idles in a depot in Salinas, California. Inside, hydrocarbon refrigerants hum through copper veins, dropping the internal temperature to a precise 34 degrees Fahrenheit. Picked just twelve hours ago, the romaine lettuce inside will stay anatomically "fresh" for the next two weeks. By the time it reaches a supermarket shelf in Miami, it will have traveled over 3,000 miles, surviving a journey that would have been biologically impossible a century ago.</p>
+                    <p>We are taught to view this as the apex of human achievement: the victory of logistics over rot, the democratization of the harvest. But look closer at the humming truck. It isn't just preserving lettuce. It is severing a community from its soil.</p>
+                </section>
+
+                <section id="reframe" class="reveal">
+                    <h2>The Frost Bite</h2>
+                    <div class="spectrum">
+                        <div class="spectrum-labels">
+                            <span>Legacy Perspective</span>
+                            <span>Shifted Perspective</span>
+                        </div>
+                        <input type="range" min="0" max="100" value="0" class="spectrum-input" id="spectrumSlider">
+                        <div class="spectrum-callout" id="spectrumCallout">
+                            Refrigeration democratized food access, freeing humanity from the tyranny of the seasons.
+                        </div>
+                    </div>
+                    <p>The conventional history of industrial refrigeration is a story of benevolence: we conquered spoilage to feed a growing world. The truth is less charitable. Refrigeration and cold-chain logistics were not merely developed to preserve food freshness; they were the precise technological mechanism that enabled the consolidation of agricultural monopolies. By artificially extending the shelf life of perishables, refrigeration allowed centralized supply chains to outcompete and ultimately displace local food webs.</p>
+                    <p>The cold chain didn't just expand access; it conditioned populations to accept highly processed, transport-dependent food, transferring control over human sustenance from local farmers to distant corporations.</p>
+                </section>
+
+                <section id="connections" class="reveal">
+                    <h2>Degrees of Separation</h2>
+                    <p>Before mechanical refrigeration, the distance between a farm and a mouth was constrained by the speed of a train and the integrity of a block of ice. Food rotted, yes, but the system was inherently localized. A community ate what its bioregion could produce.</p>
+                    <p>The introduction of industrial cold storage severed that biological tether. It allowed a handful of mega-producers in California, Florida, and Washington to flood distant markets with uniform, mass-produced goods. Local farmers, unable to compete with the artificially lowered prices of produce shipped from thousands of miles away, were bought out or bankrupted. The cold chain structurally decoupled communities from their local ecosystems.</p>
+                    
+                    <div class="snap-card" id="snapCard">
+                        <div class="snap-card-content">
+                            <p id="snapText">"We didn’t learn how to preserve our food; we taught corporations how to preserve their margins."</p>
+                            <div class="snap-actions">
+                                <button class="snap-btn" id="copyBtn">📋 Copy</button>
+                                <button class="snap-btn" id="shareXBtn">𝕏 Share on X</button>
+                                <button class="snap-btn" id="shareInBtn">in Share on LinkedIn</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p>Hover over the diagram below to see how the cold chain funnels control away from local networks toward centralized monopolies.</p>
+
+                    <div class="canvas-container">
+                        <canvas id="networkCanvas"></canvas>
+                        <div class="canvas-caption">Interactive Node Network: Hover to trace supply chain paths</div>
+                    </div>
+                </section>
+
+                <section id="nuance" class="reveal">
+                    <h2>Chilling Effect</h2>
+                    <p>To be fair, the cold chain does reduce immediate post-harvest spoilage, and in specific contexts—like delivering medical supplies or preventing famine—it has saved lives. But acknowledging its utility does not absolve it of its structural costs. The trade-off for reduced spoilage was the destruction of local agricultural resilience.</p>
+                    <p>Today, a single corporate outage or supply route disruption can leave entire cities staring at empty shelves, a vulnerability that would have been impossible when food was sourced locally. We traded resilience for uniformity. The data below visualizes this shift, comparing the metrics of a localized food web against the industrialized cold chain.</p>
+
+                    <div class="chart-container">
+                        <div class="chart-toggles">
+                            <button class="chart-toggle-btn active" data-metric="distance">Avg. Food Miles</button>
+                            <button class="chart-toggle-btn" data-metric="control">Corporate Market Share</button>
+                            <button class="chart-toggle-btn" data-metric="resilience">Local Resilience Index</button>
+                        </div>
+                        <canvas id="dataChart"></canvas>
+                    </div>
+                </section>
+
+                <section id="agency" class="reveal">
+                    <h2>Thawing Out</h2>
+                    <p>The centralized food chain relies on our passive participation. If the cold chain is the mechanism of corporate control, then our purchasing power is the lever of decentralization. We do not need to overthrow the agricultural monopolies overnight; we simply need to outgrow them, one meal at a time, by re-establishing local connections.</p>
+                    <p>Reclaiming sustenance means consciously opting out of the 3,000-mile salad. It means accepting that a tomato in January is an anomaly, not a right. By supporting regional agriculture, we begin to stitch the severed ties between our communities and our soil.</p>
+
+                    <div class="action">
+                        <h3 style="margin-top:0;">Reconnect Your Food Web</h3>
+                        <p style="font-size: 0.9rem; color: var(--text-muted);">Complete these micro-habits over the next week to actively decentralize your sustenance.</p>
+                        <ul class="checklist">
+                            <li><input type="checkbox" id="t1"><label for="t1">Visit a local farmers' market and buy one staple directly from the grower.</label></li>
+                            <li><input type="checkbox" id="t2"><label for="t2">Identify three items in your fridge that traveled over 1,000 miles.</label></li>
+                            <li><input type="checkbox" id="t3"><label for="t3">Swap one out-of-season perishable for a locally preserved alternative (e.g., canned, fermented).</label></li>
+                        </ul>
+                        <div class="progress-gauge-container">
+                            <div class="progress-gauge" id="progressGauge"></div>
+                        </div>
+                        <div class="progress-label" id="progressLabel">0% Decentralized</div>
+                    </div>
+                </section>
+            </article>
+        </main>
+    </div>
+
+    <script>
+        // --- Core State & Utils ---
+        const html = document.documentElement;
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (prefersDark) html.setAttribute('data-theme', 'dark');
+
+        // --- Topbar Functionality ---
+        const themeToggle = document.getElementById('theme-toggle');
+        const fontToggle = document.getElementById('font-toggle');
+        const menuBtn = document.getElementById('menu-btn');
+        const rail = document.getElementById('rail');
+        const scrim = document.getElementById('scrim');
+
+        themeToggle.addEventListener('click', () => {
+            const current = html.getAttribute('data-theme');
+            html.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+        });
+
+        let fontScale = 1;
+        fontToggle.addEventListener('click', () => {
+            fontScale = fontScale === 1 ? 1.1 : fontScale === 1.1 ? 0.9 : 1;
+            html.style.setProperty('--font-scale', fontScale);
+        });
+
+        menuBtn.addEventListener('click', () => {
+            rail.classList.add('open');
+            scrim.classList.add('active');
+        });
+        scrim.addEventListener('click', () => {
+            rail.classList.remove('open');
+            scrim.classList.remove('active');
+        });
+
+        // --- Progress Bar & Scrollspy ---
+        const progress = document.getElementById('progress');
+        const sections = document.querySelectorAll('main section');
+        const navLinks = document.querySelectorAll('#rail a');
+
+        window.addEventListener('scroll', () => {
+            const st = window.scrollY;
+            const docHeight = document.body.offsetHeight - window.innerHeight;
+            const scrollPercent = (st / docHeight) * 100;
+            progress.style.width = scrollPercent + '%';
+        });
+
+        // Intersection Observer for Reveal & Scrollspy
+        const observerOptions = {
+            rootMargin: '-20% 0px -60% 0px'
+        };
+
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.reveal').forEach(el => {
+            revealObserver.observe(el);
+        });
+
+        const navObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const id = entry.target.getAttribute('id');
+                    navLinks.forEach(link => {
+                        link.classList.remove('active');
+                        if (link.getAttribute('href') === '#' + id) {
+                            link.classList.add('active');
+                        }
+                    });
+                }
+            });
+        }, observerOptions);
+
+        sections.forEach(section => {
+            navObserver.observe(section);
+        });
+
+        // --- Hero Spectrum Visualization ---
+        const slider = document.getElementById('spectrumSlider');
+        const callout = document.getElementById('spectrumCallout');
+        
+        const spectrumTexts = [
+            "Refrigeration democratized food access, freeing humanity from the tyranny of the seasons.",
+            "The cold chain extends shelf life, but begins decoupling food from local seasons.",
+            "Logistics enable distant producers to undercut local farmers, centralizing supply.",
+            "Refrigeration structurally decouples communities from ecosystems, centralizing corporate control."
+        ];
+
+        slider.addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            const index = Math.min(Math.floor(val / 25), 3);
+            callout.textContent = spectrumTexts[index];
+            
+            // Dynamic color shift
+            const hue = val * 3.6; // 0 to 360
+            callout.style.color = val > 50 ? 'white' : 'var(--text)';
+            callout.style.background = val > 50 ? `hsl(${hue}, 70%, 40%)` : 'var(--bg)';
+        });
+
+        // --- Node Network Canvas ---
+        const canvas = document.getElementById('networkCanvas');
+        const ctx = canvas.getContext('2d');
+        let nodes = [];
+        let edges = [];
+        let hoveredNode = null;
+
+        function setupCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * window.devicePixelRatio;
+            canvas.height = rect.height * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            
+            const w = rect.width;
+            const h = rect.height;
+            
+            nodes = [
+                { x: w*0.15, y: h*0.3, r: 15, name: "Local Farm", color: "#4CAF50", type: "local" },
+                { x: w*0.15, y: h*0.7, r: 15, name: "Local Market", color: "#4CAF50", type: "local" },
+                { x: w*0.5, y: h*0.5, r: 25, name: "Cold Chain", color: "#FF3366", type: "hub" },
+                { x: w*0.85, y: h*0.3, r: 20, name: "Corporate Monopoly", color: "#0066cc", type: "corp" },
+                { x: w*0.85, y: h*0.7, r: 20, name: "Supermarket", color: "#0066cc", type: "corp" }
+            ];
+
+            edges = [
+                { from: 0, to: 1, strength: "weak", active: false },
+                { from: 0, to: 2, strength: "strong", active: false },
+                { from: 1, to: 2, strength: "strong", active: false },
+                { from: 2, to: 3, strength: "strong", active: false },
+                { from: 2, to: 4, strength: "strong", active: false },
+                { from: 3, to: 4, strength: "strong", active: false }
+            ];
+        }
+
+        function drawNetwork() {
+            const rect = canvas.getBoundingClientRect();
+            ctx.clearRect(0, 0, rect.width, rect.height);
+
+            // Draw edges
+            edges.forEach(edge => {
+                const fromNode = nodes[edge.from];
+                const toNode = nodes[edge.to];
+                
+                ctx.beginPath();
+                ctx.moveTo(fromNode.x, fromNode.y);
+                ctx.lineTo(toNode.x, toNode.y);
+                
+                if (edge.active) {
+                    ctx.strokeStyle = fromNode.color;
+                    ctx.lineWidth = 3;
+                    ctx.setLineDash([]);
+                } else {
+                    ctx.strokeStyle = edge.strength === "weak" ? 'rgba(150,150,150,0.3)' : 'rgba(150,150,150,0.6)';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash(edge.strength === "weak" ? [5, 5] : []);
+                }
+                ctx.stroke();
+                ctx.setLineDash([]);
+            });
+
+            // Draw nodes
+            nodes.forEach(node => {
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, node.r, 0, Math.PI * 2);
+                ctx.fillStyle = node === hoveredNode ? '#fff' : node.color;
+                ctx.fill();
+                ctx.strokeStyle = node.color;
+                ctx.lineWidth = node === hoveredNode ? 4 : 2;
+                ctx.stroke();
+                
+                ctx.fillStyle = '#333';
+                ctx.font = '12px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(node.name, node.x, node.y + node.r + 20);
+            });
+        }
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mx = e.clientX - rect.left;
+            const my = e.clientY - rect.top;
+            
+            hoveredNode = null;
+            nodes.forEach(node => {
+                const dist = Math.hypot(mx - node.x, my - node.y);
+                if (dist < node.r + 5) {
+                    hoveredNode = node;
+                }
+            });
+
+            // Update edges based on hover
+            edges.forEach(edge => {
+                edge.active = hoveredNode && (nodes[edge.from] === hoveredNode || nodes[edge.to] === hoveredNode);
+            });
+
+            drawNetwork();
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            hoveredNode = null;
+            edges.forEach(e => e.active = false);
+            drawNetwork();
+        });
+
+        window.addEventListener('resize', () => {
+            setupCanvas();
+            drawNetwork();
+        });
+
+        setupCanvas();
+        drawNetwork();
+
+        // --- Chart.js Visualization ---
+        const chartCtx = document.getElementById('dataChart').getContext('2d');
+        const chartData = {
+            distance: {
+                labels: ['Local Web (1920)', 'Industrial Chain (Today)'],
+                datasets: [{
+                    label: 'Average Miles Traveled',
+                    data: [45, 1500],
+                    backgroundColor: ['rgba(76, 175, 80, 0.6)', 'rgba(255, 51, 102, 0.6)'],
+                    borderColor: ['rgba(76, 175, 80, 1)', 'rgba(255, 51, 102, 1)'],
+                    borderWidth: 1
+                }]
+            },
+            control: {
+                labels: ['Local Web (1920)', 'Industrial Chain (Today)'],
+                datasets: [{
+                    label: 'Top 4 Corporate Market Share (%)',
+                    data: [5, 75],
+                    backgroundColor: ['rgba(76, 175, 80, 0.6)', 'rgba(255, 51, 102, 0.6)'],
+                    borderColor: ['rgba(76, 175, 80, 1)', 'rgba(255, 51, 102, 1)'],
+                    borderWidth: 1
+                }]
+            },
+            resilience: {
+                labels: ['Local Web (1920)', 'Industrial Chain (Today)'],
+                datasets: [{
+                    label: 'Local Resilience Index (0-100)',
+                    data: [85, 20],
+                    backgroundColor: ['rgba(76, 175, 80, 0.6)', 'rgba(255, 51, 102, 0.6)'],
+                    borderColor: ['rgba(76, 175, 80, 1)', 'rgba(255, 51, 102, 1)'],
+                    borderWidth: 1
+                }]
+            }
+        };
+
+        let dataChart = new Chart(chartCtx, {
+            type: 'bar',
+            data: chartData.distance,
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        titleFont: { size: 14 },
+                        bodyFont: { size: 12 }
+                    }
+                },
+                scales: {
+                    y: { beginAtZero: true, ticks: { color: '#888' } },
+                    x: { ticks: { color: '#888' } }
+                }
+            }
+        });
+
+        document.querySelectorAll('.chart-toggle-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.chart-toggle-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const metric = btn.getAttribute('data-metric');
+                dataChart.data = chartData[metric];
+                dataChart.update();
+            });
+        });
+
+        // --- Perspective Snap Card & Share ---
+        const snapText = document.getElementById('snapText').innerText;
+        const snapCard = document.getElementById('snapCard');
+        const copyBtn = document.getElementById('copyBtn');
+        const shareXBtn = document.getElementById('shareXBtn');
+        const shareInBtn = document.getElementById('shareInBtn');
+        const currentUrl = window.location.href;
+
+        // Gradient shift on scroll
+        window.addEventListener('scroll', () => {
+            const rect = snapCard.getBoundingClientRect();
+            const viewHeight = window.innerHeight;
+            let progress = (viewHeight - rect.top) / (viewHeight + rect.height);
+            progress = Math.max(0, Math.min(1, progress));
+            const angle = 135 + (progress * 90);
+            snapCard.style.background = `linear-gradient(${angle}deg, var(--accent), var(--accent-2))`;
+        });
+
+        copyBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(snapText).then(() => {
+                copyBtn.innerText = '✓ Copied!';
+                copyBtn.classList.add('copied');
+                setTimeout(() => {
+                    copyBtn.innerText = '📋 Copy';
+                    copyBtn.classList.remove('copied');
+                }, 2000);
+            });
+        });
+
+        shareXBtn.addEventListener('click', () => {
+            const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(snapText)}&url=${encodeURIComponent(currentUrl)}`;
+            window.open(url, '_blank');
+        });
+
+        shareInBtn.addEventListener('click', () => {
+            const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(currentUrl)}`;
+            window.open(url, '_blank');
+        });
+
+        // --- Interactive Checklist ---
+        const checkboxes = document.querySelectorAll('.checklist input[type="checkbox"]');
+        const gauge = document.getElementById('progressGauge');
+        const label = document.getElementById('progressLabel');
+
+        checkboxes.forEach(box => {
+            box.addEventListener('change', () => {
+                let checked = 0;
+                checkboxes.forEach(b => { if(b.checked) checked++; });
+                const pct = (checked / checkboxes.length) * 100;
+                gauge.style.width = pct + '%';
+                label.innerText = `${pct}% Decentralized`;
+                
+                if(pct === 100) {
+                    label.innerText = "100% Local Web Restored";
+                }
+            });
+        });
+
+        // --- Dynamic Reading Time ---
+        const wordCount = document.body.innerText.split(/\s+/).length;
+        const readTime = Math.ceil(wordCount / 200);
+        document.getElementById('reading-time').innerText = `${readTime} min read`;
+
+    </script>
+</body>
+</html>
