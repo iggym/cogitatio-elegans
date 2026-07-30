@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Walls Without Mortar | The Open-Plan Office</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #f4f4f9;
+            --text: #1a1a2e;
+            --text-muted: #555;
+            --accent: #0066ff;
+            --accent-2: #ff3366;
+            --card-bg: #ffffff;
+            --border: #e0e0eb;
+            --glass: rgba(255, 255, 255, 0.75);
+            --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        [data-theme="dark"] {
+            --bg: #0f0f1a;
+            --text: #f4f4f9;
+            --text-muted: #a0a0b0;
+            --accent: #4d80ff;
+            --accent-2: #ff5577;
+            --card-bg: #1a1a2e;
+            --border: #2a2a3e;
+            --glass: rgba(15, 15, 26, 0.75);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            font-size: 16px;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            transition: background var(--transition), color var(--transition);
+            overflow-x: hidden;
+        }
+
+        /* Progress Bar */
+        #progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 4px;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent), var(--accent-2));
+            z-index: 1000;
+            transition: width 0.1s linear;
+        }
+
+        /* Topbar */
+        #topbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            z-index: 999;
+            transition: background var(--transition), border-color var(--transition);
+        }
+
+        .tb-left, .tb-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .home-link {
+            font-weight: 800;
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 1.1rem;
+            letter-spacing: -0.5px;
+        }
+
+        .breadcrumb {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .breadcrumb span {
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        .tb-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .reading-time {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            background: var(--card-bg);
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+        }
+
+        .btn-icon {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            width: 34px;
+            height: 34px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .btn-icon:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        #menu-btn {
+            display: none;
+        }
+
+        /* Layout Grid */
+        .wrap {
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding-top: 60px;
+        }
+
+        /* Navigation Rail */
+        #rail {
+            position: sticky;
+            top: 60px;
+            height: calc(100vh - 60px);
+            padding: 40px 20px;
+            border-right: 1px solid var(--border);
+        }
+
+        #rail nav {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        #rail a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            padding: 8px 12px;
+            border-radius: 6px;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+
+        #rail a:hover {
+            color: var(--text);
+            background: var(--card-bg);
+        }
+
+        #rail a.active {
+            color: var(--accent);
+            font-weight: 600;
+            border-left-color: var(--accent);
+            background: rgba(0, 102, 255, 0.05);
+        }
+
+        /* Main Content */
+        main {
+            padding: 40px 60px 80px;
+            max-width: 720px;
+        }
+
+        article {
+            font-size: 1.125rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 16px;
+            letter-spacing: -1px;
+        }
+
+        h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-top: 64px;
+            margin-bottom: 24px;
+            letter-spacing: -0.5px;
+        }
+
+        p {
+            margin-bottom: 24px;
+            color: var(--text);
+        }
+
+        /* Reveal Animation */
+        .reveal {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Hero Spectrum */
+        .spectrum-container {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin: 32px 0;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+        }
+
+        .spectrum-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .spectrum-label-left { color: var(--text-muted); }
+        .spectrum-label-right { color: var(--accent); }
+
+        .spectrum-slider {
+            width: 100%;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 8px;
+            background: linear-gradient(90deg, var(--border) 0%, var(--accent) 100%);
+            border-radius: 4px;
+            outline: none;
+        }
+
+        .spectrum-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            background: var(--card-bg);
+            border: 3px solid var(--accent);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .spectrum-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+
+        .spectrum-output {
+            margin-top: 20px;
+            padding: 16px;
+            background: var(--bg);
+            border-radius: 8px;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            font-size: 1rem;
+            border-left: 4px solid var(--accent);
+            transition: border-color 0.3s;
+        }
+
+        /* SVG Diagram */
+        .svg-diagram {
+            margin: 40px 0;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+        }
+
+        .svg-diagram svg {
+            width: 100%;
+            height: auto;
+            cursor: pointer;
+        }
+
+        .node-circle {
+            fill: var(--card-bg);
+            stroke: var(--text-muted);
+            stroke-width: 2;
+            transition: all 0.3s;
+        }
+
+        .node-text {
+            fill: var(--text);
+            font-size: 12px;
+            text-anchor: middle;
+            font-weight: 600;
+            pointer-events: none;
+        }
+
+        .edge {
+            stroke: var(--border);
+            stroke-width: 2;
+            transition: all 0.3s;
+        }
+
+        .node-group:hover .node-circle,
+        .node-group.active .node-circle {
+            fill: var(--accent);
+            stroke: var(--accent);
+            r: 35;
+        }
+        
+        .node-group:hover .node-text,
+        .node-group.active .node-text {
+            fill: #fff;
+        }
+
+        .node-group:hover ~ .edge,
+        .edge.active {
+            stroke: var(--accent);
+            stroke-width: 3;
+        }
+
+        /* Chart Container */
+        .chart-container {
+            margin: 40px 0;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+        }
+
+        .chart-toggles {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .chart-toggle-btn {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .chart-toggle-btn.active {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+        }
+
+        /* Perspective Snap Card */
+        .snap-card {
+            margin: 48px 0;
+            background: linear-gradient(135deg, var(--card-bg), var(--bg));
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .snap-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+        }
+
+        .snap-text {
+            font-size: 1.6rem;
+            font-weight: 800;
+            line-height: 1.4;
+            margin-bottom: 24px;
+            letter-spacing: -0.5px;
+        }
+
+        .snap-actions {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .snap-btn {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .snap-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .snap-btn.copied {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+        }
+
+        /* Action & Checklist */
+        .action {
+            margin-top: 48px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 32px;
+        }
+
+        .checklist-progress {
+            height: 8px;
+            background: var(--border);
+            border-radius: 4px;
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+
+        .checklist-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent), var(--accent-2));
+            transition: width 0.4s ease;
+        }
+
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            cursor: pointer;
+        }
+
+        .checklist-item input {
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+        }
+
+        .checklist-item input:checked {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .checklist-item input:checked::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .checklist-item label {
+            font-size: 1rem;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .checklist-item input:checked ~ label {
+            color: var(--text-muted);
+            text-decoration: line-through;
+        }
+
+        /* Scrim & Mobile */
+        #scrim {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 998;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        #scrim.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Responsive */
+        @media (max-width: 880px) {
+            .wrap {
+                grid-template-columns: 1fr;
+            }
+            #rail {
+                position: fixed;
+                top: 60px;
+                left: 0;
+                width: 280px;
+                background: var(--bg);
+                z-index: 999;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                border-right: 1px solid var(--border);
+                height: calc(100vh - 60px);
+            }
+            #rail.open {
+                transform: translateX(0);
+            }
+            #menu-btn {
+                display: flex;
+            }
+            main {
+                padding: 24px;
+            }
+            h1 { font-size: 2rem; }
+            h2 { font-size: 1.5rem; }
+            .breadcrumb, .reading-time { display: none; }
+            .snap-text { font-size: 1.2rem; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
+            html { scroll-behavior: auto; }
+            .reveal { opacity: 1; transform: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="progress"></div>
+
+    <header id="topbar">
+        <div class="tb-left">
+            <button id="menu-btn" class="btn-icon" aria-label="Open menu">☰</button>
+            <a href="https://iggym.github.io/cogitatio-elegans/" class="home-link">Cogitatio</a>
+            <div class="breadcrumb">/ <span>Walls Without Mortar</span></div>
+        </div>
+        <div class="tb-right">
+            <div id="reading-time" class="reading-time">0 min read</div>
+            <button id="font-toggle" class="btn-icon" aria-label="Toggle text size">Aa</button>
+            <button id="theme-toggle" class="btn-icon" aria-label="Toggle theme">◐</button>
+        </div>
+    </header>
+
+    <div id="scrim"></div>
+
+    <div class="wrap">
+        <aside id="rail">
+            <nav>
+                <a href="#opening">Sardines in a Tin</a>
+                <a href="#reframe">The Great Mirage</a>
+                <a href="#connections">Walls Without Mortar</a>
+                <a href="#nuance">The Cost of Closeness</a>
+                <a href="#agency">Building Our Doors</a>
+                <a href="#action">Reclaim the Clock</a>
+            </nav>
+        </aside>
+
+        <main>
+            <article>
+                <h1 class="reveal">Walls Without Mortar</h1>
+                <p class="reveal" style="color: var(--text-muted); font-size: 1rem;">A reframe of the Open-Plan Office and Collaborative Ideology</p>
+
+                <section id="opening" class="reveal">
+                    <h2>Sardines in a Tin</h2>
+                    <p>Sarah clicks the mute button on her noise-canceling headphones. The office hums. A phone rings three desks over. Someone laughs loudly near the printer. The air is thick with the sound of fifty keyboards clacking. She hasn't spoken a word out loud to another human in four hours, despite sitting shoulder-to-shoulder with fifty people.</p>
+                    <p>We were sold a dream of boundary-less collaboration. What we got was a sensory assault course.</p>
+
+                    <div class="spectrum-container">
+                        <div class="spectrum-header">
+                            <span class="spectrum-label-left">Legacy Perspective</span>
+                            <span class="spectrum-label-right">Shifted Perspective</span>
+                        </div>
+                        <input type="range" min="0" max="100" value="0" class="spectrum-slider" id="spectrumSlider">
+                        <div class="spectrum-output" id="spectrumOutput">
+                            Drag to shift perspective: Open-plan designs were introduced to foster spontaneity, communication, and creative collaboration.
+                        </div>
+                    </div>
+                </section>
+
+                <section id="reframe" class="reveal">
+                    <h2>The Great Mirage</h2>
+                    <p>The open-plan office was never about collaboration. It is a real-estate cost-saving measure designed to pack more bodies into less square footage.</p>
+                    <p>The "collaborative ideology" is the sugar coating on a bitter pill of spatial compression. By removing physical barriers to maximize density, modern workplace design actively destroys the spontaneous communication it claims to foster. Instead of talking, workers are driven into digital isolation, deploying headphones and Slack messages to escape the perpetual distraction of their immediate environment.</p>
+                </section>
+
+                <section id="connections" class="reveal">
+                    <h2>Walls Without Mortar</h2>
+                    <p>The hidden connection lies in our psychological defense mechanisms. When physical boundaries are removed, the human brain does not suddenly become extroverted. It panics. It seeks shelter. </p>
+                    <p>We replace physical walls with digital ones. We replace spoken words with text on a screen. The very tools meant to connect us—Slack, Teams, email—become the moats we dig to protect our cognitive resources from the invading army of ambient noise. </p>
+
+                    <figure class="svg-diagram">
+                        <svg viewBox="0 0 600 300" xmlns="http://www.w3.org/2000/svg">
+                            <!-- Edges -->
+                            <line class="edge" id="edge1" x1="100" y1="150" x2="300" y2="80" />
+                            <line class="edge" id="edge2" x1="300" y1="80" x2="500" y2="150" />
+                            <line class="edge" id="edge3" x1="300" y1="80" x2="300" y2="220" />
+                            <line class="edge" id="edge4" x1="300" y1="220" x2="100" y2="150" />
+                            <line class="edge" id="edge5" x1="300" y1="220" x2="500" y2="150" />
+                            
+                            <!-- Nodes -->
+                            <g class="node-group" data-node="1">
+                                <circle class="node-circle" cx="100" cy="150" r="30" />
+                                <text class="node-text" x="100" y="155">Cost Savings</text>
+                            </g>
+                            <g class="node-group" data-node="2">
+                                <circle class="node-circle" cx="300" cy="80" r="30" />
+                                <text class="node-text" x="300" y="85">Open Plan</text>
+                            </g>
+                            <g class="node-group" data-node="3">
+                                <circle class="node-circle" cx="500" cy="150" r="30" />
+                                <text class="node-text" x="500" y="155">Distraction</text>
+                            </g>
+                            <g class="node-group" data-node="4">
+                                <circle class="node-circle" cx="300" cy="220" r="30" />
+                                <text class="node-text" x="300" y="225">Headphones</text>
+                            </g>
+                        </svg>
+                        <p style="text-align: center; font-size: 0.85rem; color: var(--text-muted); margin-top: 12px;">Hover over nodes to trace the cycle of withdrawal.</p>
+                    </figure>
+
+                    <div class="snap-card" id="snapCard">
+                        <p class="snap-text">"They removed the walls to build higher barriers."</p>
+                        <div class="snap-actions">
+                            <button class="snap-btn" id="copyBtn">Copy</button>
+                            <button class="snap-btn" id="shareX">Share on X</button>
+                            <button class="snap-btn" id="shareLI">Share on LinkedIn</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="nuance" class="reveal">
+                    <h2>The Cost of Closeness</h2>
+                    <p>Workplace designs framed as cultural enhancements often function as dense spatial compression tools that trigger defensive psychological withdrawal. This is not merely a matter of preference. Cognitive science is clear: human attention is a finite resource. Continuous ambient stimulus depletes it rapidly.</p>
+                    <p>The nuance is that the intent behind open plans wasn't inherently malicious. Designers genuinely believed that visibility would breed connection. But they optimized for physical proximity, ignoring the psychological prerequisites for actual collaboration: psychological safety and the ability to control one's attention.</p>
+
+                    <div class="chart-container">
+                        <div class="chart-toggles">
+                            <button class="chart-toggle-btn active" data-view="management">Management View</button>
+                            <button class="chart-toggle-btn" data-view="employee">Employee Reality</button>
+                        </div>
+                        <canvas id="officeChart" height="200"></canvas>
+                    </div>
+                </section>
+
+                <section id="agency" class="reveal">
+                    <h2>Building Our Doors</h2>
+                    <p>If the architecture of our workplaces is fundamentally extractive, we must engineer our own micro-environments of focus. We cannot wait for the floor plan to change. We must build our own doors.</p>
+                    <p>This means treating attention as a currency more valuable than time. It means establishing hard boundaries in a boundary-less space. The power shift happens when you stop apologizing for needing quiet to think.</p>
+                </section>
+
+                <section id="action" class="reveal action">
+                    <h2>Reclaim the Clock</h2>
+                    <p style="margin-bottom: 24px;">Meaningful change requires concrete action. Start by reclaiming a single block of uninterrupted focus today.</p>
+                    
+                    <div class="checklist-progress">
+                        <div class="checklist-bar" id="progressBar"></div>
+                    </div>
+
+                    <div class="checklist-item">
+                        <input type="checkbox" id="c1">
+                        <label for="c1">Block 90 minutes of "Focus Time" on your calendar tomorrow.</label>
+                    </div>
+                    <div class="checklist-item">
+                        <input type="checkbox" id="c2">
+                        <label for="c2">Physically move to a quiet room or corner for that duration.</label>
+                    </div>
+                    <div class="checklist-item">
+                        <input type="checkbox" id="c3">
+                        <label for="c3">Set status to "Do Not Disturb" on all communication platforms.</label>
+                    </div>
+                    <div class="checklist-item">
+                        <input type="checkbox" id="c4">
+                        <label for="c4">Leave the headphones off and experience true silence.</label>
+                    </div>
+                </section>
+            </article>
+        </main>
+    </div>
+
+    <script>
+        // --- Global State & Elements ---
+        const body = document.body;
+        const themeToggle = document.getElementById('theme-toggle');
+        const fontToggle = document.getElementById('font-toggle');
+        const menuBtn = document.getElementById('menu-btn');
+        const rail = document.getElementById('rail');
+        const scrim = document.getElementById('scrim');
+        const progressBar = document.getElementById('progress');
+        const readingTimeEl = document.getElementById('reading-time');
+        const sections = document.querySelectorAll('section');
+        const railLinks = document.querySelectorAll('#rail a');
+
+        // --- Theme Management ---
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+        let currentTheme = localStorage.getItem('theme') || (prefersDark.matches ? 'dark' : 'light');
+        applyTheme(currentTheme);
+
+        themeToggle.addEventListener('click', () => {
+            currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('theme', currentTheme);
+            applyTheme(currentTheme);
+        });
+
+        function applyTheme(theme) {
+            body.setAttribute('data-theme', theme);
+        }
+
+        // --- Font Size Toggle ---
+        let fontState = 0;
+        const fontSizes = ['16px', '18px', '20px'];
+        fontToggle.addEventListener('click', () => {
+            fontState = (fontState + 1) % fontSizes.length;
+            document.documentElement.style.fontSize = fontSizes[fontState];
+        });
+
+        // --- Mobile Drawer ---
+        menuBtn.addEventListener('click', () => {
+            rail.classList.add('open');
+            scrim.classList.add('active');
+        });
+        scrim.addEventListener('click', () => {
+            rail.classList.remove('open');
+            scrim.classList.remove('active');
+        });
+        railLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                if(window.innerWidth <= 880) {
+                    rail.classList.remove('open');
+                    scrim.classList.remove('active');
+                }
+            });
+        });
+
+        // --- Reading Time Estimate ---
+        const wordCount = document.querySelector('article').innerText.split(' ').length;
+        const readTime = Math.ceil(wordCount / 220);
+        readingTimeEl.innerText = `${readTime} min read`;
+
+        // --- Scroll Progress & Scrollspy ---
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    // Reveal animation
+                    entry.target.classList.add('visible');
+                    
+                    // Scrollspy
+                    const id = entry.target.id;
+                    railLinks.forEach(link => {
+                        link.classList.toggle('active', link.getAttribute('href') === `#${id}`);
+                    });
+                }
+            });
+        }, { threshold: 0.2, rootMargin: '-100px 0px -400px 0px' });
+
+        sections.forEach(sec => observer.observe(sec));
+        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+        window.addEventListener('scroll', () => {
+            const scrollTop = window.scrollY;
+            const docHeight = document.body.offsetHeight - window.innerHeight;
+            const scrollPercent = (scrollTop / docHeight) * 100;
+            progressBar.style.width = `${scrollPercent}%`;
+        });
+
+        // --- Hero Spectrum ---
+        const slider = document.getElementById('spectrumSlider');
+        const output = document.getElementById('spectrumOutput');
+        const legacyText = "Open-plan designs were introduced to foster spontaneity, communication, and creative collaboration.";
+        const shiftedText = "A cost-saving spatial compression tool that drives workers into digital isolation to escape perpetual distraction.";
+        const midText = "The physical environment shapes psychological reality. What seems collaborative may be extractive.";
+
+        slider.addEventListener('input', (e) => {
+            const val = e.target.value;
+            if (val < 33) {
+                output.innerText = legacyText;
+                output.style.borderLeftColor = 'var(--text-muted)';
+            } else if (val < 66) {
+                output.innerText = midText;
+                output.style.borderLeftColor = 'var(--accent-2)';
+            } else {
+                output.innerText = shiftedText;
+                output.style.borderLeftColor = 'var(--accent)';
+            }
+        });
+
+        // --- SVG Diagram Interactions ---
+        const nodeGroups = document.querySelectorAll('.node-group');
+        const edges = document.querySelectorAll('.edge');
+        const edgeMap = {
+            '1': ['edge1', 'edge4'],
+            '2': ['edge1', 'edge2', 'edge3'],
+            '3': ['edge2', 'edge5'],
+            '4': ['edge3', 'edge4', 'edge5']
+        };
+
+        nodeGroups.forEach(group => {
+            group.addEventListener('mouseenter', () => {
+                const id = group.dataset.node;
+                edges.forEach(e => e.classList.remove('active'));
+                nodeGroups.forEach(n => n.classList.remove('active'));
+                
+                edgeMap[id].forEach(edgeId => {
+                    document.getElementById(edgeId).classList.add('active');
+                });
+                group.classList.add('active');
+            });
+            group.addEventListener('mouseleave', () => {
+                edges.forEach(e => e.classList.remove('active'));
+                nodeGroups.forEach(n => n.classList.remove('active'));
+            });
+        });
+
+        // --- Perspective Snap Share & Copy ---
+        const snapText = document.querySelector('.snap-text').innerText;
+        const currentUrl = window.location.href;
+        const copyBtn = document.getElementById('copyBtn');
+        const shareX = document.getElementById('shareX');
+        const shareLI = document.getElementById('shareLI');
+
+        copyBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(`${snapText} - ${currentUrl}`);
+            copyBtn.innerText = 'Copied!';
+            copyBtn.classList.add('copied');
+            setTimeout(() => {
+                copyBtn.innerText = 'Copy';
+                copyBtn.classList.remove('copied');
+            }, 2000);
+        });
+
+        shareX.addEventListener('click', () => {
+            const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(snapText)}&url=${encodeURIComponent(currentUrl)}`;
+            window.open(url, '_blank');
+        });
+
+        shareLI.addEventListener('click', () => {
+            const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(currentUrl)}`;
+            window.open(url, '_blank');
+        });
+
+        // --- Checklist Progress ---
+        const checkboxes = document.querySelectorAll('.checklist input[type="checkbox"]');
+        const checklistBar = document.getElementById('progressBar');
+        checkboxes.forEach(box => {
+            box.addEventListener('change', () => {
+                const checked = document.querySelectorAll('.checklist input[type="checkbox"]:checked').length;
+                const total = checkboxes.length;
+                const percent = (checked / total) * 100;
+                checklistBar.style.width = `${percent}%`;
+            });
+        });
+
+        // --- Chart.js Visualization ---
+        const ctx = document.getElementById('officeChart').getContext('2d');
+        let chart;
+        
+        const dataSets = {
+            management: {
+                labels: ['Cost Efficiency', 'Spatial Density', 'Perceived Collaboration', 'Actual Focus Time'],
+                data: [85, 90, 75, 30],
+                title: 'Management View: Optimizing for Density'
+            },
+            employee: {
+                labels: ['Cognitive Overload', 'Distraction Frequency', 'Digital Isolation', 'Withdrawal Behaviors'],
+                data: [80, 85, 70, 90],
+                title: 'Employee Reality: The Withdrawal Response'
+            }
+        };
+
+        function renderChart(view) {
+            const d = dataSets[view];
+            if(chart) chart.destroy();
+            
+            chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: d.labels,
+                    datasets: [{
+                        label: d.title,
+                        data: d.data,
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.5)',
+                            'rgba(255, 159, 64, 0.5)',
+                            'rgba(255, 205, 86, 0.5)',
+                            'rgba(75, 192, 192, 0.5)'
+                        ],
+                        borderColor: [
+                            'rgb(255, 99, 132)',
+                            'rgb(255, 159, 64)',
+                            'rgb(255, 205, 86)',
+                            'rgb(75, 192, 192)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            titleFont: { size: 14 },
+                            bodyFont: { size: 12 }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: { color: body.getAttribute('data-theme') === 'dark' ? '#a0a0b0' : '#555' },
+                            grid: { color: body.getAttribute('data-theme') === 'dark' ? '#2a2a3e' : '#e0e0eb' }
+                        },
+                        x: {
+                            ticks: { color: body.getAttribute('data-theme') === 'dark' ? '#a0a0b0' : '#555' },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        renderChart('management');
+
+        document.querySelectorAll('.chart-toggle-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.chart-toggle-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                renderChart(btn.dataset.view);
+            });
+        });
+
+    </script>
+</body>
+</html>
