@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Iron Clockwork | Standard Time & Industrial Logistics</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #121212;
+            --surface: #1E1E1E;
+            --surface-hover: #2A2A2A;
+            --text: #E0E0E0;
+            --text-dim: #A0A0A0;
+            --accent: #03DAC6;
+            --accent-2: #FF0266;
+            --border: #333333;
+            --font-size: 18px;
+            --line-height: 1.7;
+            --max-content-width: 720px;
+        }
+
+        [data-theme="light"] {
+            --bg: #FAFAFA;
+            --surface: #FFFFFF;
+            --surface-hover: #F0F0F0;
+            --text: #121212;
+            --text-dim: #555555;
+            --accent: #006B5F;
+            --accent-2: #D81B60;
+            --border: #E0E0E0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: var(--font-size);
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: var(--line-height);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* Progress Bar */
+        #progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 4px;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent), var(--accent-2));
+            z-index: 1000;
+            transition: width 0.1s ease-out;
+        }
+
+        /* Topbar */
+        #topbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background: rgba(18, 18, 18, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            z-index: 999;
+        }
+        [data-theme="light"] #topbar {
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        .topbar-left, .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .home-link {
+            font-weight: 800;
+            color: var(--text);
+            text-decoration: none;
+            letter-spacing: -0.5px;
+        }
+
+        .breadcrumb {
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 300px;
+        }
+        
+        .read-time {
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            background: var(--surface);
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+        }
+
+        .btn-icon {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s ease;
+        }
+
+        .btn-icon:hover {
+            background: var(--surface-hover);
+            border-color: var(--accent);
+        }
+
+        .drawer-btn {
+            display: none;
+        }
+
+        /* Layout */
+        .wrap {
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            margin-top: 60px;
+            min-height: calc(100vh - 60px);
+        }
+
+        /* Navigation Rail */
+        #rail {
+            position: sticky;
+            top: 60px;
+            height: calc(100vh - 60px);
+            padding: 40px 24px;
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+        }
+
+        #rail nav {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        #rail a {
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            border-left: 2px solid transparent;
+            padding-left: 12px;
+        }
+
+        #rail a:hover {
+            color: var(--text);
+        }
+
+        #rail a.active {
+            color: var(--accent);
+            border-left: 2px solid var(--accent);
+            font-weight: 600;
+        }
+
+        /* Main Content */
+        main {
+            padding: 40px 5%;
+            max-width: 100%;
+            overflow: hidden;
+        }
+
+        article {
+            max-width: var(--max-content-width);
+            margin: 0 auto;
+        }
+
+        h1, h2, h3 {
+            font-family: Georgia, 'Times New Roman', serif;
+            letter-spacing: -1px;
+            line-height: 1.2;
+            margin-bottom: 24px;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        h2 {
+            font-size: 2rem;
+            margin-top: 64px;
+            color: var(--text);
+        }
+
+        p {
+            margin-bottom: 24px;
+            color: var(--text);
+        }
+
+        .author {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            margin-bottom: 48px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 24px;
+        }
+
+        /* Interactive Elements */
+        .spectrum-container {
+            margin: 48px 0;
+            padding: 32px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+        }
+
+        .spectrum-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .spectrum-label-left { color: var(--text-dim); }
+        .spectrum-label-right { color: var(--accent); }
+
+        .spectrum-slider {
+            width: 100%;
+            height: 8px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            outline: none;
+        }
+
+        .spectrum-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, var(--text-dim), var(--accent));
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid var(--bg);
+        }
+
+        .spectrum-slider::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            background: var(--accent);
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid var(--bg);
+        }
+
+        .spectrum-callout {
+            margin-top: 24px;
+            font-size: 1.1rem;
+            font-style: italic;
+            color: var(--text);
+            min-height: 50px;
+            transition: opacity 0.3s ease;
+        }
+
+        /* SVG Diagram */
+        .diagram-container {
+            margin: 48px 0;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+        }
+        
+        svg {
+            width: 100%;
+            height: auto;
+            cursor: pointer;
+        }
+
+        .node-circle {
+            fill: var(--surface-hover);
+            stroke: var(--text-dim);
+            stroke-width: 2;
+            transition: all 0.3s ease;
+        }
+        
+        .node-text {
+            fill: var(--text);
+            font-size: 12px;
+            text-anchor: middle;
+            pointer-events: none;
+        }
+
+        .link-line {
+            stroke: var(--text-dim);
+            stroke-width: 1;
+            stroke-dasharray: 4;
+            opacity: 0.3;
+            transition: all 0.3s ease;
+        }
+
+        .active-node .node-circle {
+            fill: var(--accent);
+            stroke: var(--accent);
+            r: 35;
+        }
+        
+        .active-link {
+            stroke: var(--accent);
+            opacity: 1;
+            stroke-width: 2;
+        }
+
+        /* Chart Container */
+        .chart-container {
+            margin: 48px 0;
+            padding: 24px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+        }
+        .chart-toggles {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .chart-toggle-btn {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .chart-toggle-btn.active {
+            background: var(--accent);
+            color: var(--bg);
+            border-color: var(--accent);
+        }
+
+        /* Perspective Snap Card */
+        .snap-card {
+            margin: 64px 0;
+            padding: 48px 32px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, var(--surface), var(--bg));
+            border: 1px solid var(--accent);
+            position: relative;
+            text-align: center;
+        }
+
+        .snap-quote {
+            font-family: Georgia, serif;
+            font-size: 1.8rem;
+            line-height: 1.4;
+            color: var(--text);
+            margin-bottom: 32px;
+        }
+
+        .snap-actions {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .snap-btn {
+            background: var(--bg);
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .snap-btn:hover { border-color: var(--accent); }
+
+        /* Action Checklist */
+        .action-container {
+            margin: 48px 0;
+            padding: 32px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+        }
+
+        .checklist-progress {
+            height: 8px;
+            background: var(--bg);
+            border-radius: 4px;
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+
+        .checklist-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent), var(--accent-2));
+            transition: width 0.4s ease;
+        }
+
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 16px;
+            cursor: pointer;
+        }
+
+        .checklist-item input {
+            margin-right: 12px;
+            width: 20px;
+            height: 20px;
+            accent-color: var(--accent);
+        }
+
+        /* Reveal Animation */
+        .reveal {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Scrim & Mobile Drawer */
+        #scrim {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 998;
+        }
+
+        /* Responsive */
+        @media (max-width: 880px) {
+            .wrap {
+                grid-template-columns: 1fr;
+            }
+            #rail {
+                position: fixed;
+                top: 60px;
+                left: 0;
+                width: 280px;
+                background: var(--bg);
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                z-index: 999;
+            }
+            #rail.open {
+                transform: translateX(0);
+            }
+            #scrim.open {
+                display: block;
+            }
+            .drawer-btn {
+                display: block;
+            }
+            .breadcrumb {
+                display: none;
+            }
+            h1 {
+                font-size: 2.2rem;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation: none !important;
+                transition: none !important;
+                scroll-behavior: auto !important;
+            }
+            .reveal {
+                opacity: 1;
+                transform: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="progress"></div>
+
+    <header id="topbar">
+        <div class="topbar-left">
+            <button class="btn-icon drawer-btn" id="drawerBtn">☰</button>
+            <a href="https://iggym.github.io/cogitatio-elegans/" class="home-link">Cogitatio Elegans</a>
+            <span class="breadcrumb">/ The Iron Clockwork</span>
+        </div>
+        <div class="topbar-right">
+            <span class="read-time" id="readTime">-- min read</span>
+            <button class="btn-icon" id="fontBtn">A+</button>
+            <button class="btn-icon" id="themeBtn">🌓</button>
+        </div>
+    </header>
+
+    <div id="scrim"></div>
+
+    <div class="wrap">
+        <aside id="rail">
+            <nav>
+                <a href="#opening">The Sun's Slow Bow</a>
+                <a href="#reframe">Iron Horses Stampede</a>
+                <a href="#connections">Cogs In Motion</a>
+                <a href="#nuance">A Bitter Pill</a>
+                <a href="#agency">Beat Your Drum</a>
+            </nav>
+        </aside>
+
+        <main>
+            <article>
+                <h1 class="reveal">The Iron Clockwork</h1>
+                <div class="author reveal">An exploration into how standard time zones subordinate human physiology to industrial machinery.</div>
+
+                <section id="opening" class="reveal">
+                    <h2>The Sun's Slow Bow</h2>
+                    <p>The sun reached its zenith over Pittsburgh. The town clock struck twelve. A baker pulled a hot loaf from the oven, the banker sat down for lunch. It was noon. But at the train depot a block away, the conductor pocketed his watch. It was 12:22. He blew his whistle, and the train departed, leaving a dozen confused travelers on the platform.</p>
+                    <p>Before 1883, time was organic. It was tied to the rotation of the Earth and the position of the sun. When the sun was directly overhead, it was noon. Every town operated on its own local time. This was a system perfectly adapted to human biology and agrarian life. But it was fatal for machines.</p>
+                </section>
+
+                <section id="reframe" class="reveal">
+                    <h2>Iron Horses Stampede</h2>
+                    <div class="spectrum-container">
+                        <div class="spectrum-labels">
+                            <span class="spectrum-label-left">Conventional View</span>
+                            <span class="spectrum-label-right">The Reframe</span>
+                        </div>
+                        <input type="range" min="0" max="100" value="0" class="spectrum-slider" id="spectrumSlider">
+                        <div class="spectrum-callout" id="spectrumCallout">
+                            Standard time zones were adopted to help everyday citizens coordinate their daily schedules, meetings, and travel more efficiently.
+                        </div>
+                    </div>
+                    <p>Standard time was not a gift to the everyday citizen. It was legally enforced by 19th-century railway corporations needing precise logistical coordination across vast geographic distances. The railroads could not operate safely if every town kept its own solar time. The solution was not to adjust the trains to the people, but to adjust the people to the trains.</p>
+                </section>
+
+                <section id="connections" class="reveal">
+                    <h2>Cogs In Motion</h2>
+                    <p>The adoption of standard time was the moment human biology was formally subordinated to industrial logistics. We forced our organic rhythms to submit to machine scheduling. The network required uniformity; the human body required sunlight.</p>
+                    
+                    <div class="diagram-container">
+                        <svg viewBox="0 0 600 300" id="networkSvg">
+                            <!-- Links -->
+                            <line class="link-line" id="link1" x1="150" y1="80" x2="300" y2="150" />
+                            <line class="link-line" id="link2" x1="150" y1="220" x2="300" y2="150" />
+                            <line class="link-line" id="link3" x1="300" y1="150" x2="450" y2="80" />
+                            <line class="link-line" id="link4" x1="300" y1="150" x2="450" y2="220" />
+                            
+                            <!-- Nodes -->
+                            <g class="node-group" data-node="1" data-links="link1,link3">
+                                <circle class="node-circle" cx="150" cy="80" r="25"></circle>
+                                <text class="node-text" x="150" y="84">Human</text>
+                            </g>
+                            <g class="node-group" data-node="2" data-links="link2,link4">
+                                <circle class="node-circle" cx="150" cy="220" r="25"></circle>
+                                <text class="node-text" x="150" y="224">Sun</text>
+                            </g>
+                            <g class="node-group" data-node="3" data-links="link1,link2,link3,link4">
+                                <circle class="node-circle" cx="300" cy="150" r="30"></circle>
+                                <text class="node-text" x="300" y="154">Std Time</text>
+                            </g>
+                            <g class="node-group" data-node="4" data-links="link3">
+                                <circle class="node-circle" cx="450" cy="80" r="25"></circle>
+                                <text class="node-text" x="450" y="84">Railway</text>
+                            </g>
+                            <g class="node-group" data-node="5" data-links="link4">
+                                <circle class="node-circle" cx="450" cy="220" r="25"></circle>
+                                <text class="node-text" x="450" y="224">Machine</text>
+                            </g>
+                        </svg>
+                        <p style="text-align: center; color: var(--text-dim); font-size: 0.85rem; margin-top: 12px;">Hover or tap nodes to reveal dependencies.</p>
+                    </div>
+
+                    <div class="snap-card reveal">
+                        <p class="snap-quote" id="snapQuote">"We did not synchronize our watches to catch the train; we synchronized our bodies to fuel the machine."</p>
+                        <div class="snap-actions">
+                            <button class="snap-btn" id="copyBtn">📋 Copy</button>
+                            <button class="snap-btn" id="shareXBtn">𝕏 Share</button>
+                            <button class="snap-btn" id="shareLnBtn">in Share</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="nuance" class="reveal">
+                    <h2>A Bitter Pill</h2>
+                    <p>To be fair, the chaos of local time was dangerous. Trains sharing single tracks needed strict schedules to avoid collisions. But we must acknowledge what we traded away. We sacrificed our connection to the natural day for the efficiency of the network.</p>
+                    
+                    <div class="chart-container reveal">
+                        <div class="chart-toggles">
+                            <button class="chart-toggle-btn active" data-view="solar">Solar Time Variance</button>
+                            <button class="chart-toggle-btn" data-view="standard">Standardized Offset</button>
+                        </div>
+                        <div style="height: 300px; position: relative;">
+                            <canvas id="timeChart"></canvas>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="agency" class="reveal">
+                    <h2>Beat Your Drum</h2>
+                    <p>Universal temporal coordination tools subordinate human physiological realities to the logistical requirements of industrial machinery. But you can reclaim small slices of your biological autonomy.</p>
+                    
+                    <div class="action-container reveal">
+                        <div class="checklist-progress">
+                            <div class="checklist-bar" id="progressBar"></div>
+                        </div>
+                        <div class="checklist">
+                            <label class="checklist-item">
+                                <input type="checkbox" class="check-input"> 
+                                <span>Eat lunch based on hunger, not when the clock strikes noon.</span>
+                            </label>
+                            <label class="checklist-item">
+                                <input type="checkbox" class="check-input"> 
+                                <span>Step outside to check the sun's actual position today.</span>
+                            </label>
+                            <label class="checklist-item">
+                                <input type="checkbox" class="check-input"> 
+                                <span>Turn off notifications for one hour dictated by your energy, not your calendar.</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <p>Meaningful change is possible through concrete, small, decisive choices. The clock may rule the system, but it doesn't have to rule your body. Within the next 24 hours, look at the sky. Eat when you are hungry. Rest when you are tired. Reclaim your rhythm.</p>
+                </section>
+
+            </article>
+        </main>
+    </div>
+
+    <script>
+        // --- Reading Time Calculation ---
+        const articleText = document.querySelector('article').innerText;
+        const wordCount = articleText.split(/\s+/).length;
+        document.getElementById('readTime').innerText = Math.ceil(wordCount / 200) + ' min read';
+
+        // --- Progress Bar ---
+        const progress = document.getElementById('progress');
+        window.addEventListener('scroll', () => {
+            const scrollTop = document.documentElement.scrollTop;
+            const scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const scrollPercent = (scrollTop / scrollHeight) * 100;
+            progress.style.width = scrollPercent + '%';
+        });
+
+        // --- Theme Toggle ---
+        const themeBtn = document.getElementById('themeBtn');
+        themeBtn.addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            if(window.timeChartInstance) {
+                updateChartColors();
+            }
+        });
+
+        // --- Font Size Toggle ---
+        const fontBtn = document.getElementById('fontBtn');
+        const root = document.documentElement;
+        let currentFont = 18;
+        fontBtn.addEventListener('click', () => {
+            if (currentFont === 18) { currentFont = 20; }
+            else if (currentFont === 20) { currentFont = 16; }
+            else { currentFont = 18; }
+            root.style.setProperty('--font-size', currentFont + 'px');
+        });
+
+        // --- Mobile Drawer ---
+        const drawerBtn = document.getElementById('drawerBtn');
+        const rail = document.getElementById('rail');
+        const scrim = document.getElementById('scrim');
+        
+        drawerBtn.addEventListener('click', () => {
+            rail.classList.toggle('open');
+            scrim.classList.toggle('open');
+        });
+        scrim.addEventListener('click', () => {
+            rail.classList.remove('open');
+            scrim.classList.remove('open');
+        });
+
+        // --- Intersection Observer for Reveal & Scrollspy ---
+        const reveals = document.querySelectorAll('.reveal');
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) entry.target.classList.add('visible');
+            });
+        }, { threshold: 0.1 });
+        reveals.forEach(el => revealObserver.observe(el));
+
+        const sections = document.querySelectorAll('section');
+        const navLinks = document.querySelectorAll('#rail a');
+        const spyObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const id = entry.target.id;
+                    navLinks.forEach(link => {
+                        link.classList.toggle('active', link.getAttribute('href') === `#${id}`);
+                    });
+                }
+            });
+        }, { rootMargin: "-40% 0px -55% 0px" });
+        sections.forEach(sec => spyObserver.observe(sec));
+
+        // --- Spectrum Slider ---
+        const slider = document.getElementById('spectrumSlider');
+        const callout = document.getElementById('spectrumCallout');
+        const conventionalText = "Standard time zones were adopted to help everyday citizens coordinate their daily schedules, meetings, and travel more efficiently.";
+        const reframeText = "Standard time was legally enforced by 19th-century railway corporations needing precise logistical coordination, forcing human biological rhythms to submit to machine scheduling.";
+
+        slider.addEventListener('input', (e) => {
+            const val = e.target.value;
+            if (val < 50) {
+                callout.innerText = conventionalText;
+                callout.style.color = `var(--text-dim)`;
+            } else {
+                callout.innerText = reframeText;
+                callout.style.color = `var(--accent)`;
+            }
+        });
+
+        // --- SVG Network Interaction ---
+        const nodeGroups = document.querySelectorAll('.node-group');
+        nodeGroups.forEach(node => {
+            node.addEventListener('mouseenter', () => {
+                const links = node.getAttribute('data-links').split(',');
+                links.forEach(linkId => {
+                    document.getElementById(linkId).classList.add('active-link');
+                });
+                node.classList.add('active-node');
+            });
+            node.addEventListener('mouseleave', () => {
+                document.querySelectorAll('.link-line').forEach(link => link.classList.remove('active-link'));
+                node.classList.remove('active-node');
+            });
+            // Touch support
+            node.addEventListener('click', () => {
+                document.querySelectorAll('.link-line').forEach(link => link.classList.remove('active-link'));
+                nodeGroups.forEach(n => n.classList.remove('active-node'));
+                
+                const links = node.getAttribute('data-links').split(',');
+                links.forEach(linkId => {
+                    document.getElementById(linkId).classList.add('active-link');
+                });
+                node.classList.add('active-node');
+            });
+        });
+
+        // --- Chart.js ---
+        const ctx = document.getElementById('timeChart').getContext('2d');
+        let timeChartInstance;
+        
+        const chartData = {
+            labels: ['New York', 'Philadelphia', 'Pittsburgh', 'Cleveland', 'Chicago'],
+            solar: [0, 1.5, 20, 25, 35], // simulated variance in minutes from NY solar time
+            standard: [0, 0, 0, 0, 0]
+        };
+
+        function getChartColors() {
+            const style = getComputedStyle(document.documentElement);
+            return {
+                accent: style.getPropertyValue('--accent').trim(),
+                textDim: style.getPropertyValue('--text-dim').trim(),
+                border: style.getPropertyValue('--border').trim()
+            };
+        }
+
+        function updateChartColors() {
+            if(!timeChartInstance) return;
+            const colors = getChartColors();
+            timeChartInstance.data.datasets[0].borderColor = colors.accent;
+            timeChartInstance.data.datasets[0].backgroundColor = colors.accent + '33';
+            timeChartInstance.options.scales.x.ticks.color = colors.textDim;
+            timeChartInstance.options.scales.y.ticks.color = colors.textDim;
+            timeChartInstance.options.scales.x.grid.color = colors.border;
+            timeChartInstance.options.scales.y.grid.color = colors.border;
+            timeChartInstance.update();
+        }
+
+        function renderChart(view = 'solar') {
+            const colors = getChartColors();
+            const isSolar = view === 'solar';
+            timeChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [{
+                        label: 'Minutes Deviation from NYC',
+                        data: isSolar ? chartData.solar : chartData.standard,
+                        backgroundColor: isSolar ? colors.accent + '33' : colors.accent,
+                        borderColor: colors.accent,
+                        borderWidth: 2,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.raw + ' min offset';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { 
+                            ticks: { color: colors.textDim },
+                            grid: { color: colors.border }
+                        },
+                        y: { 
+                            ticks: { color: colors.textDim },
+                            grid: { color: colors.border },
+                            title: { display: true, text: 'Minutes', color: colors.textDim }
+                        }
+                    }
+                }
+            });
+        }
+        renderChart();
+
+        document.querySelectorAll('.chart-toggle-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.chart-toggle-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                timeChartInstance.destroy();
+                renderChart(btn.getAttribute('data-view'));
+            });
+        });
+
+        // --- Perspective Snap Share ---
+        const snapQuoteText = document.getElementById('snapQuote').innerText;
+        const currentUrl = window.location.href;
+        
+        document.getElementById('copyBtn').addEventListener('click', () => {
+            navigator.clipboard.writeText(snapQuoteText + " " + currentUrl);
+            alert('Quote copied to clipboard!');
+        });
+
+        document.getElementById('shareXBtn').addEventListener('click', () => {
+            const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(snapQuoteText)}&url=${encodeURIComponent(currentUrl)}`;
+            window.open(url, '_blank');
+        });
+
+        document.getElementById('shareLnBtn').addEventListener('click', () => {
+            const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(currentUrl)}`;
+            window.open(url, '_blank');
+        });
+
+        // --- Checklist Progress ---
+        const checkboxes = document.querySelectorAll('.check-input');
+        const progressBar = document.getElementById('progressBar');
+        
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', () => {
+                const checked = document.querySelectorAll('.check-input:checked').length;
+                const total = checkboxes.length;
+                const percent = (checked / total) * 100;
+                progressBar.style.width = percent + '%';
+            });
+        });
+    </script>
+</body>
+</html>
