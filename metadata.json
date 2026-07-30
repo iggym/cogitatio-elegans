@@ -1,5 +1,12 @@
 [
   {
+  "title": "The Algorithm's Shadow",
+  "description": "Predictive policing doesn't forecast crime. It forecasts where police have already chosen to look — and calls it data science.",
+  "category": "technology",
+  "date": "2025-07-13",
+  "slug": "algorithms-shadow.html"
+},
+  {
   "title": "Walls Without Mortar",
   "description": "The open-plan office wasn't designed for collaboration. It's a spatial compression tool that forces workers into digital isolation to survive.",
   "category": "workplace",
