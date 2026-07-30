@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Outsourced Mind | Digital Photography & Autobiographical Memory</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,600;9..144,800;9..144,900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f0d0c;
+    --bg-elev: #1a1715;
+    --bg-glass: rgba(15, 13, 12, 0.65);
+    --fg: #f5f0e8;
+    --fg-dim: #b8b0a4;
+    --muted: #6c6358;
+    --border: rgba(245, 240, 232, 0.08);
+    --border-strong: rgba(245, 240, 232, 0.18);
+    --accent: #ff6b35;
+    --accent-2: #ffb347;
+    --accent-soft: rgba(255, 107, 53, 0.12);
+    --teal: #2ec4b6;
+    --teal-soft: rgba(46, 196, 182, 0.12);
+    --warn: #e63946;
+    --serif: 'Fraunces', Georgia, serif;
+    --sans: 'Space Grotesk', system-ui, sans-serif;
+    --max-w: 1180px;
+    --rail-w: 220px;
+  }
+
+  [data-theme="light"] {
+    --bg: #faf6f0;
+    --bg-elev: #fffaf3;
+    --bg-glass: rgba(250, 246, 240, 0.75);
+    --fg: #1a1410;
+    --fg-dim: #4a4036;
+    --muted: #8a7e6f;
+    --border: rgba(26, 20, 16, 0.08);
+    --border-strong: rgba(26, 20, 16, 0.18);
+    --accent: #d84315;
+    --accent-2: #c87914;
+    --accent-soft: rgba(216, 67, 21, 0.10);
+    --teal: #1a8278;
+    --teal-soft: rgba(26, 130, 120, 0.10);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--sans);
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+    transition: background-color 0.4s ease, color 0.4s ease;
+  }
+
+  /* Progress bar */
+  #progress {
+    position: fixed; top: 0; left: 0;
+    height: 3px; width: 0%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--teal));
+    z-index: 1000;
+    transition: width 0.1s linear;
+    box-shadow: 0 0 12px var(--accent);
+  }
+
+  /* Topbar */
+  #topbar {
+    position: fixed; top: 3px; left: 0; right: 0;
+    height: 56px;
+    background: var(--bg-glass);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    border-bottom: 1px solid var(--border);
+    z-index: 900;
+    display: flex; align-items: center;
+    padding: 0 20px;
+    gap: 16px;
+  }
+  #topbar .brand {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: 18px;
+    letter-spacing: -0.01em;
+    color: var(--fg);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  #topbar .crumbs {
+    font-size: 12px;
+    color: var(--muted);
+    display: flex; align-items: center; gap: 8px;
+    flex: 1;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  #topbar .crumbs span { opacity: 0.5; }
+  #topbar .read-time {
+    font-size: 12px;
+    color: var(--fg-dim);
+    background: var(--accent-soft);
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  #topbar .tools { display: flex; gap: 6px; align-items: center; }
+  #topbar .tools button {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--fg-dim);
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #topbar .tools button:hover { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+  #topbar .menu-btn { display: none; }
+
+  /* Layout */
+  .wrap {
+    max-width: var(--max-w);
+    margin: 0 auto;
+    padding: 80px 24px 80px;
+    display: grid;
+    grid-template-columns: var(--rail-w) 1fr;
+    gap: 48px;
+  }
+
+  /* Sidebar Rail */
+  #rail {
+    position: sticky;
+    top: 80px;
+    align-self: start;
+    height: calc(100vh - 100px);
+    overflow-y: auto;
+    padding-right: 8px;
+  }
+  #rail::-webkit-scrollbar { width: 4px; }
+  #rail::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 2px; }
+  #rail .rail-label {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+    font-weight: 600;
+  }
+  #rail ul { list-style: none; }
+  #rail li { margin-bottom: 4px; }
+  #rail a {
+    display: block;
+    padding: 8px 12px;
+    color: var(--fg-dim);
+    text-decoration: none;
+    font-size: 13px;
+    border-radius: 6px;
+    border-left: 2px solid transparent;
+    transition: all 0.2s ease;
+    line-height: 1.4;
+  }
+  #rail a:hover { color: var(--fg); background: var(--accent-soft); }
+  #rail a.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    background: var(--accent-soft);
+    font-weight: 500;
+  }
+
+  /* Main content */
+  main {
+    max-width: 720px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  /* Typography */
+  article header.hero {
+    margin-bottom: 56px;
+  }
+  .eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+  h1 {
+    font-family: var(--serif);
+    font-weight: 900;
+    font-size: clamp(38px, 6vw, 64px);
+    line-height: 1.02;
+    letter-spacing: -0.03em;
+    margin-bottom: 20px;
+    background: linear-gradient(135deg, var(--fg) 60%, var(--fg-dim));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .deck {
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: clamp(18px, 2.4vw, 23px);
+    line-height: 1.45;
+    color: var(--fg-dim);
+    letter-spacing: -0.005em;
+  }
+
+  h2 {
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: clamp(28px, 4vw, 38px);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin: 64px 0 20px;
+    color: var(--fg);
+  }
+  h3 {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: 22px;
+    margin: 36px 0 12px;
+    color: var(--fg);
+  }
+
+  p {
+    font-size: 17px;
+    line-height: 1.72;
+    margin-bottom: 20px;
+    color: var(--fg-dim);
+  }
+  p strong { color: var(--fg); font-weight: 600; }
+
+  section { scroll-margin-top: 80px; }
+
+  /* Reveal animations */
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.8s cubic-bezier(0.2, 0.7, 0.2, 1), transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .reveal.in { opacity: 1; transform: translateY(0); }
+
+  /* Spectrum Slider */
+  .spectrum {
+    margin: 40px 0;
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    position: relative;
+    overflow: hidden;
+  }
+  .spectrum::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 20% 0%, var(--accent-soft), transparent 50%),
+                radial-gradient(circle at 80% 100%, var(--teal-soft), transparent 50%);
+    opacity: 0.6;
+    pointer-events: none;
+  }
+  .spectrum-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 24px;
+    position: relative;
+  }
+  .spectrum-head h3 { margin: 0; font-size: 18px; }
+  .spectrum-head span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.15em; }
+  .spectrum-slider {
+    position: relative;
+    height: 64px;
+    background: linear-gradient(90deg, var(--accent) 0%, var(--accent-2) 40%, var(--fg-dim) 50%, var(--teal) 60%, var(--teal) 100%);
+    border-radius: 12px;
+    cursor: pointer;
+    overflow: hidden;
+    user-select: none;
+  }
+  .spectrum-slider .handle {
+    position: absolute;
+    top: 0; bottom: 0;
+    left: 50%;
+    width: 4px;
+    background: var(--fg);
+    box-shadow: 0 0 20px rgba(255,255,255,0.5);
+    transform: translateX(-50%);
+    pointer-events: none;
+    z-index: 2;
+  }
+  .spectrum-slider .handle::before {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 28px; height: 28px;
+    background: var(--fg);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  }
+  .spectrum-slider .handle::after {
+    content: '⇄';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--bg);
+    font-size: 14px;
+    font-weight: bold;
+    z-index: 1;
+  }
+  .spectrum-labels {
+    display: flex; justify-content: space-between;
+    margin-top: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .spectrum-labels .left { color: var(--accent); }
+  .spectrum-labels .right { color: var(--teal); }
+  .spectrum-callout {
+    margin-top: 24px;
+    padding: 20px;
+    background: var(--bg);
+    border-radius: 10px;
+    border-left: 3px solid var(--accent);
+    font-family: var(--serif);
+    font-size: 17px;
+    line-height: 1.5;
+    color: var(--fg);
+    min-height: 70px;
+    transition: border-color 0.4s ease;
+    position: relative;
+  }
+  .spectrum-callout.shifted { border-left-color: var(--teal); }
+  .spectrum-callout .tag {
+    display: block;
+    font-family: var(--sans);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  /* Canvas / SVG diagram */
+  .diagram-wrap {
+    margin: 40px 0;
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    position: relative;
+  }
+  .diagram-wrap .diagram-title {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+  .diagram-wrap .diagram-sub {
+    font-family: var(--serif);
+    font-size: 20px;
+    margin-bottom: 16px;
+    color: var(--fg);
+  }
+  .node-svg {
+    width: 100%;
+    height: 380px;
+    cursor: default;
+  }
+  .node-svg .node {
+    cursor: pointer;
+    transition: opacity 0.3s ease;
+  }
+  .node-svg .node circle {
+    transition: all 0.3s ease;
+  }
+  .node-svg .node:hover circle,
+  .node-svg .node.active circle {
+    r: 32;
+    filter: drop-shadow(0 0 12px var(--accent));
+  }
+  .node-svg .edge {
+    stroke: var(--border-strong);
+    stroke-width: 1.5;
+    fill: none;
+    transition: all 0.3s ease;
+  }
+  .node-svg .edge.active {
+    stroke: var(--accent);
+    stroke-width: 2.5;
+    stroke-dasharray: 4 4;
+    animation: dash 1s linear infinite;
+  }
+  @keyframes dash { to { stroke-dashoffset: -8; } }
+  .node-svg text {
+    font-family: var(--sans);
+    font-size: 11px;
+    fill: var(--fg-dim);
+    text-anchor: middle;
+    pointer-events: none;
+  }
+  .node-svg .node-label {
+    font-weight: 600;
+    fill: var(--fg);
+  }
+  .diagram-caption {
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--muted);
+    text-align: center;
+    font-style: italic;
+  }
+
+  /* Pull quote / snap card */
+  .snap-card {
+    margin: 48px 0;
+    padding: 36px;
+    background: linear-gradient(135deg, var(--bg-elev), var(--bg));
+    border: 1px solid var(--border-strong);
+    border-radius: 18px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.3s ease;
+  }
+  .snap-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, var(--accent-soft), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.8s ease;
+  }
+  .snap-card.in::before { transform: translateX(100%); }
+  .snap-card .snap-label {
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 700;
+    margin-bottom: 16px;
+  }
+  .snap-card blockquote {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: clamp(22px, 3.4vw, 30px);
+    line-height: 1.25;
+    letter-spacing: -0.015em;
+    color: var(--fg);
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 2;
+  }
+  .snap-card blockquote::before {
+    content: '"';
+    position: absolute;
+    left: -16px; top: -12px;
+    font-size: 80px;
+    color: var(--accent);
+    opacity: 0.25;
+    line-height: 1;
+  }
+  .snap-card .snap-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .snap-card .copy-btn {
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    color: var(--fg-dim);
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: var(--sans);
+    font-weight: 500;
+    transition: all 0.2s ease;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .snap-card .copy-btn:hover { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+  .snap-card .share-btns { display: flex; gap: 6px; margin-left: auto; }
+  .snap-card .share-btns a {
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 8px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--fg-dim);
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+  .snap-card .share-btns a:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* Chart container */
+  .chart-wrap {
+    margin: 40px 0;
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+  }
+  .chart-wrap .chart-head {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .chart-wrap .chart-head h3 { margin: 0; font-size: 18px; }
+  .chart-wrap .filters { display: flex; gap: 6px; }
+  .chart-wrap .filters button {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--fg-dim);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    cursor: pointer;
+    font-family: var(--sans);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: all 0.2s ease;
+  }
+  .chart-wrap .filters button.active {
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
+  }
+  .chart-wrap canvas { max-height: 320px; }
+
+  /* CTA / Checklist */
+  .action {
+    margin: 56px 0 32px;
+    padding: 32px;
+    background: linear-gradient(160deg, var(--accent-soft), transparent 70%);
+    border: 1px solid var(--border-strong);
+    border-radius: 18px;
+  }
+  .action h3 {
+    font-size: 24px;
+    margin-top: 0;
+  }
+  .action .gauge-wrap {
+    display: flex; align-items: center; gap: 14px;
+    margin: 20px 0 24px;
+    padding: 16px;
+    background: var(--bg);
+    border-radius: 12px;
+  }
+  .action .gauge {
+    width: 54px; height: 54px;
+    position: relative;
+  }
+  .action .gauge svg { transform: rotate(-90deg); }
+  .action .gauge circle {
+    fill: none;
+    stroke-width: 6;
+    stroke-linecap: round;
+  }
+  .action .gauge .track { stroke: var(--border-strong); }
+  .action .gauge .fill {
+    stroke: var(--accent);
+    stroke-dasharray: 138;
+    stroke-dashoffset: 138;
+    transition: stroke-dashoffset 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .action .gauge-text {
+    font-size: 12px;
+    color: var(--fg-dim);
+  }
+  .action .gauge-text strong {
+    display: block;
+    font-size: 16px;
+    color: var(--fg);
+  }
+  .checklist { list-style: none; }
+  .checklist li {
+    padding: 12px 14px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 8px;
+    display: flex; align-items: flex-start; gap: 12px;
+    transition: all 0.25s ease;
+    cursor: pointer;
+  }
+  .checklist li:hover { border-color: var(--accent); }
+  .checklist li.done { opacity: 0.55; background: var(--teal-soft); border-color: var(--teal); }
+  .checklist input[type="checkbox"] {
+    appearance: none;
+    width: 22px; height: 22px;
+    border: 2px solid var(--border-strong);
+    border-radius: 6px;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-top: 1px;
+    position: relative;
+    transition: all 0.2s ease;
+  }
+  .checklist input[type="checkbox"]:checked {
+    background: var(--teal);
+    border-color: var(--teal);
+  }
+  .checklist input[type="checkbox"]:checked::after {
+    content: '✓';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--bg);
+    font-weight: bold;
+    font-size: 14px;
+  }
+  .checklist label {
+    font-size: 15px;
+    color: var(--fg);
+    cursor: pointer;
+    line-height: 1.5;
+  }
+  .checklist li.done label { text-decoration: line-through; }
+
+  /* Footer */
+  footer {
+    margin-top: 64px;
+    padding-top: 32px;
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  /* Scrim & mobile drawer */
+  #scrim {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    z-index: 800;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+  #scrim.open { opacity: 1; pointer-events: auto; }
+
+  /* Responsive */
+  @media (max-width: 880px) {
+    .wrap {
+      grid-template-columns: 1fr;
+      padding: 76px 16px 60px;
+      gap: 0;
+    }
+    #rail {
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      width: 280px;
+      height: 100vh;
+      background: var(--bg-elev);
+      border-right: 1px solid var(--border);
+      padding: 80px 20px 20px;
+      transform: translateX(-100%);
+      transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1);
+      z-index: 850;
+    }
+    #rail.open { transform: translateX(0); }
+    #topbar .menu-btn {
+      display: flex;
+    }
+    #topbar .crumbs { display: none; }
+    main { max-width: 100%; }
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+    .reveal { opacity: 1; transform: none; }
+    .node-svg .edge.active { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+
+<header id="topbar">
+  <button class="menu-btn tools" id="menuBtn" aria-label="Open navigation">☰</button>
+  <a href="https://iggym.github.io/cogitatio-elegans/" class="brand">Cogitatio Elegans</a>
+  <nav class="crumbs" aria-label="Breadcrumb">
+    <span>›</span> Cognition
+    <span>›</span> Digital Memory
+  </nav>
+  <span class="read-time" id="readTime">~6 min</span>
+  <div class="tools">
+    <button id="fontBtn" aria-label="Toggle text size" title="Toggle text size">Aa</button>
+    <button id="themeBtn" aria-label="Toggle theme" title="Toggle theme">◐</button>
+  </div>
+</header>
+
+<div id="scrim"></div>
+
+<div class="wrap">
+  <aside id="rail" aria-label="Section navigation">
+    <div class="rail-label">Sections</div>
+    <ul>
+      <li><a href="#opening" class="active">Opening Scene</a></li>
+      <li><a href="#reframe">The Bold Reframe</a></li>
+      <li><a href="#snap">The Perspective Snap</a></li>
+      <li><a href="#connections">The Hidden Connections</a></li>
+      <li><a href="#data">Memory Offloading Data</a></li>
+      <li><a href="#nuance">Credibility &amp; Nuance</a></li>
+      <li><a href="#action">Narrative Agency</a></li>
+    </ul>
+  </aside>
+
+  <main>
+    <article>
+      <header class="hero reveal">
+        <div class="eyebrow">Cognition · Memory · Technology</div>
+        <h1>The Outsourced Mind</h1>
+        <p class="deck">Every photo you take is a quiet contract with your hardware — a trade of internal, living memory for cold, external fidelity.</p>
+      </header>
+
+      <section id="opening" class="reveal">
+        <h2>A Flash in the Dark</h2>
+        <p>The fireworks erupt over the harbor. Thirty thousand phones rise in unison, a forest of glowing rectangles capturing the exact same burst of color. You are there, shoulder to shoulder with the crowd, but your eyes are glued to a three-inch screen. You pinch to zoom. You wait for the perfect bloom. You tap. The shutter sound clicks. You check the shot. It looks good. You look back up. The sky is already dark.</p>
+        <p>Later that night, scrolling through your camera roll, you will see the photo and know that you were there. But the felt memory — the boom in your chest, the smell of salt and sulfur, the warmth of the person beside you — will be thinner than it should be. You recorded the event. You just didn't fully live it.</p>
+        <p>This is not a sermon about being present. It is a neurological fact. The device in your hand has quietly edited your brain.</p>
+      </section>
+
+      <section id="reframe" class="reveal">
+        <h2>Memory's Silent Leak</h2>
+        <p>The conventional view is a comfort: cameras and digital recording devices expand our capacity to preserve personal histories, allowing us to remember life events with absolute fidelity. It feels true. Every photo is a safety net. Every video is an external hard drive for the mind.</p>
+        <p>But here is the bold reframe: <strong>Tools designed to augment memory often degrade organic cognitive retention by encouraging humans to trade internal neural encoding for external hardware storage.</strong></p>
+        <p>Psychologists call this the <em>photo-taking impairment effect</em>. The continuous availability of external documentation triggers a cognitive shortcut in the brain. The moment you press the shutter, your brain receives a clear signal: this event does not need to be internally encoded. It is safely stored elsewhere. So your brain, efficient as it is, lets the raw memory fade. You trusted the silicon. You let the neuron go quiet.</p>
+
+        <div class="spectrum reveal" id="spectrumCard">
+          <div class="spectrum-head">
+            <h3>The Memory Spectrum</h3>
+            <span>Drag to compare</span>
+          </div>
+          <div class="spectrum-slider" id="spectrumSlider" role="slider" aria-label="Perspective spectrum" tabindex="0">
+            <div class="handle" id="spectrumHandle"></div>
+          </div>
+          <div class="spectrum-labels">
+            <span class="left">Legacy Perspective</span>
+            <span class="right">Shifted Perspective</span>
+          </div>
+          <div class="spectrum-callout" id="spectrumCallout">
+            <span class="tag">Legacy Perspective</span>
+            Cameras are prosthetics for the mind. Every photo taken is a memory saved. The more we document, the more we remember, and the less we lose to the erosion of time.
+          </div>
+        </div>
+      </section>
+
+      <section id="snap" class="reveal">
+        <div class="snap-card" id="snapCard">
+          <div class="snap-label">The Perspective Snap</div>
+          <blockquote id="snapQuote">When you outsource the capture of a moment, you also outsource the capacity to remember it.</blockquote>
+          <div class="snap-actions">
+            <button class="copy-btn" id="copyBtn" aria-label="Copy quote">⧉ Copy quote</button>
+            <div class="share-btns">
+              <a href="#" id="shareX" aria-label="Share on X" title="Share on X">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+              </a>
+              <a href="#" id="shareLI" aria-label="Share on LinkedIn" title="Share on LinkedIn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="connections" class="reveal">
+        <h2>The Brain's Lazy Bargain</h2>
+        <p>The hidden connection here is between <strong>attention</strong> and <strong>encoding</strong>. Memory is not a recording. It is a construction, built from what you paid attention to in the moment. When you delegate the capturing to a device, your attention shifts. You stop processing the scene — the geometry of the faces, the quality of the light, the emotional weight — and start processing the interface: framing, focus, the shutter button.</p>
+        <p>The brain is an energy-conserving organ. It does not encode what it does not deeply attend to. And it does not deeply attend to what it believes is already handled. This is the cognitive shortcut at the heart of the photo-taking impairment effect. The camera is not just a passive net waiting below the high-wire act of memory. It is an active signal that tells the brain to step off the wire entirely.</p>
+
+        <figure class="diagram-wrap reveal">
+          <div class="diagram-title">Cognitive Flow Diagram</div>
+          <div class="diagram-sub">How documentation interrupts encoding</div>
+          <svg class="node-svg" id="nodeSvg" viewBox="0 0 600 380" aria-label="Interactive node diagram of memory encoding">
+            <defs>
+              <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+                <path d="M0,0 L8,4 L0,8 z" fill="var(--border-strong)" />
+              </marker>
+              <marker id="arrowActive" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+                <path d="M0,0 L8,4 L0,8 z" fill="var(--accent)" />
+              </marker>
+            </defs>
+            <!-- Edges -->
+            <path class="edge" id="e1" d="M 110 190 Q 200 120 290 100" marker-end="url(#arrow)" />
+            <path class="edge" id="e2" d="M 110 190 Q 200 260 290 280" marker-end="url(#arrow)" />
+            <path class="edge" id="e3" d="M 350 100 Q 440 140 490 190" marker-end="url(#arrow)" />
+            <path class="edge" id="e4" d="M 350 280 Q 440 240 490 190" marker-end="url(#arrow)" />
+            <path class="edge" id="e5" d="M 320 130 L 320 250" marker-end="url(#arrow)" stroke-dasharray="3 3" />
+            <!-- Nodes -->
+            <g class="node" data-id="event" data-desc="A lived moment enters your sensory field. The brain must decide what to do with it.">
+              <circle cx="60" cy="190" r="28" fill="var(--bg)" stroke="var(--accent)" stroke-width="2" />
+              <text class="node-label" x="60" y="194">Event</text>
+            </g>
+            <g class="node" data-id="attention" data-desc="Without a camera, you focus full attention on the scene. Rich sensory and emotional data is gathered.">
+              <circle cx="320" cy="100" r="28" fill="var(--bg)" stroke="var(--teal)" stroke-width="2" />
+              <text class="node-label" x="320" y="104">Attend</text>
+            </g>
+            <g class="node" data-id="device" data-desc="The camera intervenes. Attention shifts to framing, focus, and interface. The brain receives a signal: 'This is handled.'">
+              <circle cx="320" cy="280" r="28" fill="var(--bg)" stroke="var(--accent)" stroke-width="2" />
+              <text class="node-label" x="320" y="284">Device</text>
+            </g>
+            <g class="node" data-id="memory" data-desc="The result: organic memory. Its strength depends entirely on which path was taken.">
+              <circle cx="540" cy="190" r="28" fill="var(--bg)" stroke="var(--fg-dim)" stroke-width="2" />
+              <text class="node-label" x="540" y="194">Memory</text>
+            </g>
+          </svg>
+          <div class="diagram-caption" id="diagramCaption">Hover or tap any node to trace the cognitive path.</div>
+        </figure>
+      </section>
+
+      <section id="data" class="reveal">
+        <h2>Numbering the Fade</h2>
+        <p>The data is not subtle. When researchers measure recall of documented versus undocumented events, the impairment is measurable and consistent. The external record is perfect. The internal record is impoverished.</p>
+        <div class="chart-wrap reveal">
+          <div class="chart-head">
+            <h3>Recall Accuracy: Documented vs. Undocumented</h3>
+            <div class="filters" id="chartFilters">
+              <button class="active" data-filter="all">All</button>
+              <button data-filter="objects">Objects</button>
+              <button data-filter="details">Details</button>
+              <button data-filter="emotion">Emotion</button>
+            </div>
+          </div>
+          <canvas id="memoryChart"></canvas>
+        </div>
+        <p>Look at the gap. The external photograph captures the object flawlessly. But the internal memory of the person who took the photograph is weaker than the memory of someone who simply stood there and looked. The camera captured the scene. It hollowed out the observer.</p>
+      </section>
+
+      <section id="nuance" class="reveal">
+        <h2>Grains of Truth</h2>
+        <p>Let us be fair to the camera. Not all documentation degrades memory. When you photograph something with the explicit intention of revisiting it — when the act of photography is mindful, deliberate, an act of attention rather than a reflex — the impairment shrinks or vanishes. The problem is not the photograph. It is the offloading. It is the silent contract: "The device has this, so I do not need to."</p>
+        <p>And of course, for the events that would otherwise be entirely lost to time — the mundane Tuesday, the passing face — a thin external memory is better than none at all. The photograph is not the enemy. The enemy is the belief that a photograph is a substitute for presence, rather than a supplement to it.</p>
+      </section>
+
+      <section id="action" class="reveal">
+        <h2>The 24-Hour Reboot</h2>
+        <p>Meaningful change does not require throwing your phone in the ocean. It requires a small, decisive shift in how you use it. The goal is to break the automatic offloading reflex — to make the camera a conscious tool, not a cognitive crutch.</p>
+        <div class="action" id="actionCard">
+          <h3>Your Memory Recovery Protocol</h3>
+          <p style="margin-bottom: 0;">Execute these within the next 24 hours.</p>
+          <div class="gauge-wrap">
+            <div class="gauge">
+              <svg width="54" height="54">
+                <circle class="track" cx="27" cy="27" r="22"></circle>
+                <circle class="fill" id="gaugeFill" cx="27" cy="27" r="22"></circle>
+              </svg>
+            </div>
+            <div class="gauge-text">
+              <strong id="gaugeCount">0 of 4 complete</strong>
+              Each step rebuilds your internal encoding.
+            </div>
+          </div>
+          <ul class="checklist" id="checklist">
+            <li>
+              <input type="checkbox" id="c1">
+              <label for="c1">Attend one full event today — a meal, a walk, a conversation — and leave your phone in your pocket the entire time.</label>
+            </li>
+            <li>
+              <input type="checkbox" id="c2">
+              <label for="c2">Before taking your next photo, pause for 5 seconds and consciously name three details of the scene aloud or in your mind.</label>
+            </li>
+            <li>
+              <input type="checkbox" id="c3">
+              <label for="c3">Review a photo from the past week and spend 60 seconds writing down what the photo does not capture: the smell, the feeling, the context.</label>
+            </li>
+            <li>
+              <input type="checkbox" id="c4">
+              <label for="c4">Delete five photos from your camera roll that you took reflexively and never looked at again. Feel the difference between capturing and keeping.</label>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <footer>
+        <p>Grounded in research on the photo-taking impairment effect and cognitive offloading. The mind is a muscle. Use it or lose it.</p>
+      </footer>
+    </article>
+  </main>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  // ============ Theme Toggle ============
+  const themeBtn = document.getElementById('themeBtn');
+  const root = document.documentElement;
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme) root.setAttribute('data-theme', savedTheme);
+  else if (window.matchMedia('(prefers-color-scheme: light)').matches) root.setAttribute('data-theme', 'light');
+
+  themeBtn.addEventListener('click', () => {
+    const cur = root.getAttribute('data-theme');
+    const next = cur === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+    if (chartInstance) updateChartColors();
+  });
+
+  // ============ Font Size Toggle ============
+  const fontBtn = document.getElementById('fontBtn');
+  const sizes = [16, 17, 18, 19, 20];
+  let sizeIdx = 1;
+  const savedSize = localStorage.getItem('fontSize');
+  if (savedSize) { sizeIdx = parseInt(savedSize); document.documentElement.style.fontSize = sizes[sizeIdx] + 'px'; }
+  fontBtn.addEventListener('click', () => {
+    sizeIdx = (sizeIdx + 1) % sizes.length;
+    document.documentElement.style.fontSize = sizes[sizeIdx] + 'px';
+    localStorage.setItem('fontSize', sizeIdx.toString());
+  });
+
+  // ============ Reading Time ============
+  const articleText = document.querySelector('article').innerText;
+  const wordCount = articleText.split(/\s+/).length;
+  const readMins = Math.max(3, Math.round(wordCount / 220));
+  document.getElementById('readTime').textContent = '~' + readMins + ' min';
+
+  // ============ Progress Bar ============
+  const progress = document.getElementById('progress');
+  const updateProgress = () => {
+    const h = document.documentElement;
+    const scrolled = (h.scrollTop) / (h.scrollHeight - h.clientHeight) * 100;
+    progress.style.width = scrolled + '%';
+  };
+  window.addEventListener('scroll', updateProgress, { passive: true });
+  updateProgress();
+
+  // ============ Scrollspy ============
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('#rail a');
+  const spy = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        const id = e.target.id;
+        navLinks.forEach(l => l.classList.toggle('active', l.getAttribute('href') === '#' + id));
+      }
+    });
+  }, { rootMargin: '-20% 0px -60% 0px', threshold: 0 });
+  sections.forEach(s => spy.observe(s));
+
+  // ============ Reveal Animations ============
+  const reveals = document.querySelectorAll('.reveal');
+  const revObs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('in');
+        revObs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12 });
+  reveals.forEach(r => revObs.observe(r));
+
+  // ============ Mobile Drawer ============
+  const menuBtn = document.getElementById('menuBtn');
+  const rail = document.getElementById('rail');
+  const scrim = document.getElementById('scrim');
+  const toggleDrawer = (open) => {
+    rail.classList.toggle('open', open);
+    scrim.classList.toggle('open', open);
+  };
+  menuBtn.addEventListener('click', () => toggleDrawer(!rail.classList.contains('open')));
+  scrim.addEventListener('click', () => toggleDrawer(false));
+  navLinks.forEach(l => l.addEventListener('click', () => { if (window.innerWidth <= 880) toggleDrawer(false); }));
+
+  // ============ Spectrum Slider ============
+  const slider = document.getElementById('spectrumSlider');
+  const handle = document.getElementById('spectrumHandle');
+  const callout = document.getElementById('spectrumCallout');
+  let isDragging = false;
+
+  const legacyText = `<span class="tag">Legacy Perspective</span>Cameras are prosthetics for the mind. Every photo taken is a memory saved. The more we document, the more we remember, and the less we lose to the erosion of time.`;
+  const shiftedText = `<span class="tag">Shifted Perspective</span>The brain treats the camera as an external hard drive. The moment you outsource the capture of a moment, you signal your neurons that internal encoding is unnecessary — and the organic memory fades.`;
+
+  const updateSpectrum = (pct) => {
+    handle.style.left = pct + '%';
+    if (pct > 50) {
+      callout.innerHTML = shiftedText;
+      callout.classList.add('shifted');
+    } else {
+      callout.innerHTML = legacyText;
+      callout.classList.remove('shifted');
+    }
+  };
+  const getPct = (clientX) => {
+    const rect = slider.getBoundingClientRect();
+    return Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
+  };
+  slider.addEventListener('mousedown', (e) => { isDragging = true; updateSpectrum(getPct(e.clientX)); });
+  window.addEventListener('mousemove', (e) => { if (isDragging) updateSpectrum(getPct(e.clientX)); });
+  window.addEventListener('mouseup', () => { isDragging = false; });
+  slider.addEventListener('touchstart', (e) => { isDragging = true; updateSpectrum(getPct(e.touches[0].clientX)); }, { passive: true });
+  window.addEventListener('touchmove', (e) => { if (isDragging) updateSpectrum(getPct(e.touches[0].clientX)); }, { passive: true });
+  window.addEventListener('touchend', () => { isDragging = false; });
+  slider.addEventListener('keydown', (e) => {
+    const cur = parseFloat(handle.style.left) || 50;
+    if (e.key === 'ArrowLeft') updateSpectrum(Math.max(0, cur - 10));
+    if (e.key === 'ArrowRight') updateSpectrum(Math.min(100, cur + 10));
+  });
+
+  // ============ Node Diagram ============
+  const nodes = document.querySelectorAll('.node-svg .node');
+  const caption = document.getElementById('diagramCaption');
+  const edges = {
+    event: ['e1', 'e2'],
+    attention: ['e1', 'e3'],
+    device: ['e2', 'e4', 'e5'],
+    memory: ['e3', 'e4']
+  };
+  nodes.forEach(n => {
+    const activate = () => {
+      nodes.forEach(x => x.classList.remove('active'));
+      document.querySelectorAll('.node-svg .edge').forEach(x => x.classList.remove('active'));
+      n.classList.add('active');
+      const id = n.dataset.id;
+      (edges[id] || []).forEach(eid => {
+        const el = document.getElementById(eid);
+        if (el) { el.classList.add('active'); el.setAttribute('marker-end', 'url(#arrowActive)'); }
+      });
+      caption.textContent = n.dataset.desc;
+    };
+    n.addEventListener('mouseenter', activate);
+    n.addEventListener('click', activate);
+  });
+
+  // ============ Snap Card Copy & Share ============
+  const snapQuote = document.getElementById('snapQuote');
+  const copyBtn = document.getElementById('copyBtn');
+  const shareX = document.getElementById('shareX');
+  const shareLI = document.getElementById('shareLI');
+  const pageUrl = encodeURIComponent(window.location.href);
+  const quoteText = snapQuote.innerText.trim();
+  const shareText = encodeURIComponent(quoteText + ' — The Outsourced Mind');
+
+  copyBtn.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(quoteText + ' ' + window.location.href);
+      copyBtn.innerHTML = '✓ Copied!';
+      setTimeout(() => copyBtn.innerHTML = '⧉ Copy quote', 2000);
+    } catch (e) {
+      copyBtn.innerHTML = '✗ Failed';
+      setTimeout(() => copyBtn.innerHTML = '⧉ Copy quote', 2000);
+    }
+  });
+  shareX.href = `https://twitter.com/intent/tweet?text=${shareText}&url=${pageUrl}`;
+  shareLI.href = `https://www.linkedin.com/sharing/share-offsite/?url=${pageUrl}`;
+
+  // ============ Chart.js ============
+  let chartInstance = null;
+  const ctx = document.getElementById('memoryChart');
+
+  const getColors = () => {
+    const isDark = root.getAttribute('data-theme') !== 'light';
+    return {
+      grid: isDark ? 'rgba(245,240,232,0.06)' : 'rgba(26,20,16,0.06)',
+      text: isDark ? '#b8b0a4' : '#4a4036',
+      accent: isDark ? '#ff6b35' : '#d84315',
+      teal: isDark ? '#2ec4b6' : '#1a8278'
+    };
+  };
+
+  const datasets = {
+    objects: { documented: 95, undocumented: 72, label: 'Object Recognition' },
+    details: { documented: 64, undocumented: 81, label: 'Contextual Details' },
+    emotion: { documented: 48, undocumented: 88, label: 'Emotional Resonance' }
+  };
+
+  const buildData = (filter) => {
+    let keys = filter === 'all' ? Object.keys(datasets) : [filter];
+    return {
+      labels: keys.map(k => datasets[k].label),
+      datasets: [
+        {
+          label: 'Documented (Photo Taken)',
+          data: keys.map(k => datasets[k].documented),
+          backgroundColor: getColors().accent + 'cc',
+          borderColor: getColors().accent,
+          borderWidth: 2,
+          borderRadius: 6
+        },
+        {
+          label: 'Undocumented (No Photo)',
+          data: keys.map(k => datasets[k].undocumented),
+          backgroundColor: getColors().teal + 'cc',
+          borderColor: getColors().teal,
+          borderWidth: 2,
+          borderRadius: 6
+        }
+      ]
+    };
+  };
+
+  const updateChartColors = () => {
+    if (!chartInstance) return;
+    const c = getColors();
+    chartInstance.data.datasets[0].backgroundColor = c.accent + 'cc';
+    chartInstance.data.datasets[0].borderColor = c.accent;
+    chartInstance.data.datasets[1].backgroundColor = c.teal + 'cc';
+    chartInstance.data.datasets[1].borderColor = c.teal;
+    chartInstance.options.scales.x.grid.color = c.grid;
+    chartInstance.options.scales.y.grid.color = c.grid;
+    chartInstance.options.scales.x.ticks.color = c.text;
+    chartInstance.options.scales.y.ticks.color = c.text;
+    chartInstance.options.plugins.legend.labels.color = c.text;
+    chartInstance.update();
+  };
+
+  const initChart = (filter = 'all') => {
+    const c = getColors();
+    chartInstance = new Chart(ctx, {
+      type: 'bar',
+      data: buildData(filter),
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { color: c.text, font: { family: "'Space Grotesk', sans-serif", size: 12 }, padding: 16, usePointStyle: true, pointStyle: 'circle' }
+          },
+          tooltip: {
+            backgroundColor: root.getAttribute('data-theme') === 'light' ? '#1a1410' : '#fffaf3',
+            titleColor: root.getAttribute('data-theme') === 'light' ? '#faf6f0' : '#1a1410',
+            bodyColor: root.getAttribute('data-theme') === 'light' ? '#b8b0a4' : '#4a4036',
+            padding: 12,
+            cornerRadius: 8,
+            callbacks: {
+              label: (ctx) => ` ${ctx.dataset.label}: ${ctx.parsed.y}% recall accuracy`
+            }
+          }
+        },
+        scales: {
+          x: { grid: { color: c.grid, drawBorder: false }, ticks: { color: c.text, font: { size: 11 } } },
+          y: {
+            grid: { color: c.grid, drawBorder: false },
+            ticks: { color: c.text, font: { size: 11 }, callback: (v) => v + '%' },
+            beginAtZero: true,
+            max: 100
+          }
+        },
+        animation: { duration: 800, easing: 'easeOutQuart' }
+      }
+    });
+  };
+
+  // Lazy init chart on scroll into view
+  const chartObs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting && !chartInstance) {
+        initChart();
+        chartObs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.2 });
+  chartObs.observe(ctx);
+
+  // Chart filters
+  document.querySelectorAll('#chartFilters button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#chartFilters button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      if (chartInstance) {
+        chartInstance.data = buildData(btn.dataset.filter);
+        chartInstance.update();
+      }
+    });
+  });
+
+  // ============ Checklist Gauge ============
+  const checkboxes = document.querySelectorAll('.checklist input[type="checkbox"]');
+  const gaugeFill = document.getElementById('gaugeFill');
+  const gaugeCount = document.getElementById('gaugeCount');
+  const circumference = 138;
+
+  const updateGauge = () => {
+    const done = Array.from(checkboxes).filter(c => c.checked).length;
+    const offset = circumference - (done / checkboxes.length) * circumference;
+    gaugeFill.style.strokeDashoffset = offset;
+    gaugeCount.textContent = `${done} of ${checkboxes.length} complete`;
+  };
+  checkboxes.forEach(cb => {
+    cb.addEventListener('change', () => {
+      cb.closest('li').classList.toggle('done', cb.checked);
+      updateGauge();
+    });
+  });
+
+})();
+</script>
+
+</body>
+</html>
