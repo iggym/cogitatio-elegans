@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A Cushioned Crash Course</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #f4f4f9;
+            --fg: #1a1a2e;
+            --card: #ffffff;
+            --accent: #e94560;
+            --accent-2: #0f3460;
+            --muted: #5a5a6e;
+            --border: #dcdce6;
+            --glass: rgba(255, 255, 255, 0.7);
+            --snap-grad: linear-gradient(135deg, #e94560 0%, #0f3460 100%);
+        }
+
+        [data-theme="dark"] {
+            --bg: #0a0a12;
+            --fg: #f4f4f9;
+            --card: #141421;
+            --accent: #ff6b81;
+            --accent-2: #4e75c4;
+            --muted: #9a9aae;
+            --border: #2a2a3e;
+            --glass: rgba(10, 10, 18, 0.7);
+            --snap-grad: linear-gradient(135deg, #ff6b81 0%, #4e75c4 100%);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--fg);
+            line-height: 1.7;
+            transition: background 0.3s ease, color 0.3s ease;
+            overflow-x: hidden;
+        }
+
+        /* Progress & Topbar */
+        #progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 4px;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent), var(--accent-2));
+            z-index: 1000;
+            transition: width 0.1s linear;
+        }
+
+        #topbar {
+            position: fixed;
+            top: 4px;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 2rem;
+            z-index: 999;
+            gap: 1.5rem;
+        }
+
+        .topbar-brand {
+            font-weight: 800;
+            color: var(--accent-2);
+            text-decoration: none;
+            font-size: 1.1rem;
+        }
+
+        .topbar-meta {
+            display: flex;
+            gap: 1.5rem;
+            margin-left: auto;
+            align-items: center;
+            font-size: 0.9rem;
+            color: var(--muted);
+        }
+
+        .controls {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .btn-icon {
+            background: var(--card);
+            border: 1px solid var(--border);
+            color: var(--fg);
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        .btn-icon:hover {
+            transform: translateY(-2px);
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .menu-btn {
+            display: none;
+        }
+
+        /* Layout */
+        .wrap {
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding-top: 80px;
+        }
+
+        #rail {
+            position: sticky;
+            top: 80px;
+            height: calc(100vh - 80px);
+            padding: 2rem 1rem;
+            border-right: 1px solid var(--border);
+        }
+
+        #rail a {
+            display: block;
+            color: var(--muted);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+
+        #rail a:hover {
+            color: var(--fg);
+            background: var(--card);
+        }
+
+        #rail a.active {
+            color: var(--accent);
+            font-weight: 600;
+            border-left-color: var(--accent);
+            background: var(--card);
+        }
+
+        main {
+            padding: 2rem 3rem;
+            max-width: 720px;
+        }
+
+        /* Typography */
+        h1, h2, h3 {
+            font-family: 'Georgia', serif;
+            line-height: 1.2;
+            margin-bottom: 1rem;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 1.5rem;
+        }
+
+        h2 {
+            font-size: 2rem;
+            margin-top: 3rem;
+            color: var(--accent-2);
+        }
+
+        p {
+            margin-bottom: 1.5rem;
+            font-size: 1.05rem;
+        }
+
+        .drop-cap::first-letter {
+            font-size: 3.5rem;
+            font-weight: bold;
+            float: left;
+            line-height: 0.8;
+            padding-right: 0.5rem;
+            color: var(--accent);
+            font-family: 'Georgia', serif;
+        }
+
+        /* Reveal Animation */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Interactive Elements */
+        .spectrum {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 2rem 0;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        }
+
+        .toggle-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .toggle-label {
+            font-weight: 600;
+            color: var(--muted);
+        }
+
+        .toggle-label.active {
+            color: var(--fg);
+        }
+
+        .toggle-switch {
+            width: 60px;
+            height: 30px;
+            background: var(--border);
+            border-radius: 15px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .toggle-knob {
+            width: 26px;
+            height: 26px;
+            background: var(--card);
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            transition: left 0.3s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .toggle-switch.shifted {
+            background: var(--accent);
+        }
+
+        .toggle-switch.shifted .toggle-knob {
+            left: 32px;
+        }
+
+        .spectrum-text {
+            min-height: 60px;
+            font-size: 1.1rem;
+            color: var(--fg);
+            transition: opacity 0.3s;
+        }
+
+        /* SVG Diagram */
+        .svg-container {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 2rem 0;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+
+        .svg-container svg {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .svg-node {
+            fill: var(--bg);
+            stroke: var(--accent-2);
+            stroke-width: 2;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .svg-node.active, .svg-node:hover {
+            fill: var(--accent);
+            stroke: var(--accent);
+        }
+
+        .svg-text {
+            fill: var(--fg);
+            font-size: 14px;
+            font-weight: 600;
+            pointer-events: none;
+        }
+
+        .svg-link {
+            stroke: var(--border);
+            stroke-width: 2;
+            transition: stroke 0.3s, stroke-width 0.3s;
+        }
+
+        .svg-link.active {
+            stroke: var(--accent);
+            stroke-width: 3;
+        }
+
+        /* Chart */
+        .chart-container {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 2rem 0;
+            border: 1px solid var(--border);
+        }
+
+        /* Perspective Snap */
+        .snap-card {
+            background: var(--snap-grad);
+            color: white;
+            padding: 3rem 2rem;
+            border-radius: 16px;
+            margin: 3rem 0;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .snap-text {
+            font-family: 'Georgia', serif;
+            font-size: 1.8rem;
+            font-style: italic;
+            line-height: 1.4;
+            margin-bottom: 1.5rem;
+        }
+
+        .snap-actions {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .snap-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: background 0.2s;
+        }
+
+        .snap-btn:hover {
+            background: rgba(255,255,255,0.4);
+        }
+
+        /* Checklist */
+        .action {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 2rem 0;
+        }
+
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+            cursor: pointer;
+        }
+
+        .checklist-item input {
+            margin-right: 1rem;
+            width: 20px;
+            height: 20px;
+            accent-color: var(--accent);
+        }
+
+        .gauge-container {
+            height: 8px;
+            background: var(--border);
+            border-radius: 4px;
+            margin-top: 2rem;
+            overflow: hidden;
+        }
+
+        .gauge-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent-2), var(--accent));
+            transition: width 0.4s ease;
+        }
+
+        /* Scrim & Mobile */
+        #scrim {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 998;
+        }
+
+        @media (max-width: 880px) {
+            .wrap {
+                grid-template-columns: 1fr;
+            }
+            #rail {
+                position: fixed;
+                top: 64px;
+                left: 0;
+                width: 280px;
+                background: var(--card);
+                height: 100%;
+                transform: translateX(-100%);
+                transition: transform 0.3s;
+                z-index: 999;
+            }
+            #rail.open {
+                transform: translateX(0);
+            }
+            .menu-btn {
+                display: flex;
+            }
+            .topbar-meta .breadcrumb, .topbar-meta .read-time {
+                display: none;
+            }
+            main {
+                padding: 1.5rem;
+            }
+            h1 { font-size: 2.2rem; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
+            .reveal {
+                opacity: 1;
+                transform: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="progress"></div>
+    <header id="topbar">
+        <a href="https://iggym.github.io/cogitatio-elegans/" class="topbar-brand">Cogitatio Elegans</a>
+        <div class="topbar-meta">
+            <span class="breadcrumb">Safety / Risk</span>
+            <span class="read-time" id="readTime">5 min read</span>
+            <div class="controls">
+                <button class="btn-icon" id="fontToggle" title="Toggle Text Size">A</button>
+                <button class="btn-icon" id="themeToggle" title="Toggle Theme">🌙</button>
+                <button class="btn-icon menu-btn" id="menuBtn" title="Open Menu">☰</button>
+            </div>
+        </div>
+    </header>
+
+    <div id="scrim"></div>
+
+    <div class="wrap">
+        <nav id="rail">
+            <a href="#scene" class="active">The Steel Cocoon</a>
+            <a href="#reframe">Sponges For Risk</a>
+            <a href="#connections">The Blind Spot</a>
+            <a href="#nuance">Bumper To Bumper</a>
+            <a href="#agency">Narrow The Lanes</a>
+            <a href="#cta">Take The Wheel</a>
+        </nav>
+
+        <main>
+            <article>
+                <h1>A Cushioned Crash Course</h1>
+                
+                <section id="scene" class="reveal">
+                    <p class="drop-cap">The dashboard chimes a pleasant melody as the lane-keeping assist engages. Inside the cabin, the climate control holds steady at 72 degrees, insulated from the chaotic rush of the afternoon commute. The driver, bathed in the confidence of a five-star safety rating, accelerates to 45 mph in a dense residential zone. They feel secure. They feel invincible. They do not see the cyclist approaching the crosswalk just over the next blind hill.</p>
+                    <p>For decades, the logic has seemed unassailable: add seatbelts, airbags, and wider lanes, and you protect human life. Safety infrastructure, we are told, is a one-way street of accumulation. More padding equals less pain.</p>
+                </section>
+
+                <section id="reframe" class="reveal">
+                    <h2>Sponges For Risk</h2>
+                    <div class="spectrum">
+                        <div class="toggle-container">
+                            <span class="toggle-label active" id="legacyLabel">Legacy Perspective</span>
+                            <div class="toggle-switch" id="perspectiveToggle">
+                                <div class="toggle-knob"></div>
+                            </div>
+                            <span class="toggle-label" id="shiftedLabel">Shifted Perspective</span>
+                        </div>
+                        <div class="spectrum-text" id="spectrumText">
+                            Safety regulations and engineering features are implemented solely to reduce accident rates and protect human life. The safer the car, the safer the road.
+                        </div>
+                    </div>
+                    <p>But this view ignores a fundamental facet of human psychology. Under the principle of risk compensation, when environments feel physically safer, humans subconsciously adjust their behavior. We drive faster. We brake later. We glance at our phones. The cushion doesn't just absorb the impact; it absorbs the fear. Consequently, overall accident rates remain remarkably stable, but the geometry of harm shifts entirely.</p>
+                </section>
+
+                <section id="connections" class="reveal">
+                    <h2>The Blind Spot</h2>
+                    <p>The hidden connection lies in how we distribute danger. When you wrap a driver in a steel cocoon of airbags and reinforced doors, you do not eliminate the kinetic energy of a crash. You simply change who absorbs it.</p>
+                    
+                    <div class="svg-container">
+                        <svg viewBox="0 0 500 250" id="riskMap">
+                            <!-- Links -->
+                            <line class="svg-link" id="link1" x1="100" y1="125" x2="250" y2="60" />
+                            <line class="svg-link" id="link2" x1="250" y1="60" x2="400" y2="125" />
+                            <line class="svg-link" id="link3" x1="100" y1="125" x2="250" y2="190" />
+                            <line class="svg-link" id="link4" x1="250" y1="190" x2="400" y2="125" />
+                            
+                            <!-- Nodes -->
+                            <circle class="svg-node" id="node1" cx="100" cy="125" r="30" data-info="Driver feels protected by engineering, prompting riskier behavior."></circle>
+                            <text class="svg-text" x="100" y="130" text-anchor="middle">Safety Tech</text>
+                            
+                            <circle class="svg-node" id="node2" cx="250" cy="60" r="30" data-info="Subconscious risk compensation: increased speed and distraction."></circle>
+                            <text class="svg-text" x="250" y="65" text-anchor="middle">Speed</text>
+                            
+                            <circle class="svg-node" id="node3" cx="400" cy="125" r="30" data-info="Unprotected pedestrians and cyclists absorb the kinetic energy."></circle>
+                            <text class="svg-text" x="400" y="130" text-anchor="middle">Pedestrian</text>
+                            
+                            <circle class="svg-node" id="node4" cx="250" cy="190" r="30" data-info="Wider lanes encourage faster turning and less caution at intersections."></circle>
+                            <text class="svg-text" x="250" y="195" text-anchor="middle">Wider Lanes</text>
+                        </svg>
+                        <p id="svgInfo" style="margin-top:1rem; color:var(--muted); height: 20px;">Hover or tap a node to trace the risk flow.</p>
+                    </div>
+
+                    <p>By designing streets exclusively for the effortless, distraction-free flow of heavy vehicles, municipalities have inadvertently engineered a pedestrian hunting ground. The vulnerable road users—the cyclists, the walkers, the children—are left to bear the brunt of the "safety" features designed for the driver.</p>
+                    
+                    <div class="snap-card" id="snapCard">
+                        <div class="snap-text" id="snapText">Safety doesn't erase the crash; it just moves the bruise.</div>
+                        <div class="snap-actions">
+                            <button class="snap-btn" id="copyBtn">📋 Copy</button>
+                            <button class="snap-btn" id="shareX">𝕏 Share</button>
+                            <button class="snap-btn" id="shareLI">in Share</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="nuance" class="reveal">
+                    <h2>Bumper To Bumper</h2>
+                    <p>This is not an argument for ripping airbags out of dashboards. The introduction of seatbelts and crumple zones undeniably saved a generation of drivers from immediate, grisly fatalities. The nuance lies in the net harm. If a driver walks away from a 50mph collision because of their front-end reinforcement, but the pedestrian they hit does not, the infrastructure hasn't saved a life. It has merely selected a different victim.</p>
+                    
+                    <div class="chart-container">
+                        <canvas id="riskChart"></canvas>
+                    </div>
+                    
+                    <p>The data consistently reflects this plateau. While vehicle occupant deaths plummeted over the last three decades, pedestrian and cyclist fatalities rose to fill the vacuum. We engineered our way out of driver casualties, only to engineer ourselves into a pedestrian crisis.</p>
+                </section>
+
+                <section id="agency" class="reveal">
+                    <h2>Narrow The Lanes</h2>
+                    <p>If widening lanes and padding cars merely redistributes danger, the inverse is also true. We can design environments that demand attention. Narrowing travel lanes, installing chicanes, and removing excessive signage forces a driver to slow down, make eye contact, and navigate with care. When the environment feels risky, the driver behaves safely.</p>
+                    <p>This is the realization reshaping modern urban planning. Cities like Oslo and Hoboken have achieved zero pedestrian fatalities not by adding more padding to cars, but by removing the illusion of safety from the driver's seat. They built friction into the infrastructure.</p>
+                </section>
+
+                <section id="cta" class="reveal">
+                    <h2>Take The Wheel</h2>
+                    <p>Shifting this paradigm requires acknowledging that our personal sense of safety often comes at a cost to the collective. You have the agency to introduce friction back into your own daily transit.</p>
+                    
+                    <div class="action">
+                        <h3 style="margin-bottom: 1.5rem; font-family: sans-serif; font-size: 1.2rem;">Micro-Habit Checklist</h3>
+                        <label class="checklist-item">
+                            <input type="checkbox" class="task"> 
+                            <span>Drive barefoot or in thin-soled shoes tomorrow to heighten tactile feedback of the vehicle's speed.</span>
+                        </label>
+                        <label class="checklist-item">
+                            <input type="checkbox" class="task"> 
+                            <span>Commit to a "zero tolerance" policy on crosswalks—full stops, no rolling turns.</span>
+                        </label>
+                        <label class="checklist-item">
+                            <input type="checkbox" class="task"> 
+                            <span>Walk or cycle one trip you usually drive, to physically experience the infrastructure's risk imbalance.</span>
+                        </label>
+                        <label class="checklist-item">
+                            <input type="checkbox" class="task"> 
+                            <span>Attend one local city council meeting to advocate for lane narrowing or traffic-calming measures.</span>
+                        </label>
+                        <div class="gauge-container">
+                            <div class="gauge-fill" id="gauge"></div>
+                        </div>
+                    </div>
+                    <p>Take the first step within the next 24 hours. Slip off your heavy shoes before you start the engine. Feel the pedals. Feel the speed. Reintroduce the healthy fear that keeps everyone on the road alive.</p>
+                </section>
+            </article>
+        </main>
+    </div>
+
+    <script>
+        // --- State & Elements ---
+        const body = document.body;
+        const themeToggle = document.getElementById('themeToggle');
+        const fontToggle = document.getElementById('fontToggle');
+        const progress = document.getElementById('progress');
+        const rail = document.getElementById('rail');
+        const scrim = document.getElementById('scrim');
+        const menuBtn = document.getElementById('menuBtn');
+
+        // --- Theme ---
+        const setTheme = (theme) => {
+            body.setAttribute('data-theme', theme);
+            themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+            localStorage.setItem('theme', theme);
+        };
+        const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        setTheme(savedTheme);
+        themeToggle.addEventListener('click', () => {
+            setTheme(body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+        });
+
+        // --- Font Size ---
+        let fontState = 0;
+        const fontSizes = ['16px', '18px', '20px'];
+        fontToggle.addEventListener('click', () => {
+            fontState = (fontState + 1) % fontSizes.length;
+            body.style.fontSize = fontSizes[fontState];
+        });
+
+        // --- Reading Time ---
+        const words = document.body.innerText.split(/\s+/).length;
+        document.getElementById('readTime').textContent = Math.ceil(words / 200) + ' min read';
+
+        // --- Progress & Scrollspy ---
+        const sections = document.querySelectorAll('section');
+        const navLinks = document.querySelectorAll('#rail a');
+
+        window.addEventListener('scroll', () => {
+            const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            progress.style.width = (winScroll / height) * 100 + '%';
+        });
+
+        // --- Intersection Observers ---
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) entry.target.classList.add('visible');
+            });
+        }, { threshold: 0.1 });
+        document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+        const navObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const id = entry.target.id;
+                    navLinks.forEach(link => {
+                        link.classList.toggle('active', link.getAttribute('href') === `#${id}`);
+                    });
+                }
+            });
+        }, { rootMargin: '-30% 0px -60% 0px' });
+        sections.forEach(sec => navObserver.observe(sec));
+
+        // --- Mobile Drawer ---
+        menuBtn.addEventListener('click', () => {
+            rail.classList.add('open');
+            scrim.style.display = 'block';
+        });
+        scrim.addEventListener('click', () => {
+            rail.classList.remove('open');
+            scrim.style.display = 'none';
+        });
+
+        // --- Hero Spectrum Toggle ---
+        const toggle = document.getElementById('perspectiveToggle');
+        const legacyLabel = document.getElementById('legacyLabel');
+        const shiftedLabel = document.getElementById('shiftedLabel');
+        const spectrumText = document.getElementById('spectrumText');
+        
+        const texts = {
+            legacy: "Safety regulations and engineering features are implemented solely to reduce accident rates and protect human life. The safer the car, the safer the road.",
+            shifted: "When environments feel physically safer, humans subconsciously adjust their behavior by taking more risks. Danger is redistributed from protected drivers to unprotected pedestrians."
+        };
+
+        toggle.addEventListener('click', () => {
+            const isShifted = toggle.classList.toggle('shifted');
+            spectrumText.style.opacity = 0;
+            setTimeout(() => {
+                spectrumText.innerText = isShifted ? texts.shifted : texts.legacy;
+                spectrumText.style.opacity = 1;
+            }, 200);
+            legacyLabel.classList.toggle('active', !isShifted);
+            shiftedLabel.classList.toggle('active', isShifted);
+        });
+
+        // --- SVG Interaction ---
+        const svgNodes = document.querySelectorAll('.svg-node');
+        const svgLinks = document.querySelectorAll('.svg-link');
+        const svgInfo = document.getElementById('svgInfo');
+        
+        svgNodes.forEach(node => {
+            node.addEventListener('mouseenter', () => {
+                svgInfo.innerText = node.getAttribute('data-info');
+                const id = node.id;
+                svgLinks.forEach(link => {
+                    if(link.id === 'link1' && id === 'node1') link.classList.add('active');
+                    if(link.id === 'link2' && id === 'node2') link.classList.add('active');
+                    if(link.id === 'link3' && id === 'node4') link.classList.add('active');
+                    if(link.id === 'link4' && id === 'node3') link.classList.add('active');
+                });
+            });
+            node.addEventListener('mouseleave', () => {
+                svgLinks.forEach(link => link.classList.remove('active'));
+                svgInfo.innerText = "Hover or tap a node to trace the risk flow.";
+            });
+        });
+
+        // --- Chart.js ---
+        const ctx = document.getElementById('riskChart').getContext('2d');
+        const riskChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['1990s', '2000s', '2010s', '2020s'],
+                datasets: [
+                    {
+                        label: 'Driver Fatalities',
+                        data: [80, 60, 40, 30],
+                        backgroundColor: 'rgba(15, 52, 96, 0.6)',
+                        borderColor: 'rgba(15, 52, 96, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Pedestrian Fatalities',
+                        data: [20, 40, 60, 70],
+                        backgroundColor: 'rgba(233, 69, 96, 0.6)',
+                        borderColor: 'rgba(233, 69, 96, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Redistribution of Harm (Simulated Index)',
+                        color: body.getAttribute('data-theme') === 'dark' ? '#f4f4f9' : '#1a1a2e'
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { color: body.getAttribute('data-theme') === 'dark' ? '#9a9aae' : '#5a5a6e' },
+                        grid: { color: body.getAttribute('data-theme') === 'dark' ? '#2a2a3e' : '#dcdce6' }
+                    },
+                    x: {
+                        ticks: { color: body.getAttribute('data-theme') === 'dark' ? '#9a9aae' : '#5a5a6e' },
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+
+        // --- Perspective Snap Share ---
+        const snapText = document.getElementById('snapText').innerText;
+        const currentUrl = window.location.href;
+        
+        document.getElementById('copyBtn').addEventListener('click', () => {
+            navigator.clipboard.writeText(`"${snapText}" - ${currentUrl}`);
+            alert('Quote copied to clipboard!');
+        });
+
+        document.getElementById('shareX').addEventListener('click', () => {
+            window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`"${snapText}"`)}&url=${encodeURIComponent(currentUrl)}`, '_blank');
+        });
+
+        document.getElementById('shareLI').addEventListener('click', () => {
+            window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(currentUrl)}`, '_blank');
+        });
+
+        // --- Checklist Gauge ---
+        const tasks = document.querySelectorAll('.task');
+        const gauge = document.getElementById('gauge');
+        tasks.forEach(task => {
+            task.addEventListener('change', () => {
+                const completed = document.querySelectorAll('.task:checked').length;
+                const percent = (completed / tasks.length) * 100;
+                gauge.style.width = percent + '%';
+            });
+        });
+    </script>
+</body>
+</html>
