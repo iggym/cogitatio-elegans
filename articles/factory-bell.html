@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Factory's Bell | Cogitatio Elegans</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #f4f4f9;
+            --card: #ffffff;
+            --text: #1a1a2e;
+            --text-muted: #555;
+            --accent: #e94560;
+            --accent-2: #0f3460;
+            --border: #e0e0e0;
+            --glass: rgba(255, 255, 255, 0.7);
+            --progress-gradient: linear-gradient(90deg, #e94560, #0f3460);
+        }
+
+        [data-theme="dark"] {
+            --bg: #0d0d1a;
+            --card: #16213e;
+            --text: #eaeaea;
+            --text-muted: #a0a0b0;
+            --accent: #e94560;
+            --accent-2: #00d4ff;
+            --border: #2a2a4a;
+            --glass: rgba(22, 33, 62, 0.8);
+            --progress-gradient: linear-gradient(90deg, #00d4ff, #e94560);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            transition: background 0.3s, color 0.3s;
+            line-height: 1.7;
+            font-size: 18px;
+        }
+
+        /* Progress Bar */
+        #progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 4px;
+            width: 0%;
+            background: var(--progress-gradient);
+            z-index: 1000;
+            transition: width 0.1s ease-out;
+        }
+
+        /* Topbar */
+        #topbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            z-index: 999;
+        }
+        .topbar-left { display: flex; align-items: center; gap: 16px; }
+        .home-link {
+            font-weight: bold;
+            color: var(--text);
+            text-decoration: none;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .breadcrumb { color: var(--text-muted); font-size: 0.9rem; }
+        .topbar-right { display: flex; align-items: center; gap: 16px; }
+        .reading-time {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            background: var(--card);
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+        }
+        .toggle-btn {
+            background: var(--card);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: transform 0.2s;
+        }
+        .toggle-btn:hover { transform: translateY(-2px); }
+        #drawer-btn { display: none; font-size: 1.5rem; background: none; border: none; color: var(--text); cursor: pointer; }
+
+        /* Layout */
+        .wrap {
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            gap: 40px;
+            max-width: 1200px;
+            margin: 80px auto 40px;
+            padding: 0 20px;
+        }
+
+        /* Sidebar */
+        #rail {
+            position: sticky;
+            top: 80px;
+            height: fit-content;
+            border-right: 2px solid var(--border);
+            padding-right: 20px;
+        }
+        #rail nav { display: flex; flex-direction: column; gap: 12px; }
+        #rail a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+            padding-left: 12px;
+            border-left: 3px solid transparent;
+        }
+        #rail a:hover { color: var(--accent); }
+        #rail a.active {
+            color: var(--accent);
+            border-left-color: var(--accent);
+            font-weight: bold;
+        }
+
+        /* Main Content */
+        main {
+            max-width: 70ch;
+        }
+        article { margin-bottom: 60px; }
+        h1 {
+            font-size: 2.8rem;
+            line-height: 1.2;
+            margin-bottom: 16px;
+            background: var(--progress-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .meta { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 32px; display: flex; gap: 12px; align-items: center; }
+        h2 {
+            font-size: 1.8rem;
+            margin: 40px 0 16px;
+            color: var(--text);
+        }
+        p { margin-bottom: 20px; }
+        
+        /* Reveal Animation */
+        .reveal {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+        .reveal.in-view {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Hero Spectrum */
+        .spectrum {
+            position: relative;
+            height: 200px;
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 32px 0;
+            border: 1px solid var(--border);
+            user-select: none;
+        }
+        .spectrum-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+        }
+        .layer-legacy {
+            background: #f0f0f0;
+            color: #333;
+        }
+        [data-theme="dark"] .layer-legacy { background: #333; color: #ddd; }
+        .layer-shifted {
+            background: var(--accent-2);
+            color: white;
+            clip-path: inset(0 0 0 50%);
+            transition: clip-path 0.1s;
+        }
+        .spectrum input[type="range"] {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            -webkit-appearance: none;
+            appearance: none;
+            z-index: 10;
+            opacity: 0;
+            cursor: ew-resize;
+        }
+        .spectrum-handle {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 4px;
+            height: 100%;
+            background: white;
+            z-index: 5;
+            pointer-events: none;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+        .spectrum-handle::after {
+            content: '⟷';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            color: black;
+            padding: 4px 8px;
+            border-radius: 50%;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .callout {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            font-style: italic;
+            text-align: center;
+            margin-top: -16px;
+            margin-bottom: 32px;
+        }
+
+        /* SVG Network */
+        .network-container {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 32px 0;
+        }
+        #network svg { width: 100%; height: auto; }
+        .node-circle { transition: all 0.3s; cursor: pointer; }
+        .node-line { transition: all 0.3s; }
+
+        /* Chart */
+        .chart-wrapper {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 32px 0;
+            position: relative;
+            height: 350px;
+        }
+        .chart-toggles { display: flex; gap: 10px; margin-bottom: 16px; }
+        .chart-btn { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
+        .chart-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+        /* Snap Card */
+        .snap-card {
+            background: var(--card);
+            border: 2px solid var(--accent);
+            border-radius: 12px;
+            padding: 32px;
+            margin: 40px 0;
+            position: relative;
+            transition: background 0.2s;
+        }
+        .snap-text {
+            font-size: 1.4rem;
+            font-weight: bold;
+            line-height: 1.4;
+            margin-bottom: 20px;
+            color: var(--text);
+        }
+        .snap-actions { display: flex; gap: 12px; align-items: center; }
+        .snap-btn {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        .snap-btn:hover { background: var(--accent); color: white; }
+        .copy-feedback { font-size: 0.8rem; color: var(--accent); opacity: 0; transition: opacity 0.3s; }
+        .copy-feedback.show { opacity: 1; }
+
+        /* Action Card */
+        .action {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin: 40px 0;
+        }
+        .action h3 { margin-bottom: 16px; color: var(--accent); }
+        .checklist label {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            cursor: pointer;
+        }
+        .checklist input { width: 20px; height: 20px; accent-color: var(--accent); cursor: pointer; }
+        .gauge {
+            height: 8px;
+            background: var(--bg);
+            border-radius: 4px;
+            margin-top: 20px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+        .gauge-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--progress-gradient);
+            transition: width 0.4s ease;
+        }
+
+        /* Mobile Responsive */
+        #scrim {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 998;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        #scrim.active { display: block; opacity: 1; }
+
+        @media (max-width: 880px) {
+            .wrap { grid-template-columns: 1fr; padding: 0 16px; margin-top: 70px; }
+            #drawer-btn { display: block; }
+            .reading-time, .topbar-right .toggle-btn { display: none; }
+            #rail {
+                position: fixed;
+                top: 0; left: 0;
+                width: 280px;
+                height: 100vh;
+                background: var(--card);
+                z-index: 999;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                padding: 80px 20px 20px;
+                border-right: 1px solid var(--border);
+            }
+            #rail.open { transform: translateX(0); }
+            h1 { font-size: 2.2rem; }
+            .snap-text { font-size: 1.2rem; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            .reveal { opacity: 1; transform: none; transition: none; }
+            * { animation: none !important; transition: none !important; }
+        }
+    </style>
+</head>
+<body>
+    <div id="progress"></div>
+
+    <header id="topbar">
+        <div class="topbar-left">
+            <button id="drawer-btn">☰</button>
+            <a href="https://iggym.github.io/cogitatio-elegans/" class="home-link">⌂ Cogitatio</a>
+            <span class="breadcrumb">/ The Factory's Bell</span>
+        </div>
+        <div class="topbar-right">
+            <span class="reading-time" id="reading-time">~ 4 min read</span>
+            <button class="toggle-btn" onclick="adjustFontSize(-1)">A-</button>
+            <button class="toggle-btn" onclick="adjustFontSize(1)">A+</button>
+            <button class="toggle-btn" onclick="toggleTheme()">🌓</button>
+        </div>
+    </header>
+
+    <div id="scrim"></div>
+
+    <div class="wrap">
+        <aside id="rail">
+            <nav>
+                <a href="#opening">A Rude Awakening</a>
+                <a href="#reframe">Cogs in the Machine</a>
+                <a href="#connections">Ticking Time Bombs</a>
+                <a href="#nuance">Bitter Pill to Swallow</a>
+                <a href="#agency">Take Back the Reins</a>
+                <a href="#cta">Beat the Bell</a>
+            </nav>
+        </aside>
+
+        <main>
+            <article>
+                <div class="meta">
+                    <span>May 16, 2024</span> • <span>Industrialization</span>
+                </div>
+                <h1>The Factory's Bell</h1>
+
+                <section id="opening" class="reveal">
+                    <p>The room is pitch black. At precisely 4:15 AM, a mechanical shriek tears through the silence. A hand slams down on the brass bell. Groggy, disoriented, a body pulls itself from the warmth of the bed, heart pounding against the ribs. The mind is still swimming in a dream, but the schedule does not care. The day has begun, not because the sun is up, but because the clock demands it.</p>
+                </section>
+
+                <section id="reframe" class="reveal">
+                    <h2>Cogs in the Machine</h2>
+                    <p>We are taught that the alarm clock is a helpful tool, a polite nudge ensuring we meet our daily commitments. This is a comforting lie. The mechanical alarm clock did not become a fixture in every bedroom to help you achieve your dreams. It was adopted to synchronize your biology with the relentless, unyielding gears of industrial production.</p>
+                    
+                    <div class="spectrum">
+                        <div class="spectrum-layer layer-legacy">
+                            <strong>The Legacy View</strong><br>
+                            "A helpful tool ensuring we wake up on time."
+                        </div>
+                        <div class="spectrum-layer layer-shifted" id="shiftedLayer">
+                            <strong>The Shifted View</strong><br>
+                            "Synchronizing human bodies with factory shifts."
+                        </div>
+                        <div class="spectrum-handle" id="specHandle"></div>
+                        <input type="range" min="0" max="100" value="50" id="specSlider">
+                    </div>
+                    <p class="callout" id="specCallout">Drag to reveal how industrial needs overwrote human biology.</p>
+
+                    <p>The widespread adoption of mechanical alarm clocks was driven entirely by industrial requirements. Factories needed predictable, interchangeable inputs. Human bodies, with their natural circadian rhythms, were too variable. The alarm clock was the tool that forcibly codified chronic circadian disruption into daily life, transforming a biological organism into a reliable mechanical input for industrial schedules.</p>
+                </section>
+
+                <section id="connections" class="reveal">
+                    <h2>Ticking Time Bombs</h2>
+                    <p>We view sleep fragmentation—the tearing of sleep into shallow, interrupted chunks—as a modern lifestyle annoyance, perhaps caused by screens or stress. But the root cause is architectural. We linked human health to industrial timekeeping. The modern epidemic of sleep fragmentation isn't a failure of willpower; it is the direct result of treating human biology as a disposable mechanical input for industrial schedules.</p>
+                    
+                    <div class="network-container">
+                        <svg id="network" viewBox="0 0 400 250">
+                            <!-- Lines -->
+                            <line id="line-sun" class="node-line" x1="50" y1="125" x2="200" y2="125" stroke="#ccc" stroke-width="2" />
+                            <line id="line-factory" class="node-line" x1="350" y1="125" x2="200" y2="125" stroke="#ccc" stroke-width="2" />
+                            <line id="line-clock" class="node-line" x1="200" y1="125" x2="200" y2="60" stroke="#ccc" stroke-width="2" />
+                            <line id="line-body" class="node-line" x1="200" y1="125" x2="200" y2="190" stroke="#ccc" stroke-width="2" />
+                            
+                            <!-- Nodes -->
+                            <circle class="node-circle" cx="50" cy="125" r="25" fill="#f0f0f0" stroke="#0f3460" stroke-width="2" data-id="sun"></circle>
+                            <text x="50" y="130" text-anchor="middle" font-size="12">Sun</text>
+                            
+                            <circle class="node-circle" cx="350" cy="125" r="25" fill="#f0f0f0" stroke="#e94560" stroke-width="2" data-id="factory"></circle>
+                            <text x="350" y="130" text-anchor="middle" font-size="12">Factory</text>
+                            
+                            <circle class="node-circle" cx="200" cy="60" r="25" fill="#f0f0f0" stroke="#e94560" stroke-width="2" data-id="clock"></circle>
+                            <text x="200" y="65" text-anchor="middle" font-size="12">Clock</text>
+                            
+                            <circle class="node-circle" cx="200" cy="190" r="25" fill="#f0f0f0" stroke="#0f3460" stroke-width="2" data-id="body"></circle>
+                            <text x="200" y="195" text-anchor="middle" font-size="12">Body</text>
+                        </svg>
+                        <p style="text-align: center; font-size: 0.85rem; color: var(--text-muted); margin-top: 10px;">Hover over nodes to see the flow of control.</p>
+                    </div>
+
+                    <div class="snap-card" id="snapCard">
+                        <p class="snap-text" id="snapText">We don't use the alarm clock to wake up; we use it to break.</p>
+                        <div class="snap-actions">
+                            <button class="snap-btn" onclick="copySnap()">📋 <span id="copyText">Copy</span></button>
+                            <button class="snap-btn" onclick="shareSnap('twitter')">𝕏 Share</button>
+                            <button class="snap-btn" onclick="shareSnap('linkedin')">in Share</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="nuance" class="reveal">
+                    <h2>Bitter Pill to Swallow</h2>
+                    <p>Let us acknowledge the counterargument: without temporal synchronization, modern society collapses. Emergency rooms need staff at 3 AM. Global supply chains require logistical precision. The alarm clock did not merely subjugate; it enabled the complex coordination that defines our civilization.</p>
+                    <p>However, this utility does not erase the biological cost. By aligning ourselves with the factory shift, we accepted chronic sleep deprivation as a baseline. We traded biological harmony for economic efficiency.</p>
+
+                    <div class="chart-wrapper">
+                        <div class="chart-toggles">
+                            <button class="chart-btn active" onclick="toggleDataset(0, this)">Natural Wake (Biological)</button>
+                            <button class="chart-btn active" onclick="toggleDataset(1, this)">Alarm Wake (Industrial)</button>
+                        </div>
+                        <canvas id="sleepChart"></canvas>
+                    </div>
+                </section>
+
+                <section id="agency" class="reveal">
+                    <h2>Take Back the Reins</h2>
+                    <p>We cannot abandon the clock entirely, but we do not have to be broken by it. Meaningful change requires recognizing that our sleep environment is an industrial construct, and we can actively redesign it. By prioritizing biological cues over mechanical demands, we can reclaim fragments of our natural rhythm.</p>
+                </section>
+
+                <section id="cta" class="reveal">
+                    <h2>Beat the Bell</h2>
+                    <p>The shift begins tonight. Do not let the alarm be the first shock to your system. Prepare your biology to wake naturally, softening the blow of the industrial schedule.</p>
+                    
+                    <div class="action">
+                        <h3>The 24-Hour Micro-Shift</h3>
+                        <div class="checklist">
+                            <label><input type="checkbox" class="task"> Dim all artificial lights 90 minutes before bed</label>
+                            <label><input type="checkbox" class="task"> Move your phone out of arm's reach</label>
+                            <label><input type="checkbox" class="task"> Set your alarm to a gentle, escalating tone</label>
+                            <label><input type="checkbox" class="task"> Set your alarm 15 minutes earlier to allow for slow waking</label>
+                        </div>
+                        <div class="gauge"><div class="gauge-fill" id="gaugeFill"></div></div>
+                    </div>
+                </section>
+            </article>
+        </main>
+    </div>
+
+    <script>
+        // --- Theme & Font Size ---
+        function toggleTheme() {
+            const current = document.documentElement.getAttribute('data-theme');
+            document.documentElement.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+        }
+        function adjustFontSize(dir) {
+            const current = parseFloat(getComputedStyle(document.body).fontSize);
+            document.body.style.fontSize = (current + (dir * 2)) + 'px';
+        }
+
+        // --- Reading Time ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const text = document.querySelector('article').innerText;
+            const words = text.trim().split(/\s+/).length;
+            const time = Math.ceil(words / 200);
+            document.getElementById('reading-time').textContent = `~ ${time} min read`;
+        });
+
+        // --- Progress Bar ---
+        const progress = document.getElementById('progress');
+        window.addEventListener('scroll', () => {
+            const scrollTop = document.documentElement.scrollTop;
+            const scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const scrollPercent = (scrollTop / scrollHeight) * 100;
+            progress.style.width = scrollPercent + '%';
+        });
+
+        // --- Reveal Animations ---
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) entry.target.classList.add('in-view');
+            });
+        }, { threshold: 0.1 });
+        document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+        // --- Scrollspy ---
+        const sections = document.querySelectorAll('section');
+        const navLinks = document.querySelectorAll('#rail a');
+        const spyObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    navLinks.forEach(link => link.classList.remove('active'));
+                    const activeLink = document.querySelector(`#rail a[href="#${entry.target.id}"]`);
+                    if(activeLink) activeLink.classList.add('active');
+                }
+            });
+        }, { rootMargin: "-40% 0px -55% 0px" });
+        sections.forEach(sec => spyObserver.observe(sec));
+
+        // --- Mobile Drawer ---
+        const drawerBtn = document.getElementById('drawer-btn');
+        const rail = document.getElementById('rail');
+        const scrim = document.getElementById('scrim');
+        drawerBtn.addEventListener('click', () => { rail.classList.add('open'); scrim.classList.add('active'); });
+        scrim.addEventListener('click', () => { rail.classList.remove('open'); scrim.classList.remove('active'); });
+        navLinks.forEach(link => link.addEventListener('click', () => { 
+            if(window.innerWidth < 880) { rail.classList.remove('open'); scrim.classList.remove('active'); }
+        }));
+
+        // --- Hero Spectrum ---
+        const specSlider = document.getElementById('specSlider');
+        const shiftedLayer = document.getElementById('shiftedLayer');
+        const specHandle = document.getElementById('specHandle');
+        const specCallout = document.getElementById('specCallout');
+
+        specSlider.addEventListener('input', (e) => {
+            const val = e.target.value;
+            shiftedLayer.style.clipPath = `inset(0 0 0 ${val}%)`;
+            specHandle.style.left = val + '%';
+            
+            if (val < 30) specCallout.textContent = "The helpful tool narrative hides the industrial mechanism.";
+            else if (val > 70) specCallout.textContent = "The reality: our biology is subjugated to the shift.";
+            else specCallout.textContent = "Drag to reveal how industrial needs overwrote human biology.";
+        });
+
+        // --- SVG Network Interactivity ---
+        const nodes = document.querySelectorAll('.node-circle');
+        const lines = document.querySelectorAll('.node-line');
+        const svgColors = { sun: '#0f3460', factory: '#e94560', clock: '#e94560', body: '#0f3460' };
+        
+        nodes.forEach(node => {
+            node.addEventListener('mouseenter', () => {
+                const id = node.dataset.id;
+                lines.forEach(line => {
+                    if(line.id.includes(id)) {
+                        line.setAttribute('stroke', svgColors[id]);
+                        line.setAttribute('stroke-width', '4');
+                    }
+                });
+                if (id === 'factory') {
+                    document.getElementById('line-factory').setAttribute('stroke', '#e94560');
+                    document.getElementById('line-clock').setAttribute('stroke', '#e94560');
+                }
+            });
+            node.addEventListener('mouseleave', () => {
+                lines.forEach(line => {
+                    line.setAttribute('stroke', '#ccc');
+                    line.setAttribute('stroke-width', '2');
+                });
+            });
+        });
+
+        // --- Chart.js ---
+        const ctx = document.getElementById('sleepChart').getContext('2d');
+        const sleepData = {
+            labels: ['11pm', '12am', '1am', '2am', '3am', '4am', '5am', '6am', '7am'],
+            datasets: [
+                {
+                    label: 'Natural Wake (REM completion)',
+                    data: [1, 3, 4, 4, 3, 2, 3, 1, 0], // 0=A, 1=L, 2=L, 3=R, 4=D
+                    borderColor: '#0f3460',
+                    backgroundColor: 'rgba(15, 52, 96, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                },
+                {
+                    label: 'Alarm Wake (Interrupted)',
+                    data: [1, 3, 4, 4, 3, 2, 1.5, 0, 0], // Abrupt wake at 6am during REM
+                    borderColor: '#e94560',
+                    backgroundColor: 'rgba(233, 69, 96, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }
+            ]
+        };
+        
+        const sleepChart = new Chart(ctx, {
+            type: 'line',
+            data: sleepData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let val = context.raw;
+                                let stage = 'Awake';
+                                if (val >= 3.5) stage = 'Deep Sleep';
+                                else if (val >= 2.5) stage = 'REM Sleep';
+                                else if (val > 0) stage = 'Light Sleep';
+                                return `${context.dataset.label}: ${stage}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        min: 0, max: 4,
+                        ticks: {
+                            stepSize: 1,
+                            callback: (val) => { return ['Awake', 'Light', 'REM', '', 'Deep'][val] || ''; }
+                        }
+                    }
+                }
+            }
+        });
+
+        function toggleDataset(index, btn) {
+            const meta = sleepChart.getDatasetMeta(index);
+            meta.hidden = !meta.hidden;
+            btn.classList.toggle('active');
+            sleepChart.update();
+        }
+
+        // --- Snap Card ---
+        const snapCard = document.getElementById('snapCard');
+        window.addEventListener('scroll', () => {
+            const rect = snapCard.getBoundingClientRect();
+            const viewHeight = Math.max(document.documentElement.clientHeight, window.innerHeight);
+            if (rect.top < viewHeight && rect.bottom > 0) {
+                const scrollPct = 1 - (rect.top / viewHeight);
+                const h = Math.round(scrollPct * 360);
+                snapCard.style.background = `linear-gradient(135deg, hsl(${h}, 70%, 95%), hsl(${h+60}, 70%, 90%))`;
+                if (document.documentElement.getAttribute('data-theme') === 'dark') {
+                    snapCard.style.background = `linear-gradient(135deg, hsl(${h}, 20%, 20%), hsl(${h+60}, 20%, 15%))`;
+                }
+            }
+        });
+
+        function copySnap() {
+            const text = document.getElementById('snapText').innerText;
+            navigator.clipboard.writeText(text);
+            const feedback = document.getElementById('copyText');
+            feedback.innerText = 'Copied!';
+            setTimeout(() => feedback.innerText = 'Copy', 2000);
+        }
+
+        function shareSnap(platform) {
+            const text = encodeURIComponent(document.getElementById('snapText').innerText);
+            const url = encodeURIComponent(window.location.href);
+            if (navigator.share) {
+                navigator.share({ title: 'The Factory\'s Bell', text: decodeURIComponent(text), url: decodeURIComponent(url) });
+            } else {
+                if (platform === 'twitter') window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
+                if (platform === 'linkedin') window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}`, '_blank');
+            }
+        }
+
+        // --- Checklist Gauge ---
+        const tasks = document.querySelectorAll('.task');
+        const gaugeFill = document.getElementById('gaugeFill');
+        tasks.forEach(task => {
+            task.addEventListener('change', () => {
+                const checked = document.querySelectorAll('.task:checked').length;
+                const pct = (checked / tasks.length) * 100;
+                gaugeFill.style.width = pct + '%';
+            });
+        });
+    </script>
+</body>
+</html>
