@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Appliance Paradox</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:ital,wght@0,200;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#FAF6F0;--fg:#2C2418;--muted:#8A7E6B;--accent:#C75B3A;--accent2:#D4A843;
+  --card:#FFFFFF;--card-border:#E5DDD0;--topbar-bg:rgba(250,246,240,.82);
+  --rail-bg:#F3EDE3;
+  --font-display:'Playfair Display',Georgia,serif;--font-ui:'DM Sans',sans-serif;
+  --text-size:18px;--line-height:1.78;--radius:10px;
+  --chart-line:#C75B3A;--chart-line-fill:rgba(199,91,58,.12);
+  --chart-bar:#D4A843;--chart-bar-fill:rgba(212,168,67,.55);
+  --chart-grid:rgba(138,126,107,.15);--chart-tick:#5A5245;
+  --chart-tooltip-bg:rgba(44,36,24,.92);--chart-tooltip-fg:#F0E8DA;
+}
+[data-theme="dark"]{
+  --bg:#1A1714;--fg:#F0E8DA;--muted:#8A7E6B;--accent:#E8734A;--accent2:#D4A843;
+  --card:#252018;--card-border:#3A3428;--topbar-bg:rgba(26,23,20,.82);
+  --rail-bg:#1F1B16;
+  --chart-line:#E8734A;--chart-line-fill:rgba(232,115,74,.14);
+  --chart-bar:#D4A843;--chart-bar-fill:rgba(212,168,67,.5);
+  --chart-grid:rgba(138,126,107,.18);--chart-tick:#B0A898;
+  --chart-tooltip-bg:rgba(15,13,11,.94);--chart-tooltip-fg:#F0E8DA;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:80px}
+body{font-family:var(--font-ui);font-size:var(--text-size);line-height:var(--line-height);
+  color:var(--fg);background:var(--bg);transition:background .4s,color .4s;overflow-x:hidden}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+img,svg,canvas{display:block;max-width:100%}
+::selection{background:var(--accent);color:#fff}
+
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
+  opacity:.025;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat:repeat;background-size:180px}
+
+#progress{position:fixed;top:0;left:0;height:3px;width:0;z-index:1001;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .1s linear}
+
+#topbar{position:fixed;top:3px;left:0;right:0;z-index:1000;
+  background:var(--topbar-bg);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--card-border);transition:background .4s}
+.topbar-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;
+  gap:12px;padding:10px 20px;font-size:14px}
+.topbar-inner a.home{font-family:var(--font-display);font-weight:700;font-size:16px;
+  color:var(--fg);white-space:nowrap}
+.breadcrumb{color:var(--muted);font-size:13px}
+.breadcrumb span{margin:0 4px}
+.reading-time{color:var(--muted);font-size:12px;margin-left:auto;white-space:nowrap}
+.topbar-controls{display:flex;align-items:center;gap:6px}
+.sz-btn,.theme-btn,.drawer-btn{border:1px solid var(--card-border);background:var(--card);
+  color:var(--fg);border-radius:6px;cursor:pointer;font-family:var(--font-ui);transition:all .2s}
+.sz-btn{width:28px;height:28px;font-size:11px;font-weight:700}
+.sz-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.theme-btn{width:28px;height:28px;font-size:13px;display:flex;align-items:center;justify-content:center}
+.drawer-btn{display:none;width:34px;height:34px;font-size:16px;align-items:center;justify-content:center}
+
+#scrim{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:900;
+  opacity:0;pointer-events:none;transition:opacity .3s}
+#scrim.open{opacity:1;pointer-events:auto}
+
+.wrap{display:grid;grid-template-columns:220px 1fr;max-width:1200px;margin:0 auto;
+  min-height:100vh;padding-top:56px}
+#rail{position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto;
+  background:var(--rail-bg);border-right:1px solid var(--card-border);padding:28px 0;
+  transition:background .4s,transform .3s}
+#rail nav{padding:0 20px}
+#rail .rail-label{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;
+  color:var(--muted);margin-bottom:12px;font-weight:700}
+#rail a{display:block;padding:8px 12px;border-radius:6px;font-size:14px;
+  color:var(--muted);transition:all .2s;margin-bottom:2px}
+#rail a:hover{color:var(--fg);background:var(--card);text-decoration:none}
+#rail a.active{color:var(--accent);background:var(--card);font-weight:700}
+main{padding:0 clamp(24px,4vw,60px) 80px;min-width:0}
+
+.hero{position:relative;overflow:hidden;padding:clamp(60px,10vw,120px) 0 clamp(40px,6vw,70px);
+  text-align:center;margin-bottom:0}
+.hero canvas{position:absolute;inset:0;z-index:0}
+.hero-content{position:relative;z-index:1}
+.hero h1{font-family:var(--font-display);font-weight:900;
+  font-size:clamp(2.6rem,6vw,4.8rem);line-height:1.08;letter-spacing:-.02em;
+  color:var(--fg);margin-bottom:16px}
+.hero .subtitle{font-size:clamp(1rem,2vw,1.25rem);color:var(--muted);max-width:560px;
+  margin:0 auto;font-weight:400;line-height:1.6}
+.hero .scroll-hint{margin-top:36px;display:inline-flex;flex-direction:column;align-items:center;
+  gap:6px;color:var(--muted);font-size:12px;animation:hintBounce 2s ease-in-out infinite}
+@keyframes hintBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+
+.section{padding:clamp(36px,5vw,64px) 0}
+.section h2{font-family:var(--font-display);font-weight:900;
+  font-size:clamp(1.8rem,3.5vw,2.6rem);line-height:1.15;margin-bottom:24px;
+  color:var(--fg);letter-spacing:-.01em}
+.section h2 .num{color:var(--accent);font-weight:400;font-size:.5em;margin-right:8px;
+  vertical-align:middle}
+.section p{margin-bottom:20px;max-width:68ch}
+.section p.lead{font-size:1.1em;font-weight:500;max-width:62ch}
+
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .7s ease,transform .7s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+
+.spectrum-card{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);
+  padding:clamp(24px,3vw,40px);margin:32px 0;transition:background .4s,border-color .4s}
+.spectrum-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.spectrum-header span{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px}
+.spectrum-header .promise{color:var(--accent2)}
+.spectrum-header .reality{color:var(--accent)}
+.spectrum-slider{width:100%;margin:12px 0;-webkit-appearance:none;appearance:none;height:6px;
+  border-radius:3px;background:linear-gradient(90deg,var(--accent2),var(--accent));outline:none;cursor:pointer}
+.spectrum-slider::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;
+  border-radius:50%;background:var(--fg);border:3px solid var(--card);cursor:grab;
+  box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.spectrum-slider::-moz-range-thumb{width:22px;height:22px;border-radius:50%;
+  background:var(--fg);border:3px solid var(--card);cursor:grab}
+.spectrum-bars{display:flex;gap:24px;margin:24px 0;flex-wrap:wrap}
+.spectrum-bar-group{flex:1;min-width:140px}
+.spectrum-bar-label{font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:500}
+.spectrum-bar-track{height:28px;background:var(--rail-bg);border-radius:6px;overflow:hidden;position:relative}
+.spectrum-bar-fill{height:100%;border-radius:6px;transition:width .5s ease,background .5s ease}
+.spectrum-callout{font-size:15px;line-height:1.65;color:var(--fg);min-height:60px;
+  padding:16px;border-radius:8px;background:var(--rail-bg);margin-top:16px;transition:background .4s}
+
+.diagram-card{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);
+  padding:clamp(24px,3vw,40px);margin:32px 0;transition:background .4s,border-color .4s}
+.diagram-card h3{font-family:var(--font-display);font-weight:700;font-size:1.2rem;
+  margin-bottom:16px;text-align:center}
+.diagram-svg{width:100%;max-width:520px;margin:0 auto;display:block}
+.diagram-svg .node{cursor:pointer;transition:filter .3s}
+.diagram-svg .node:hover{filter:brightness(1.15)}
+.diagram-svg .node circle{transition:r .3s,fill .3s}
+.diagram-svg .node.active circle{stroke:var(--fg);stroke-width:3}
+.diagram-svg .edge{stroke:var(--muted);stroke-width:2;fill:none;opacity:.4;transition:opacity .3s,stroke .3s}
+.diagram-svg .edge.active{opacity:1;stroke:var(--accent);stroke-width:3}
+.diagram-svg .flow-dot{fill:var(--accent);opacity:.7}
+.diagram-tooltip{min-height:48px;padding:12px 16px;border-radius:8px;background:var(--rail-bg);
+  font-size:14px;line-height:1.6;color:var(--fg);margin-top:16px;transition:background .4s;text-align:center}
+
+.chart-card{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);
+  padding:clamp(24px,3vw,40px);margin:32px 0;transition:background .4s,border-color .4s}
+.chart-card h3{font-family:var(--font-display);font-weight:700;font-size:1.2rem;margin-bottom:8px}
+.chart-card .chart-subtitle{font-size:13px;color:var(--muted);margin-bottom:20px}
+.chart-toggles{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.chart-toggle{padding:6px 14px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;
+  border:1px solid var(--card-border);background:var(--card);color:var(--muted);transition:all .2s;
+  font-family:var(--font-ui)}
+.chart-toggle.on-hours{background:var(--accent);color:#fff;border-color:var(--accent)}
+.chart-toggle.on-adoption{background:var(--accent2);color:#fff;border-color:var(--accent2)}
+.chart-wrap{position:relative;width:100%;height:340px}
+
+.snap-card{position:relative;border-radius:var(--radius);overflow:hidden;margin:40px 0;
+  padding:clamp(32px,4vw,56px) clamp(24px,3vw,48px);color:#fff;text-align:center;
+  background:linear-gradient(135deg,#2C2418 0%,#5A3D28 50%,#C75B3A 100%);
+  transition:background .6s}
+.snap-card .snap-text{font-family:var(--font-display);font-weight:900;
+  font-size:clamp(1.4rem,3vw,2.2rem);line-height:1.3;margin-bottom:24px}
+.snap-card .snap-actions{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
+.snap-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:8px;
+  font-size:13px;font-weight:600;cursor:pointer;border:1px solid rgba(255,255,255,.25);
+  background:rgba(255,255,255,.1);color:#fff;backdrop-filter:blur(8px);transition:all .2s;
+  font-family:var(--font-ui)}
+.snap-btn:hover{background:rgba(255,255,255,.2);transform:translateY(-1px)}
+.snap-btn.copied{background:rgba(255,255,255,.3);border-color:rgba(255,255,255,.5)}
+
+.action{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);
+  padding:clamp(28px,3vw,44px);margin:32px 0;transition:background .4s,border-color .4s}
+.action h3{font-family:var(--font-display);font-weight:700;font-size:1.3rem;margin-bottom:8px}
+.action .action-subtitle{font-size:14px;color:var(--muted);margin-bottom:24px}
+.checklist{list-style:none;margin-bottom:28px}
+.checklist li{display:flex;align-items:flex-start;gap:12px;padding:10px 0;
+  border-bottom:1px solid var(--card-border);cursor:pointer;transition:opacity .2s}
+.checklist li:last-child{border-bottom:none}
+.checklist li.checked{opacity:.55}
+.checklist li.checked .check-label{text-decoration:line-through}
+.checklist input[type="checkbox"]{appearance:none;-webkit-appearance:none;width:22px;height:22px;
+  border:2px solid var(--card-border);border-radius:6px;cursor:pointer;flex-shrink:0;
+  position:relative;transition:all .2s;margin-top:2px}
+.checklist input[type="checkbox"]:checked{background:var(--accent);border-color:var(--accent)}
+.checklist input[type="checkbox"]:checked::after{content:'\2713';position:absolute;
+  top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font-size:13px;font-weight:700}
+.check-label{font-size:15px;line-height:1.5}
+.gauge-wrap{display:flex;align-items:center;gap:20px}
+.gauge-svg{width:72px;height:72px;flex-shrink:0}
+.gauge-bg{fill:none;stroke:var(--card-border);stroke-width:6}
+.gauge-fill{fill:none;stroke:var(--accent);stroke-width:6;stroke-linecap:round;
+  transition:stroke-dashoffset .5s ease}
+.gauge-label{font-size:14px;color:var(--muted);line-height:1.5}
+.gauge-label strong{display:block;font-size:22px;color:var(--fg);font-weight:700}
+
+footer{border-top:1px solid var(--card-border);padding:32px 0;text-align:center;
+  font-size:13px;color:var(--muted);max-width:1200px;margin:0 auto;grid-column:1/-1}
+
+@media(max-width:880px){
+  .wrap{grid-template-columns:1fr}
+  #rail{position:fixed;top:56px;left:0;bottom:0;width:260px;z-index:950;
+    transform:translateX(-100%);transition:transform .3s ease}
+  #rail.open{transform:translateX(0)}
+  .drawer-btn{display:flex}
+  main{padding:0 clamp(16px,4vw,32px) 60px}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .reveal{opacity:1;transform:none;transition:none}
+  .spectrum-bar-fill{transition:none}
+  .gauge-fill{transition:none}
+  .hero .scroll-hint{animation:none}
+  #progress{transition:none}
+  html{scroll-behavior:auto}
+  .snap-btn:hover{transform:none}
+  .diagram-svg .node circle{transition:none}
+  .diagram-svg .edge{transition:none}
+}
+</style>
+</head>
+<body>
+
+<div id="progress" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+
+<header id="topbar">
+  <div class="topbar-inner">
+    <a href="https://iggym.github.io/cogitatio-elegans/" class="home">Cogitatio</a>
+    <div class="breadcrumb"><span>/</span> The Appliance Paradox</div>
+    <div class="reading-time" id="readingTime">-- min read</div>
+    <div class="topbar-controls">
+      <button class="sz-btn" data-sz="16" aria-label="Small text">S</button>
+      <button class="sz-btn active" data-sz="18" aria-label="Medium text">M</button>
+      <button class="sz-btn" data-sz="21" aria-label="Large text">L</button>
+      <button class="theme-btn" id="themeBtn" aria-label="Toggle theme"><i class="fas fa-moon"></i></button>
+      <button class="drawer-btn" id="drawerBtn" aria-label="Open menu"><i class="fas fa-bars"></i></button>
+    </div>
+  </div>
+</header>
+
+<div id="scrim" aria-hidden="true"></div>
+
+<div class="wrap">
+
+  <aside id="rail" role="navigation" aria-label="Article sections">
+    <nav>
+      <div class="rail-label">Sections</div>
+      <a href="#hero" data-section="hero">Overview</a>
+      <a href="#spin-cycle" data-section="spin-cycle">Spin Cycle</a>
+      <a href="#bait-and-switch" data-section="bait-and-switch">Bait and Switch</a>
+      <a href="#moving-goalposts" data-section="moving-goalposts">Moving the Goalposts</a>
+      <a href="#fine-print" data-section="fine-print">The Fine Print</a>
+      <a href="#off-the-hook" data-section="off-the-hook">Off the Hook</a>
+      <a href="#drop-the-ball" data-section="drop-the-ball">Drop the Ball</a>
+    </nav>
+  </aside>
+
+  <main>
+    <article>
+
+      <section id="hero" class="hero section">
+        <canvas id="dustCanvas" aria-hidden="true"></canvas>
+        <div class="hero-content">
+          <h1>The Appliance Paradox</h1>
+          <p class="subtitle">How labor-saving devices saved the labor and lost the time</p>
+          <div class="scroll-hint">
+            <span>Scroll to explore</span>
+            <i class="fas fa-chevron-down"></i>
+          </div>
+        </div>
+      </section>
+
+      <section class="section reveal" id="spectrum-section">
+        <div class="spectrum-card">
+          <div class="spectrum-header">
+            <span class="promise">The Promise</span>
+            <span class="reality">The Reality</span>
+          </div>
+          <input type="range" min="0" max="100" value="0" class="spectrum-slider" id="spectrumSlider"
+            aria-label="Drag to compare the promise versus the reality of labor-saving appliances">
+          <div class="spectrum-bars">
+            <div class="spectrum-bar-group">
+              <div class="spectrum-bar-label">Weekly Housework Hours</div>
+              <div class="spectrum-bar-track">
+                <div class="spectrum-bar-fill" id="hoursBar" style="width:15%;background:var(--accent2)"></div>
+              </div>
+            </div>
+            <div class="spectrum-bar-group">
+              <div class="spectrum-bar-label">Cleanliness Standard</div>
+              <div class="spectrum-bar-track">
+                <div class="spectrum-bar-fill" id="standardsBar" style="width:25%;background:var(--accent)"></div>
+              </div>
+            </div>
+            <div class="spectrum-bar-group">
+              <div class="spectrum-bar-label">Paid / Communal Help</div>
+              <div class="spectrum-bar-track">
+                <div class="spectrum-bar-fill" id="helpBar" style="width:70%;background:var(--muted)"></div>
+              </div>
+            </div>
+          </div>
+          <div class="spectrum-callout" id="spectrumCallout">
+            Drag the slider above to see how the promise of labor-saving devices contrasts with the lived reality.
+          </div>
+        </div>
+      </section>
+
+      <section id="spin-cycle" class="section reveal">
+        <h2><span class="num">01</span>Spin Cycle</h2>
+        <p class="lead">It's 1925. Margaret stands at the washtub for the ninth hour. Her knuckles are split. The lye stings. The water went cold an hour ago and she's still scrubbing.</p>
+        <p>Monday is wash day&mdash;has always been wash day&mdash;and the whole week's laundry won't finish itself. A man in a pressed suit appears at her door with a gleaming machine on a dolly. The Thor Electric Washing Machine. &ldquo;This,&rdquo; he says, &ldquo;will give you your life back.&rdquo;</p>
+        <p>Margaret believes him. Why wouldn't she? The promise is seductive, the logic airtight: the machine does the work, the woman gets the time. Technology as liberation. The drudgery ends here.</p>
+        <p>But it doesn't end here. Not for Margaret. Not for the hundred million women who came after her, standing in laundry rooms that the real estate listings call &ldquo;utility rooms&rdquo;&mdash;as though the utility flows outward, rather than draining inward.</p>
+      </section>
+
+      <section id="bait-and-switch" class="section reveal">
+        <h2><span class="num">02</span>Bait and Switch</h2>
+        <p class="lead">Here is the reframe that rewrites a century of domestic history: labor-saving technologies did not save time.</p>
+        <p>They eliminated paid and communal domestic support, privatized the remaining work, and simultaneously inflated societal standards of cleanliness so dramatically that the total weekly hours spent on housework by individuals remained remarkably stable&mdash;or even increased.</p>
+        <p>The washing machine didn't give Margaret her life back. It made her do it alone, and it made &ldquo;clean&rdquo; mean something no human hand could have achieved before. The appliance didn't reduce the burden. It redistributed the burden&mdash;from the community to the individual, from shared labor to silent, isolated performance.</p>
+        <p>Consider what actually happened when the washing machine arrived. The laundress lost her job. The communal wash day&mdash;exhausting, yes, but social&mdash;became obsolete. The work didn't disappear. It consolidated. One woman, one machine, one home. And the machine's capabilities didn't just match the old standard. They created a new one.</p>
+      </section>
+
+      <section id="moving-goalposts" class="section reveal">
+        <h2><span class="num">03</span>Moving the Goalposts</h2>
+        <p>Before the appliance revolution, middle-class households had help. Laundresses came weekly. Maids swept floors. Neighborhood women gathered for communal wash days&mdash;backbreaking, yes, but shared. Technology didn't just automate these tasks. It made the people who performed them redundant.</p>
+        <p>As the hired help disappeared, the work didn't vanish. It consolidated. One woman, one home, one machine. And the machine's capabilities didn't just match the old standard&mdash;they created a new one. The vacuum cleaner didn't just replace the broom. It made visible an entire category of dust that no broom could have caught. The dishwasher didn't just clean plates. It made it unacceptable to serve a meal on anything less than spotless porcelain.</p>
+        <p>The baseline shifted from &ldquo;clean enough&rdquo; to &ldquo;spotless daily.&rdquo; And the hours held steady.</p>
+
+        <div class="diagram-card">
+          <h3>The Feedback Loop</h3>
+          <p style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:16px">Click any node to trace the cycle</p>
+          <svg class="diagram-svg" viewBox="0 0 520 400" id="diagramSvg" role="img" aria-label="Feedback loop diagram showing how appliances, displaced help, inflated standards, and intensified labor form a cycle">
+            <defs>
+              <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                <polygon points="0 0, 8 3, 0 6" fill="var(--muted)" opacity=".5"/>
+              </marker>
+              <marker id="arrowhead-active" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                <polygon points="0 0, 8 3, 0 6" fill="var(--accent)"/>
+              </marker>
+            </defs>
+            <path class="edge" id="e0" d="M290,72 C370,72 420,140 420,200" marker-end="url(#arrowhead)"/>
+            <path class="edge" id="e1" d="M420,220 C420,280 370,340 290,340" marker-end="url(#arrowhead)"/>
+            <path class="edge" id="e2" d="M230,340 C150,340 100,280 100,220" marker-end="url(#arrowhead)"/>
+            <path class="edge" id="e3" d="M100,180 C100,120 150,72 230,72" marker-end="url(#arrowhead)"/>
+            <g class="node" data-node="0" data-desc="A new device enters the home with the promise of saving time and reducing effort. The marketing is irresistible.">
+              <circle cx="260" cy="56" r="28" fill="var(--accent2)" opacity=".9"/>
+              <text x="260" y="52" text-anchor="middle" fill="#fff" font-size="11" font-weight="700" font-family="DM Sans, sans-serif">NEW</text>
+              <text x="260" y="66" text-anchor="middle" fill="#fff" font-size="10" font-family="DM Sans, sans-serif">APPLIANCE</text>
+            </g>
+            <g class="node" data-node="1" data-desc="The appliance makes paid or communal domestic workers redundant. The laundress, the maid, the weekly help &mdash; all displaced.">
+              <circle cx="436" cy="200" r="28" fill="var(--accent)" opacity=".9"/>
+              <text x="436" y="196" text-anchor="middle" fill="#fff" font-size="10" font-weight="700" font-family="DM Sans, sans-serif">HELP</text>
+              <text x="436" y="210" text-anchor="middle" fill="#fff" font-size="10" font-family="DM Sans, sans-serif">DISPLACED</text>
+            </g>
+            <g class="node" data-node="2" data-desc="The machine's capabilities raise the baseline: 'clean enough' becomes 'spotless daily.' What was once a luxury is now a minimum.">
+              <circle cx="260" cy="344" r="28" fill="var(--accent)" opacity=".9"/>
+              <text x="260" y="340" text-anchor="middle" fill="#fff" font-size="10" font-weight="700" font-family="DM Sans, sans-serif">STANDARDS</text>
+              <text x="260" y="354" text-anchor="middle" fill="#fff" font-size="10" font-family="DM Sans, sans-serif">INFLATE</text>
+            </g>
+            <g class="node" data-node="3" data-desc="Higher standards mean more work, not less. The individual now performs alone what was once shared, at a higher bar.">
+              <circle cx="84" cy="200" r="28" fill="var(--accent2)" opacity=".9"/>
+              <text x="84" y="196" text-anchor="middle" fill="#fff" font-size="10" font-weight="700" font-family="DM Sans, sans-serif">LABOR</text>
+              <text x="84" y="210" text-anchor="middle" fill="#fff" font-size="10" font-family="DM Sans, sans-serif">INTENSIFIES</text>
+            </g>
+          </svg>
+          <div class="diagram-tooltip" id="diagramTooltip">Click a node above to trace the cycle</div>
+        </div>
+
+        <p>Each appliance arrived as a liberator and stayed as a jailer. The vacuum cleaner didn't free you from sweeping. It obligated you to vacuum. The dishwasher didn't eliminate dishwashing. It made hand-washing unacceptable. The machine set the standard, and the standard became the cage.</p>
+      </section>
+
+      <div class="snap-card reveal" id="snapCard">
+        <div class="snap-text" id="snapText">The appliance didn't reduce your work. It made your work invisible.</div>
+        <div class="snap-actions">
+          <button class="snap-btn" id="copyBtn" aria-label="Copy this quote"><i class="fas fa-copy"></i> Copy</button>
+          <button class="snap-btn" id="shareXBtn" aria-label="Share on X"><i class="fab fa-x-twitter"></i> Share on X</button>
+          <button class="snap-btn" id="shareLinBtn" aria-label="Share on LinkedIn"><i class="fab fa-linkedin-in"></i> Share on LinkedIn</button>
+        </div>
+      </div>
+
+      <section id="fine-print" class="section reveal">
+        <h2><span class="num">04</span>The Fine Print</h2>
+        <p>The data tells a story that the appliance industry never wanted told. Studies tracking housework hours from the 1920s through the 2000s reveal a stubborn, almost defiant consistency. The average homemaker in 1925 spent roughly 52 hours per week on housework. By 2005, that number had barely drifted downward&mdash;still hovering around 44 to 48 hours depending on the survey.</p>
+        <p>During the same period, household appliance ownership skyrocketed. Washing machine penetration went from 8% to over 80%. Vacuum cleaners went from luxury to universal. Dishwashers from nonexistent to standard. The machines multiplied. The hours didn't budge.</p>
+
+        <div class="chart-card" id="chartCard">
+          <h3>Hours vs. Adoption Over the Decades</h3>
+          <p class="chart-subtitle">Weekly housework hours stayed flat as appliance ownership soared</p>
+          <div class="chart-toggles">
+            <button class="chart-toggle on-hours" id="toggleHours" data-set="hours">Housework Hours</button>
+            <button class="chart-toggle on-adoption" id="toggleAdoption" data-set="adoption">Appliance Adoption</button>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="mainChart"></canvas>
+          </div>
+        </div>
+
+        <p>The counterargument is tempting: but people are choosing to spend that time. They want cleaner homes. Maybe. But &ldquo;want&rdquo; is a loaded word when the social penalties for a &ldquo;dirty&rdquo; home have escalated in lockstep with the technology. The standard didn't rise because people chose it. The standard rose because the technology made it possible, and then society made it mandatory.</p>
+        <p>Cognitive shift: Technological efficiency in private spaces does not grant free time; instead, it privatizes labor and permanently scales up consumption expectations. This isn't a side effect. It's the mechanism.</p>
+      </section>
+
+      <section id="off-the-hook" class="section reveal">
+        <h2><span class="num">05</span>Off the Hook</h2>
+        <p class="lead">The machine is not the enemy. The invisible standard is.</p>
+        <p>When you see the mechanism clearly&mdash;that efficiency in private spaces doesn't grant free time, it privatizes labor and scales up consumption expectations&mdash;you can start to make different choices. Not grand, systemic choices, though those matter too. Small, daily ones.</p>
+        <p>You can decide that &ldquo;clean enough&rdquo; is enough. You can let the laundry sit an extra day. You can own fewer things that require maintenance. You can refuse to compete with a standard that was invented to sell you a machine.</p>
+        <p>The goal isn't to reject technology. It's to reject the invisible tax that came with it. Every hour you spend maintaining a standard that no one asked for is an hour stolen from the life the appliance promised to return.</p>
+        <p>Reclaiming time begins with a single, deliberate act of letting go. Not of hygiene. Not of health. Of the standard that says your home must look like a showroom and you must be the one maintaining it, alone, every single day.</p>
+      </section>
+
+      <section id="drop-the-ball" class="section reveal">
+        <h2><span class="num">06</span>Drop the Ball</h2>
+        <p class="lead">Within the next 24 hours, pick one domestic task you do daily and deliberately skip it.</p>
+        <p>Don't do the dishes before bed. Don't make the bed. Don't wipe down the counter. Notice the time that opens up. Notice that the world doesn't end. Notice the quiet rebellion of choosing your own standard.</p>
+
+        <div class="action">
+          <h3>Your 24-Hour Reset</h3>
+          <p class="action-subtitle">Check off each micro-action as you complete it today</p>
+          <ul class="checklist" id="checklist">
+            <li><input type="checkbox" id="c1"><label class="check-label" for="c1">Skip one daily domestic task you normally do on autopilot</label></li>
+            <li><input type="checkbox" id="c2"><label class="check-label" for="c2">Set a "clean enough" standard for one room and stick to it</label></li>
+            <li><input type="checkbox" id="c3"><label class="check-label" for="c3">Spend 15 minutes on something you enjoy instead of cleaning</label></li>
+            <li><input type="checkbox" id="c4"><label class="check-label" for="c4">Name the "invisible standard" behind one task you resent</label></li>
+            <li><input type="checkbox" id="c5"><label class="check-label" for="c5">Tell one person about the appliance paradox</label></li>
+          </ul>
+          <div class="gauge-wrap">
+            <svg class="gauge-svg" viewBox="0 0 80 80">
+              <circle class="gauge-bg" cx="40" cy="40" r="34"/>
+              <circle class="gauge-fill" id="gaugeFill" cx="40" cy="40" r="34"
+                stroke-dasharray="213.6" stroke-dashoffset="213.6"
+                transform="rotate(-90 40 40)"/>
+            </svg>
+            <div class="gauge-label">
+              <strong id="gaugeCount">0 of 5</strong>
+              actions completed today
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </article>
+  </main>
+
+  <footer>
+    <p>The Appliance Paradox &mdash; A perspective-shifting article experience</p>
+  </footer>
+</div>
+
+<script>
+/* ── Helpers ── */
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+
+/* ── Reading Time ── */
+(function calcReadingTime() {
+  const text = $('article').innerText || '';
+  const words = text.trim().split(/\s+/).length;
+  const mins = Math.max(1, Math.round(words / 220));
+  $('#readingTime').textContent = mins + ' min read';
+})();
+
+/* ── Text Size ── */
+ $$('.sz-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    $$('.sz-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.documentElement.style.setProperty('--text-size', btn.dataset.sz + 'px');
+  });
+});
+
+/* ── Theme ── */
+function getThemeColors() {
+  const s = getComputedStyle(document.documentElement);
+  return {
+    line: s.getPropertyValue('--chart-line').trim(),
+    lineFill: s.getPropertyValue('--chart-line-fill').trim(),
+    bar: s.getPropertyValue('--chart-bar').trim(),
+    barFill: s.getPropertyValue('--chart-bar-fill').trim(),
+    grid: s.getPropertyValue('--chart-grid').trim(),
+    tick: s.getPropertyValue('--chart-tick').trim(),
+    tooltipBg: s.getPropertyValue('--chart-tooltip-bg').trim(),
+    tooltipFg: s.getPropertyValue('--chart-tooltip-fg').trim()
+  };
+}
+
+function setTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  themeBtn.innerHTML = t === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+  localStorage.setItem('theme', t);
+  /* Rebuild chart with new theme colors after CSS variables settle */
+  requestAnimationFrame(() => { requestAnimationFrame(rebuildChart); });
+}
+
+const themeBtn = $('#themeBtn');
+themeBtn.addEventListener('click', () => {
+  const cur = document.documentElement.getAttribute('data-theme');
+  setTheme(cur === 'dark' ? 'light' : 'dark');
+});
+
+if (localStorage.getItem('theme')) {
+  setTheme(localStorage.getItem('theme'));
+} else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+  setTheme('dark');
+}
+
+/* ── Mobile Drawer ── */
+const rail = $('#rail');
+const scrim = $('#scrim');
+function openDrawer() { rail.classList.add('open'); scrim.classList.add('open'); }
+function closeDrawer() { rail.classList.remove('open'); scrim.classList.remove('open'); }
+ $('#drawerBtn').addEventListener('click', openDrawer);
+scrim.addEventListener('click', closeDrawer);
+ $$('#rail a').forEach(a => a.addEventListener('click', closeDrawer));
+
+/* ── Scroll Progress ── */
+const progress = $('#progress');
+function updateProgress() {
+  const h = document.documentElement.scrollHeight - window.innerHeight;
+  const pct = h > 0 ? (window.scrollY / h) * 100 : 0;
+  progress.style.width = pct + '%';
+  progress.setAttribute('aria-valuenow', Math.round(pct));
+}
+window.addEventListener('scroll', updateProgress, { passive: true });
+
+/* ── Scrollspy ── */
+const sections = $$('section[id]');
+const railLinks = $$('#rail a');
+const spyObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      railLinks.forEach(l => l.classList.remove('active'));
+      const link = $(`#rail a[data-section="${e.target.id}"]`);
+      if (link) link.classList.add('active');
+    }
+  });
+}, { rootMargin: '-80px 0px -55% 0px', threshold: 0 });
+sections.forEach(s => spyObs.observe(s));
+
+/* ── Reveal ── */
+const revealObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) { e.target.classList.add('visible'); revealObs.unobserve(e.target); }
+  });
+}, { threshold: 0.1 });
+ $$('.reveal').forEach(el => revealObs.observe(el));
+
+/* ── Spectrum Slider ── */
+const spectrumSlider = $('#spectrumSlider');
+const spectrumData = {
+  hours:     { promise: 15, reality: 88 },
+  standards: { promise: 25, reality: 95 },
+  help:      { promise: 70, reality: 12 }
+};
+const callouts = [
+  { lo: 0,  hi: 20, text: "The promise: appliances cut housework in half, free up hours, and maintain your current standard with ease. The laundress still comes; the machine just helps." },
+  { lo: 21, hi: 45, text: "The reality begins to show. Hours don't drop as expected. The standard rises. The paid help starts to disappear \u2014 why pay someone when the machine does it?" },
+  { lo: 46, hi: 75, text: "The shift is unmistakable. Weekly housework hours remain nearly unchanged. Cleanliness standards have soared. Paid and communal help has been almost entirely displaced." },
+  { lo: 76, hi: 100, text: "Full reality: the appliance didn't save time. It privatized labor and permanently scaled up consumption expectations. Same hours. Higher bar. Alone." }
+];
+
+function updateSpectrum(val) {
+  const t = val / 100;
+  const hoursW = spectrumData.hours.promise + (spectrumData.hours.reality - spectrumData.hours.promise) * t;
+  const standW = spectrumData.standards.promise + (spectrumData.standards.reality - spectrumData.standards.promise) * t;
+  const helpW  = spectrumData.help.promise + (spectrumData.help.reality - spectrumData.help.promise) * t;
+
+  $('#hoursBar').style.width = hoursW + '%';
+  $('#hoursBar').style.background = t < 0.5 ? 'var(--accent2)' : 'var(--accent)';
+
+  $('#standardsBar').style.width = standW + '%';
+  $('#helpBar').style.width = helpW + '%';
+
+  for (const c of callouts) {
+    if (val >= c.lo && val <= c.hi) { $('#spectrumCallout').textContent = c.text; break; }
+  }
+}
+spectrumSlider.addEventListener('input', () => updateSpectrum(+spectrumSlider.value));
+/* Initialize at slider's starting value (0) */
+updateSpectrum(0);
+
+/* ── SVG Diagram ── */
+const edgeMap = [
+  { from: 0, to: 1, id: 'e0' },
+  { from: 1, to: 2, id: 'e1' },
+  { from: 2, to: 3, id: 'e2' },
+  { from: 3, to: 0, id: 'e3' }
+];
+const diagramTooltip = $('#diagramTooltip');
+ $$('.diagram-svg .node').forEach(node => {
+  node.addEventListener('click', () => {
+    const idx = +node.dataset.node;
+    $$('.diagram-svg .node').forEach(n => n.classList.remove('active'));
+    node.classList.add('active');
+    $$('.diagram-svg .edge').forEach(e => {
+      e.classList.remove('active');
+      e.removeAttribute('marker-end');
+    });
+    edgeMap.filter(e => e.from === idx || e.to === idx).forEach(e => {
+      const path = $(`#${e.id}`);
+      path.classList.add('active');
+      path.setAttribute('marker-end', 'url(#arrowhead-active)');
+    });
+    diagramTooltip.textContent = node.dataset.desc;
+  });
+  node.addEventListener('mouseenter', () => {
+    diagramTooltip.textContent = node.dataset.desc;
+  });
+});
+
+/* ── Chart.js ── */
+const chartLabels = ['1920', '1940', '1960', '1980', '2000', '2020'];
+const chartHours = [58, 55, 52, 50, 48, 47];
+const chartAdoption = [8, 40, 70, 82, 90, 95];
+let mainChart = null;
+
+function buildChart() {
+  const canvas = $('#mainChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const c = getThemeColors();
+
+  mainChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: chartLabels,
+      datasets: [
+        {
+          label: 'Weekly Housework Hours',
+          type: 'line',
+          data: chartHours,
+          borderColor: c.line,
+          backgroundColor: c.lineFill,
+          borderWidth: 3,
+          pointRadius: 5,
+          pointHoverRadius: 8,
+          pointBackgroundColor: c.line,
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          fill: true,
+          tension: 0.35,
+          yAxisID: 'y',
+          order: 0
+        },
+        {
+          label: 'Appliance Adoption %',
+          type: 'bar',
+          data: chartAdoption,
+          backgroundColor: c.barFill,
+          borderColor: c.bar,
+          borderWidth: 1,
+          borderRadius: 4,
+          yAxisID: 'y1',
+          order: 1
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: c.tooltipBg,
+          titleColor: c.tooltipFg,
+          bodyColor: c.tooltipFg,
+          padding: 12,
+          cornerRadius: 8,
+          titleFont: { family: "'DM Sans', sans-serif", weight: '700', size: 13 },
+          bodyFont: { family: "'DM Sans', sans-serif", size: 12 },
+          callbacks: {
+            label: function(ctx) {
+              if (ctx.dataset.label === 'Weekly Housework Hours') {
+                return 'Housework: ' + ctx.parsed.y + ' hrs/week';
+              }
+              return 'Adoption: ' + ctx.parsed.y + '%';
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          position: 'left',
+          title: { display: true, text: 'Hours / Week', color: c.tick,
+            font: { family: "'DM Sans', sans-serif", weight: '600', size: 12 } },
+          min: 0, max: 70,
+          grid: { color: c.grid },
+          ticks: { color: c.tick, font: { family: "'DM Sans', sans-serif", size: 11 } }
+        },
+        y1: {
+          position: 'right',
+          title: { display: true, text: 'Adoption %', color: c.tick,
+            font: { family: "'DM Sans', sans-serif", weight: '600', size: 12 } },
+          min: 0, max: 100,
+          grid: { drawOnChartArea: false },
+          ticks: { color: c.tick, font: { family: "'DM Sans', sans-serif", size: 11 } }
+        },
+        x: {
+          grid: { color: c.grid },
+          ticks: { color: c.tick, font: { family: "'DM Sans', sans-serif", size: 11 } }
+        }
+      },
+      animation: { duration: 800, easing: 'easeOutQuart' }
+    }
+  });
+}
+
+function rebuildChart() {
+  if (mainChart) { mainChart.destroy(); mainChart = null; }
+  buildChart();
+  /* Re-apply toggle state */
+  const hoursOn = $('#toggleHours').classList.contains('on-hours');
+  const adoptionOn = $('#toggleAdoption').classList.contains('on-adoption');
+  if (mainChart) {
+    mainChart.data.datasets[0].hidden = !hoursOn;
+    mainChart.data.datasets[1].hidden = !adoptionOn;
+    mainChart.update();
+  }
+}
+
+/* Chart toggles */
+ $('#toggleHours').addEventListener('click', function() {
+  this.classList.toggle('on-hours');
+  if (mainChart) {
+    mainChart.data.datasets[0].hidden = !this.classList.contains('on-hours');
+    mainChart.update();
+  }
+});
+ $('#toggleAdoption').addEventListener('click', function() {
+  this.classList.toggle('on-adoption');
+  if (mainChart) {
+    mainChart.data.datasets[1].hidden = !this.classList.contains('on-adoption');
+    mainChart.update();
+  }
+});
+
+/* Build chart after DOM + CSS variables are ready */
+requestAnimationFrame(() => { requestAnimationFrame(buildChart); });
+
+/* ── Snap Card: Copy ── */
+const snapText = $('#snapText');
+const copyBtn = $('#copyBtn');
+copyBtn.addEventListener('click', () => {
+  const text = snapText.textContent;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => showCopied()).catch(() => fallbackCopy(text));
+  } else {
+    fallbackCopy(text);
+  }
+});
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); showCopied(); } catch(e) {}
+  document.body.removeChild(ta);
+}
+function showCopied() {
+  copyBtn.classList.add('copied');
+  copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied';
+  setTimeout(() => { copyBtn.classList.remove('copied'); copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy'; }, 2200);
+}
+
+/* ── Snap Card: Share ── */
+const shareText = encodeURIComponent(snapText.textContent);
+const shareUrl = encodeURIComponent(window.location.href);
+
+ $('#shareXBtn').addEventListener('click', () => {
+  window.open('https://twitter.com/intent/tweet?text=' + shareText + '&url=' + shareUrl, '_blank', 'width=600,height=400');
+});
+ $('#shareLinBtn').addEventListener('click', () => {
+  window.open('https://www.linkedin.com/sharing/share-offsite/?url=' + shareUrl, '_blank', 'width=600,height=400');
+});
+
+/* ── Snap Card: Gradient shift on scroll ── */
+const snapCard = $('#snapCard');
+const snapScrollObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      const r = e.boundingClientRect;
+      const wh = window.innerHeight;
+      const pct = Math.max(0, Math.min(1, (wh - r.top) / (wh + r.height)));
+      const hue = 15 + pct * 25;
+      const sat = 28 + pct * 20;
+      const l1 = 14 + pct * 4;
+      const l2 = 26 + pct * 8;
+      const l3 = 38 + pct * 10;
+      snapCard.style.background =
+        'linear-gradient(135deg, hsl(' + hue + ',' + sat + '%,' + l1 + '%) 0%, hsl(' + (hue+10) + ',' + (sat+8) + '%,' + l2 + '%) 50%, hsl(' + (hue+20) + ',' + (sat+18) + '%,' + l3 + '%) 100%)';
+    }
+  });
+}, { threshold: [0, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1] });
+snapScrollObs.observe(snapCard);
+
+/* ── Checklist / Gauge ── */
+const TOTAL_CHECKS = 5;
+const CIRC = 2 * Math.PI * 34; // r = 34
+const gaugeFill = $('#gaugeFill');
+const gaugeCount = $('#gaugeCount');
+
+function updateGauge() {
+  const checked = $$('#checklist input:checked').length;
+  const offset = CIRC - (checked / TOTAL_CHECKS) * CIRC;
+  gaugeFill.style.strokeDashoffset = offset;
+  gaugeCount.textContent = checked + ' of ' + TOTAL_CHECKS;
+}
+ $$('.checklist input[type="checkbox"]').forEach(cb => {
+  cb.addEventListener('change', () => {
+    cb.closest('li').classList.toggle('checked', cb.checked);
+    updateGauge();
+  });
+});
+
+/* ── Dust Particles ── */
+const dustCanvas = $('#dustCanvas');
+const dCtx = dustCanvas.getContext('2d');
+let particles = [];
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function resizeDust() {
+  const hero = $('.hero');
+  if (!hero) return;
+  dustCanvas.width = hero.offsetWidth;
+  dustCanvas.height = hero.offsetHeight;
+}
+resizeDust();
+window.addEventListener('resize', () => { resizeDust(); initParticles(); });
+
+function initParticles() {
+  particles = [];
+  const count = reducedMotion ? 0 : Math.min(55, Math.floor(dustCanvas.width * dustCanvas.height / 9000));
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x: Math.random() * dustCanvas.width,
+      y: Math.random() * dustCanvas.height,
+      r: Math.random() * 2 + 0.5,
+      dx: (Math.random() - 0.5) * 0.3,
+      dy: (Math.random() - 0.5) * 0.2 - 0.12,
+      opacity: Math.random() * 0.35 + 0.08
+    });
+  }
+}
+initParticles();
+
+function animateDust() {
+  if (reducedMotion) return;
+  dCtx.clearRect(0, 0, dustCanvas.width, dustCanvas.height);
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  for (let i = 0; i < particles.length; i++) {
+    const p = particles[i];
+    p.x += p.dx;
+    p.y += p.dy;
+    if (p.x < -10) p.x = dustCanvas.width + 10;
+    if (p.x > dustCanvas.width + 10) p.x = -10;
+    if (p.y < -10) p.y = dustCanvas.height + 10;
+    if (p.y > dustCanvas.height + 10) p.y = -10;
+    dCtx.beginPath();
+    dCtx.arc(p.x, p.y, Math.max(0.1, p.r), 0, Math.PI * 2);
+    dCtx.fillStyle = isDark
+      ? 'rgba(212,168,67,' + p.opacity + ')'
+      : 'rgba(199,91,58,' + (p.opacity * 0.6) + ')';
+    dCtx.fill();
+  }
+  requestAnimationFrame(animateDust);
+}
+if (!reducedMotion) animateDust();
+
+/* ── Initial state ── */
+updateProgress();
+</script>
+</body>
+</html>
