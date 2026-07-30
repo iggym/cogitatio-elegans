@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cold Comfort: The True Cost of Air Conditioning</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --fg: #1a1a2e;
+    --muted: #5a6373;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --accent: #ff6b6b;
+    --accent-2: #4ecdc4;
+    --snap-gradient: linear-gradient(135deg, #ff6b6b, #ffe66d);
+    --glass: rgba(255, 255, 255, 0.75);
+    --topbar-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not(.light-mode) {
+      --bg: #0f0f1a;
+      --fg: #e0e0e0;
+      --muted: #a0a0b0;
+      --card: #1a1a2e;
+      --border: #2a2a3e;
+      --accent: #ff6b6b;
+      --accent-2: #4ecdc4;
+      --glass: rgba(26, 26, 46, 0.75);
+      --topbar-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+  }
+
+  .light-mode {
+    --bg: #f8f9fa;
+    --fg: #1a1a2e;
+    --muted: #5a6373;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --accent: #ff6b6b;
+    --accent-2: #4ecdc4;
+    --glass: rgba(255, 255, 255, 0.75);
+    --topbar-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  }
+
+  .dark-mode {
+    --bg: #0f0f1a;
+    --fg: #e0e0e0;
+    --muted: #a0a0b0;
+    --card: #1a1a2e;
+    --border: #2a2a3e;
+    --accent: #ff6b6b;
+    --accent-2: #4ecdc4;
+    --glass: rgba(26, 26, 46, 0.75);
+    --topbar-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg);
+    color: var(--fg);
+    line-height: 1.7;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    overflow-x: hidden;
+  }
+
+  /* Progress Bar */
+  #progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0%;
+    height: 4px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    z-index: 1000;
+    transition: width 0.1s ease-out;
+  }
+
+  /* Topbar */
+  #topbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 60px;
+    background: var(--glass);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    box-shadow: var(--topbar-shadow);
+    z-index: 900;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+  }
+
+  .topbar-left, .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+
+  .home-link {
+    font-weight: 800;
+    color: var(--fg);
+    text-decoration: none;
+    font-size: 1.1rem;
+    letter-spacing: -0.5px;
+  }
+
+  .breadcrumb {
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+
+  .reading-time {
+    font-size: 0.8rem;
+    background: var(--card);
+    padding: 4px 8px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+
+  .toggle-btn {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--fg);
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s, background 0.2s;
+  }
+
+  .toggle-btn:hover {
+    transform: translateY(-2px);
+  }
+
+  .menu-btn {
+    display: none;
+  }
+
+  /* Layout */
+  .wrap {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-top: 80px;
+  }
+
+  /* Sidebar */
+  #rail {
+    position: sticky;
+    top: 80px;
+    height: calc(100vh - 80px);
+    padding: 30px 20px;
+    border-right: 1px solid var(--border);
+  }
+
+  #rail nav {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  #rail a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.9rem;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: all 0.2s;
+    border-left: 3px solid transparent;
+  }
+
+  #rail a:hover {
+    color: var(--fg);
+    background: var(--card);
+  }
+
+  #rail a.active {
+    color: var(--accent);
+    font-weight: 600;
+    border-left: 3px solid var(--accent);
+    background: var(--card);
+  }
+
+  /* Main Content */
+  main {
+    padding: 40px 50px;
+    max-width: 720px;
+  }
+
+  h1, h2, h3 {
+    font-family: Georgia, 'Times New Roman', serif;
+    line-height: 1.2;
+    margin-bottom: 20px;
+  }
+
+  h1 {
+    font-size: 2.8rem;
+    margin-bottom: 30px;
+    background: linear-gradient(45deg, var(--fg), var(--muted));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  h2 {
+    font-size: 2rem;
+    margin-top: 60px;
+  }
+
+  p {
+    margin-bottom: 24px;
+    font-size: 1.05rem;
+  }
+
+  strong {
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* Reveal Animation */
+  .reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Spectrum Visualizer */
+  .spectrum-container {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 30px;
+    margin: 40px 0;
+    text-align: center;
+  }
+
+  .spectrum-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  .spectrum {
+    width: 100%;
+    height: 40px;
+    background: linear-gradient(90deg, var(--accent-2), var(--accent));
+    border-radius: 20px;
+    position: relative;
+    cursor: pointer;
+    appearance: none;
+  }
+
+  .spectrum::-webkit-slider-thumb {
+    appearance: none;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: var(--fg);
+    border: 4px solid var(--bg);
+    cursor: grab;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  }
+
+  .spectrum::-moz-range-thumb {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: var(--fg);
+    border: 4px solid var(--bg);
+    cursor: grab;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  }
+
+  .spectrum-callout {
+    margin-top: 25px;
+    font-size: 1.1rem;
+    color: var(--fg);
+    min-height: 50px;
+    transition: opacity 0.3s;
+  }
+
+  /* Node SVG Diagram */
+  .network-container {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    margin: 40px 0;
+    position: relative;
+  }
+
+  #network-svg {
+    width: 100%;
+    height: 350px;
+  }
+
+  .node {
+    fill: var(--accent-2);
+    transition: fill 0.3s, r 0.3s;
+    cursor: pointer;
+  }
+
+  .node:hover, .node.active {
+    fill: var(--accent);
+  }
+
+  .line {
+    stroke: var(--border);
+    stroke-width: 2;
+    transition: stroke 0.3s, stroke-width 0.3s;
+  }
+
+  .line.active {
+    stroke: var(--accent);
+    stroke-width: 4;
+  }
+
+  .node-text {
+    fill: var(--fg);
+    font-size: 12px;
+    text-anchor: middle;
+    font-weight: 600;
+    pointer-events: none;
+  }
+
+  /* Chart Container */
+  .chart-container {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 25px;
+    margin: 40px 0;
+    height: 400px;
+    position: relative;
+  }
+
+  /* Perspective Snap */
+  .snap-card {
+    background: var(--snap-gradient);
+    background-size: 200% 200%;
+    border-radius: 20px;
+    padding: 50px 30px;
+    margin: 60px 0;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .snap-text {
+    font-family: Georgia, serif;
+    font-size: 1.8rem;
+    color: #fff;
+    line-height: 1.4;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    margin-bottom: 30px;
+  }
+
+  .snap-actions {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+  }
+
+  .snap-btn {
+    background: rgba(255,255,255,0.2);
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255,255,255,0.4);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 30px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.2s, transform 0.2s;
+  }
+
+  .snap-btn:hover {
+    background: rgba(255,255,255,0.4);
+    transform: translateY(-2px);
+  }
+
+  .copy-feedback {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: #fff;
+    color: var(--accent);
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .copy-feedback.show {
+    opacity: 1;
+  }
+
+  /* Action Checklist */
+  .action-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 30px;
+    margin: 40px 0;
+  }
+
+  .progress-bar-bg {
+    width: 100%;
+    height: 10px;
+    background: var(--border);
+    border-radius: 5px;
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--accent-2), var(--accent));
+    transition: width 0.4s ease;
+  }
+
+  .checklist label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 15px;
+    cursor: pointer;
+    font-size: 1.05rem;
+  }
+
+  .checklist input[type="checkbox"] {
+    width: 24px;
+    height: 24px;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+
+  /* Mobile */
+  #scrim {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 800;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  #scrim.active {
+    display: block;
+    opacity: 1;
+  }
+
+  @media (max-width: 880px) {
+    .wrap {
+      grid-template-columns: 1fr;
+    }
+    .menu-btn {
+      display: flex;
+    }
+    .breadcrumb, .reading-time {
+      display: none;
+    }
+    #rail {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 280px;
+      height: 100%;
+      background: var(--bg);
+      z-index: 850;
+      transform: translateX(-100%);
+      transition: transform 0.3s ease;
+      padding-top: 80px;
+      border-right: 1px solid var(--border);
+    }
+    #rail.open {
+      transform: translateX(0);
+    }
+    main {
+      padding: 20px;
+    }
+    h1 {
+      font-size: 2.2rem;
+    }
+    h2 {
+      font-size: 1.6rem;
+    }
+  }
+
+  /* Accessibility: Reduced Motion */
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation: none !important;
+      transition: none !important;
+      scroll-behavior: auto !important;
+    }
+    .reveal {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* Font Size Toggle */
+  .large-text p {
+    font-size: 1.2rem;
+  }
+  .large-text h1 {
+    font-size: 3.2rem;
+  }
+  .large-text h2 {
+    font-size: 2.4rem;
+  }
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+
+<header id="topbar">
+  <div class="topbar-left">
+    <a href="https://iggym.github.io/cogitatio-elegans/" class="home-link">Cogitatio</a>
+    <span class="breadcrumb">/ Climate & Culture</span>
+  </div>
+  <div class="topbar-right">
+    <span class="reading-time" id="reading-time">-- min read</span>
+    <button class="toggle-btn" id="font-toggle" title="Toggle text size">A+</button>
+    <button class="toggle-btn" id="theme-toggle" title="Toggle theme">🌙</button>
+    <button class="toggle-btn menu-btn" id="menu-btn" title="Open menu">☰</button>
+  </div>
+</header>
+
+<div id="scrim"></div>
+
+<div class="wrap">
+  <aside id="rail">
+    <nav>
+      <a href="#scene" class="active">Cold Comfort</a>
+      <a href="#reframe">Geographic Bulldozer</a>
+      <a href="#connections">House of Cards</a>
+      <a href="#nuance">Sweat Equity</a>
+      <a href="#action">Cool It Down</a>
+    </nav>
+  </aside>
+
+  <main>
+    <article>
+      <h1 class="reveal">The Architectural Amnesia of Air Conditioning</h1>
+      
+      <section id="scene" class="reveal">
+        <p>The compressor hums a low, mechanical lullaby from the window unit. Outside, the asphalt simmers at 110 degrees, shimmering waves of heat rising off the pavement. Inside, a family sits in a sealed bubble, wrapped in fleece blankets, sipping hot coffee. The glass between them is the thinnest of boundaries between life and heatstroke. We consider this machine a benign comfort, a passive servant waiting to cool us down. But look closer. That humming box didn't just alter the temperature of the room; it redrew the map of the modern world.</p>
+      </section>
+
+      <section id="reframe" class="reveal">
+        <h2>Geographic Bulldozer</h2>
+        <p>We treat air conditioning as a passive reaction to hot weather. <strong>The truth is far more aggressive.</strong> Air conditioning radically inverted human geography. It enabled the massive economic and demographic shift toward the global Sunbelt. Before ubiquitous AC, cities like Phoenix, Dubai, and Singapore were constrained by the brutal limits of human thermal tolerance. AC acted as a geographic bulldozer, leveling the climatic barriers that once kept populations concentrated in temperate zones. It fueled sprawling suburban architecture, unhindered by the need for shade trees or cross-ventilation, and fundamentally altered political power distribution by moving populations, and electoral college votes, to the south.</p>
+        
+        <div class="spectrum-container">
+          <div class="spectrum-labels">
+            <span>Passive Comfort</span>
+            <span>Active Dependency</span>
+          </div>
+          <input type="range" min="0" max="100" value="50" class="spectrum" id="spectrum-slider">
+          <div class="spectrum-callout" id="spectrum-callout">
+            Drag the slider to see how air conditioning shifted from a simple luxury to an architectural requirement.
+          </div>
+        </div>
+      </section>
+
+      <section id="connections" class="reveal">
+        <h2>House of Cards</h2>
+        <p>The hidden connections between our climate control and our societal structure are rarely discussed. The machine in the window didn't just build the Sunbelt; it rebuilt the human inside it. By constantly regulating indoor climates to a narrow 72 degrees, we physiologically de-acclimatized the human body. We sweat less. Our cardiovascular responses to heat dull. We have made populations structurally more vulnerable to the very ambient heat waves we sought to escape.</p>
+        
+        <div class="snap-card" id="snap-card">
+          <div class="copy-feedback" id="copy-feedback">Copied!</div>
+          <p class="snap-text">"We didn't adapt to the heat; we engineered a species that forgets how to survive it."</p>
+          <div class="snap-actions">
+            <button class="snap-btn" id="copy-btn">📋 Copy Quote</button>
+            <button class="snap-btn" id="share-twitter">𝕏 Share on X</button>
+            <button class="snap-btn" id="share-linkedin">in Share on LinkedIn</button>
+          </div>
+        </div>
+
+        <p>The network below illustrates how a single technology cascaded into systemic fragility. Hover over the nodes to see the hidden architecture of our dependency.</p>
+
+        <div class="network-container">
+          <svg id="network-svg" viewBox="0 0 600 350">
+            <!-- Lines -->
+            <line class="line" data-target="ac" x1="300" y1="175" x2="100" y2="80" />
+            <line class="line" data-target="ac" x1="300" y1="175" x2="500" y2="80" />
+            <line class="line" data-target="ac" x1="300" y1="175" x2="100" y2="270" />
+            <line class="line" data-target="ac" x1="300" y1="175" x2="500" y2="270" />
+            
+            <!-- Central Node -->
+            <circle class="node active" id="node-ac" cx="300" cy="175" r="35" data-id="ac"></circle>
+            <text class="node-text" x="300" y="180">AC Unit</text>
+            
+            <!-- Outer Nodes -->
+            <circle class="node" cx="100" cy="80" r="25" data-id="sunbelt"></circle>
+            <text class="node-text" x="100" y="85">Sunbelt</text>
+            
+            <circle class="node" cx="500" cy="80" r="25" data-id="sprawl"></circle>
+            <text class="node-text" x="500" y="85">Sprawl</text>
+            
+            <circle class="node" cx="100" cy="270" r="25" data-id="power"></circle>
+            <text class="node-text" x="100" y="275">Power</text>
+            
+            <circle class="node" cx="500" cy="270" r="25" data-id="body"></circle>
+            <text class="node-text" x="500" y="275">Biology</text>
+          </svg>
+        </div>
+      </section>
+
+      <section id="nuance" class="reveal">
+        <h2>Sweat Equity</h2>
+        <p>None of this is to say that air conditioning is inherently evil or that we should smash the compressors. In extreme heat events, air conditioning saves thousands of lives, particularly among the elderly and vulnerable. The nuance lies in the transition from <em>emergency relief</em> to <em>permanent dependency</em>. Environmental control technologies do not adapt us to our world; they re-engineer human physiology and societal architecture to require permanent synthetic dependency. We sacrificed our biological sweat equity for the convenience of a thermostat, creating a fragile society that collapses when the grid flickers.</p>
+        
+        <div class="chart-container">
+          <canvas id="impactChart"></canvas>
+        </div>
+      </section>
+
+      <section id="action" class="reveal">
+        <h2>Cool It Down</h2>
+        <p>Recognizing our engineered fragility is the first step; reclaiming agency is the next. We don't need to suffer, but we do need to break the synthetic dependency. Small, decisive choices can begin to re-acclimatize our bodies and loosen the grip of the mechanical bully in the window.</p>
+        
+        <div class="action-card">
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="action-progress"></div>
+          </div>
+          <div class="checklist">
+            <label><input type="checkbox" class="action-check"> Raise the thermostat by 2 degrees today.</label>
+            <label><input type="checkbox" class="action-check"> Spend 10 minutes outdoors to trigger natural acclimatization.</label>
+            <label><input type="checkbox" class="action-check"> Open windows for cross-ventilation in the evening.</label>
+            <label><input type="checkbox" class="action-check"> Turn off the AC in unoccupied rooms.</label>
+          </div>
+        </div>
+
+        <p>Within the next 24 hours, raise your thermostat by three degrees. Let your body remember what it is. Reclaim your biology.</p>
+      </section>
+    </article>
+  </main>
+</div>
+
+<script>
+  // --- Progress Bar & Scrollspy ---
+  const progress = document.getElementById('progress');
+  const sections = document.querySelectorAll('section');
+  const navLinks = document.querySelectorAll('#rail a');
+
+  window.addEventListener('scroll', () => {
+    const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+    const scrolled = (winScroll / height) * 100;
+    progress.style.width = scrolled + '%';
+
+    // Scrollspy
+    let current = '';
+    sections.forEach(section => {
+      const sectionTop = section.offsetTop - 100;
+      if (winScroll >= sectionTop) {
+        current = section.getAttribute('id');
+      }
+    });
+
+    navLinks.forEach(link => {
+      link.classList.remove('active');
+      if (link.getAttribute('href') === '#' + current) {
+        link.classList.add('active');
+      }
+    });
+
+    // Dynamic gradient for snap card
+    const snapCard = document.getElementById('snap-card');
+    if (snapCard) {
+      const rect = snapCard.getBoundingClientRect();
+      const inView = rect.top < window.innerHeight && rect.bottom > 0;
+      if (inView) {
+        let shift = (window.innerHeight - rect.top) / 10;
+        snapCard.style.backgroundPosition = `${shift}% 50%`;
+      }
+    }
+  });
+
+  // --- Intersection Observer for Reveals ---
+  const revealElements = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.1 });
+
+  revealElements.forEach(el => observer.observe(el));
+
+  // --- Reading Time Calculation ---
+  const mainContent = document.querySelector('main');
+  const words = mainContent.innerText.split(/\s+/).length;
+  const readTime = Math.ceil(words / 200);
+  document.getElementById('reading-time').textContent = readTime + ' min read';
+
+  // --- Theme & Font Toggles ---
+  const themeToggle = document.getElementById('theme-toggle');
+  const fontToggle = document.getElementById('font-toggle');
+  const htmlEl = document.documentElement;
+
+  // Auto detect system theme
+  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    htmlEl.classList.add('dark-mode');
+    themeToggle.textContent = '☀️';
+  } else {
+    htmlEl.classList.add('light-mode');
+    themeToggle.textContent = '🌙';
+  }
+
+  themeToggle.addEventListener('click', () => {
+    if (htmlEl.classList.contains('dark-mode')) {
+      htmlEl.classList.remove('dark-mode');
+      htmlEl.classList.add('light-mode');
+      themeToggle.textContent = '🌙';
+    } else {
+      htmlEl.classList.remove('light-mode');
+      htmlEl.classList.add('dark-mode');
+      themeToggle.textContent = '☀️';
+    }
+  });
+
+  fontToggle.addEventListener('click', () => {
+    htmlEl.classList.toggle('large-text');
+  });
+
+  // --- Mobile Menu ---
+  const menuBtn = document.getElementById('menu-btn');
+  const rail = document.getElementById('rail');
+  const scrim = document.getElementById('scrim');
+
+  function toggleMenu() {
+    rail.classList.toggle('open');
+    scrim.classList.toggle('active');
+  }
+
+  menuBtn.addEventListener('click', toggleMenu);
+  scrim.addEventListener('click', toggleMenu);
+  
+  navLinks.forEach(link => link.addEventListener('click', () => {
+    if (window.innerWidth <= 880) toggleMenu();
+  }));
+
+  // --- Spectrum Slider ---
+  const slider = document.getElementById('spectrum-slider');
+  const callout = document.getElementById('spectrum-callout');
+
+  const calloutTexts = [
+    "Air conditioning is a harmless luxury that makes hot days bearable.",
+    "A useful tool, but society is beginning to rely on it more heavily.",
+    "AC enables massive population shifts to historically inhospitable climates.",
+    "It fuels sprawling architecture and restructures political power distribution.",
+    "It physiologically de-acclimatizes the human body, requiring permanent synthetic dependency."
+  ];
+
+  slider.addEventListener('input', (e) => {
+    const val = e.target.value;
+    let index = Math.floor(val / 25);
+    if (index > 4) index = 4;
+    callout.style.opacity = 0;
+    setTimeout(() => {
+      callout.textContent = calloutTexts[index];
+      callout.style.opacity = 1;
+    }, 150);
+  });
+
+  // --- SVG Node Network Interaction ---
+  const nodes = document.querySelectorAll('.node');
+  const lines = document.querySelectorAll('.line');
+
+  nodes.forEach(node => {
+    node.addEventListener('mouseenter', () => {
+      const id = node.dataset.id;
+      if (id !== 'ac') {
+        lines.forEach(line => {
+          if (line.dataset.target === id) {
+            line.classList.add('active');
+          } else {
+            line.classList.remove('active');
+          }
+        });
+      } else {
+        lines.forEach(line => line.classList.add('active'));
+      }
+    });
+    node.addEventListener('mouseleave', () => {
+      lines.forEach(line => line.classList.remove('active'));
+    });
+  });
+
+  // --- Perspective Snap Card Actions ---
+  const snapText = document.querySelector('.snap-text').innerText;
+  const copyBtn = document.getElementById('copy-btn');
+  const copyFeedback = document.getElementById('copy-feedback');
+
+  copyBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(snapText).then(() => {
+      copyFeedback.classList.add('show');
+      setTimeout(() => copyFeedback.classList.remove('show'), 2000);
+    });
+  });
+
+  const currentUrl = window.location.href;
+  const encodedSnap = encodeURIComponent(snapText);
+  const encodedUrl = encodeURIComponent(currentUrl);
+
+  document.getElementById('share-twitter').addEventListener('click', () => {
+    window.open(`https://twitter.com/intent/tweet?text=${encodedSnap}&url=${encodedUrl}`, '_blank');
+  });
+
+  document.getElementById('share-linkedin').addEventListener('click', () => {
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`, '_blank');
+  });
+
+  // --- Checklist Progress Gauge ---
+  const checkboxes = document.querySelectorAll('.action-check');
+  const progressBar = document.getElementById('action-progress');
+
+  checkboxes.forEach(box => {
+    box.addEventListener('change', () => {
+      const checkedCount = document.querySelectorAll('.action-check:checked').length;
+      const progress = (checkedCount / checkboxes.length) * 100;
+      progressBar.style.width = progress + '%';
+    });
+  });
+
+  // --- Chart.js Visualization ---
+  const ctx = document.getElementById('impactChart');
+  if (ctx) {
+    new Chart(ctx, {
+      type: 'radar',
+      data: {
+        labels: ['Geographic Shift', 'Suburban Sprawl', 'Political Power', 'Biological Acclimatization', 'Grid Dependency'],
+        datasets: [
+          {
+            label: 'Legacy Perspective (Passive)',
+            data: [2, 3, 1, 1, 2],
+            borderColor: 'rgba(78, 205, 196, 1)',
+            backgroundColor: 'rgba(78, 205, 196, 0.2)',
+            borderWidth: 2
+          },
+          {
+            label: 'Shifted Perspective (Active Dependency)',
+            data: [9, 8, 7, 9, 8],
+            borderColor: 'rgba(255, 107, 107, 1)',
+            backgroundColor: 'rgba(255, 107, 107, 0.2)',
+            borderWidth: 2
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          r: {
+            beginAtZero: true,
+            max: 10,
+            grid: { color: 'var(--border)' },
+            angleLines: { color: 'var(--border)' },
+            pointLabels: { color: 'var(--muted)', font: { size: 11 } },
+            ticks: { backdropColor: 'transparent', color: 'var(--muted)' }
+          }
+        },
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: { color: 'var(--fg)' }
+          }
+        }
+      }
+    });
+  }
+</script>
+
+</body>
+</html>
