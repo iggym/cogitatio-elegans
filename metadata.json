@@ -1,5 +1,18 @@
 [
   {
+  "title": "The Colonized Night",
+  "description": "Urban street lighting wasn't a humanitarian triumph to banish crime; it was an industrial tool to extend the factory shift and colonize human biological time.",
+  "category": "geography",
+  "date": "2023-10-27",
+  "slug": "colonized-night.html"
+},{
+  "title": "The Petrochemical Plate",
+  "description": "We didn't conquer scarcity; we just changed its shape. Modern farming is just fossil fuel wearing a plant suit.",
+  "category": "agriculture",
+  "date": "2024-05-16",
+  "slug": "petrochemical-plate.html"
+},
+  {
   "title": "Too Clean to Live",
   "description": "The hospital didn't fail. It worked exactly as designed — and the design itself is the problem.",
   "category": "medicine",
