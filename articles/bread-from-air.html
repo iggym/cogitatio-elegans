@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bread from Air</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+/* ── Reset & Base ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;font-size:var(--font-size-base,17px)}
+body{font-family:var(--font-ui);background:var(--bg);color:var(--fg);line-height:1.7;transition:background .4s,color .4s;overflow-x:hidden}
+a{color:var(--accent);text-decoration:none;transition:color .2s}
+a:hover{color:var(--accent-hover)}
+img{max-width:100%;display:block}
+button{cursor:pointer;font-family:var(--font-ui);border:none;background:none;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+/* ── CSS Variables ── */
+:root{
+  --bg:#faf6ed;--bg-alt:#f0e8d8;--fg:#2a1f0e;--fg-muted:#6b5d4d;
+  --accent:#c4882e;--accent-hover:#a87020;--card:#fffefa;--card-border:#e0d8c8;
+  --border:#d8cfc0;--green:#3a7a4a;--green-dark:#1a4a2a;--red:#b83a2a;
+  --topbar-bg:rgba(250,246,237,.88);--rail-bg:rgba(250,246,237,.97);
+  --progress-grad:linear-gradient(90deg,#c4882e,#3a7a4a);
+  --shadow:0 2px 16px rgba(42,31,14,.08);
+  --font-display:'Playfair Display',Georgia,serif;
+  --font-ui:'Source Sans 3',system-ui,sans-serif;
+  --font-size-base:17px;--radius:10px;
+}
+[data-theme="dark"]{
+  --bg:#141210;--bg-alt:#1e1c18;--fg:#e8e0d0;--fg-muted:#9a8e7e;
+  --accent:#d4982e;--accent-hover:#e4a83e;--card:#1e1c18;--card-border:#3a3630;
+  --border:#2e2a24;--green:#5aaa6a;--green-dark:#2a5a3a;--red:#d84a3a;
+  --topbar-bg:rgba(20,18,16,.9);--rail-bg:rgba(20,18,16,.97);
+  --progress-grad:linear-gradient(90deg,#d4982e,#5aaa6a);
+  --shadow:0 2px 16px rgba(0,0,0,.35);
+}
+
+/* ── Progress Bar ── */
+#progress{position:fixed;top:0;left:0;height:3px;width:0;background:var(--progress-grad);z-index:1001;transition:width .1s linear;pointer-events:none}
+
+/* ── Topbar ── */
+#topbar{position:sticky;top:0;z-index:1000;background:var(--topbar-bg);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--border);transition:background .4s}
+.topbar-inner{display:flex;align-items:center;gap:12px;padding:10px 24px;max-width:1200px;margin:0 auto}
+.home-link{font-family:var(--font-display);font-weight:700;font-size:1.05rem;white-space:nowrap}
+.breadcrumb{font-size:.82rem;color:var(--fg-muted);margin-right:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.breadcrumb span{opacity:.5}
+.reading-time{font-size:.78rem;color:var(--fg-muted);white-space:nowrap;font-weight:600}
+.topbar-controls{display:flex;align-items:center;gap:6px}
+.ctrl-btn{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.85rem;background:var(--bg-alt);border:1px solid var(--border);transition:all .2s}
+.ctrl-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.ctrl-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+#menuBtn{display:none}
+
+/* ── Layout Grid ── */
+.wrap{display:grid;grid-template-columns:220px 1fr;max-width:1200px;margin:0 auto;min-height:100vh}
+#rail{position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto;padding:32px 20px 32px 24px;border-right:1px solid var(--border);background:var(--rail-bg);transition:background .4s}
+#rail nav{display:flex;flex-direction:column;gap:4px}
+#rail a{font-size:.88rem;font-weight:600;color:var(--fg-muted);padding:8px 12px;border-radius:8px;transition:all .2s;border-left:3px solid transparent;white-space:nowrap}
+#rail a:hover{color:var(--fg);background:var(--bg-alt);border-left-color:var(--accent)}
+#rail a.active{color:var(--accent);background:var(--bg-alt);border-left-color:var(--accent)}
+
+/* ── Main Content ── */
+main{padding:0 24px 80px;max-width:740px;min-width:0}
+article{padding-top:12px}
+
+/* ── Hero ── */
+#hero{padding:64px 0 40px;text-align:center;position:relative}
+.hero-title{font-family:var(--font-display);font-weight:900;font-size:clamp(2.6rem,6vw,4.2rem);line-height:1.1;margin-bottom:16px;letter-spacing:-.02em}
+.hero-sub{font-size:1.15rem;color:var(--fg-muted);max-width:520px;margin:0 auto 48px;line-height:1.6}
+
+/* ── Spectrum Slider ── */
+.spectrum{position:relative;max-width:560px;margin:0 auto 24px}
+.spectrum-labels{display:flex;justify-content:space-between;font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
+.spectrum-labels .left{color:var(--accent)}
+.spectrum-labels .right{color:var(--green)}
+.spectrum-track{position:relative;height:6px;border-radius:3px;background:linear-gradient(90deg,var(--accent),var(--green));cursor:pointer}
+.spectrum-thumb{position:absolute;top:50%;transform:translate(-50%,-50%);width:24px;height:24px;border-radius:50%;background:var(--card);border:3px solid var(--accent);box-shadow:0 2px 8px rgba(0,0,0,.15);transition:border-color .2s,box-shadow .2s;cursor:grab;z-index:2}
+.spectrum-thumb:active{cursor:grabbing;box-shadow:0 2px 12px rgba(0,0,0,.25)}
+.spectrum-text{margin-top:20px;padding:24px 28px;border-radius:var(--radius);background:var(--card);border:1px solid var(--card-border);box-shadow:var(--shadow);min-height:100px;position:relative;overflow:hidden}
+.spectrum-text .view{position:absolute;inset:0;padding:24px 28px;transition:opacity .4s,transform .4s;display:flex;align-items:center}
+.spectrum-text .view.legacy{opacity:1;transform:translateX(0)}
+.spectrum-text .view.shifted{opacity:0;transform:translateX(20px)}
+.spectrum-text.shifted .view.legacy{opacity:0;transform:translateX(-20px)}
+.spectrum-text.shifted .view.shifted{opacity:1;transform:translateX(0)}
+
+/* ── Sections ── */
+.section{padding:56px 0 0}
+.section-label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:8px}
+.section-title{font-family:var(--font-display);font-weight:900;font-size:clamp(1.8rem,4vw,2.6rem);line-height:1.15;margin-bottom:24px;letter-spacing:-.01em}
+.section p{margin-bottom:20px;font-size:1rem;line-height:1.8;color:var(--fg)}
+.section p.lead{font-size:1.12rem;line-height:1.75;font-weight:400}
+.section strong{color:var(--fg);font-weight:700}
+.section em{font-style:italic;color:var(--fg-muted)}
+
+/* ── Reveal Animation ── */
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .7s cubic-bezier(.16,1,.3,1),transform .7s cubic-bezier(.16,1,.3,1)}
+.reveal.visible{opacity:1;transform:translateY(0)}
+
+/* ── Canvas Container ── */
+.canvas-wrap{position:relative;width:100%;margin:32px 0;border-radius:var(--radius);overflow:hidden;background:var(--card);border:1px solid var(--card-border);box-shadow:var(--shadow)}
+.canvas-wrap canvas{width:100%;display:block}
+.canvas-tooltip{position:absolute;background:var(--card);border:1px solid var(--card-border);border-radius:8px;padding:10px 14px;font-size:.82rem;box-shadow:var(--shadow);pointer-events:none;opacity:0;transition:opacity .2s;z-index:10;max-width:220px;line-height:1.5}
+.canvas-tooltip.show{opacity:1}
+
+/* ── Chart Container ── */
+.chart-wrap{position:relative;width:100%;margin:32px 0;border-radius:var(--radius);overflow:hidden;background:var(--card);border:1px solid var(--card-border);box-shadow:var(--shadow);padding:24px}
+.chart-toggle{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.chart-toggle button{font-size:.78rem;font-weight:700;padding:6px 14px;border-radius:6px;background:var(--bg-alt);border:1px solid var(--border);transition:all .2s}
+.chart-toggle button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* ── Snap Card ── */
+.snap-card{position:relative;margin:40px 0;padding:40px 36px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--green-dark));color:#fff;overflow:hidden;box-shadow:0 8px 32px rgba(196,136,46,.2)}
+.snap-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,0,0,.1),rgba(0,0,0,.3));z-index:0}
+.snap-card>*{position:relative;z-index:1}
+.snap-quote{font-family:var(--font-display);font-size:clamp(1.3rem,3vw,1.8rem);font-weight:700;line-height:1.4;margin-bottom:24px}
+.snap-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.snap-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:.82rem;font-weight:600;background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.25);transition:all .2s;backdrop-filter:blur(4px)}
+.snap-btn:hover{background:rgba(255,255,255,.32);transform:translateY(-1px)}
+.snap-btn i{font-size:.9rem}
+
+/* ── CTA Checklist ── */
+.action-card{margin:40px 0;padding:32px;border-radius:var(--radius);background:var(--card);border:1px solid var(--card-border);box-shadow:var(--shadow)}
+.action-card h3{font-family:var(--font-display);font-weight:700;font-size:1.3rem;margin-bottom:6px}
+.action-card .action-sub{font-size:.9rem;color:var(--fg-muted);margin-bottom:20px}
+.gauge-wrap{margin-bottom:20px}
+.gauge-label{font-size:.78rem;font-weight:700;color:var(--fg-muted);margin-bottom:6px}
+.gauge-track{height:8px;border-radius:4px;background:var(--bg-alt);overflow:hidden}
+.gauge-fill{height:100%;border-radius:4px;background:var(--progress-grad);transition:width .5s cubic-bezier(.16,1,.3,1);width:0}
+.checklist{display:flex;flex-direction:column;gap:10px}
+.checklist label{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border-radius:8px;background:var(--bg-alt);cursor:pointer;transition:all .2s;border:1px solid transparent}
+.checklist label:hover{border-color:var(--accent);background:var(--bg)}
+.checklist input[type="checkbox"]{appearance:none;-webkit-appearance:none;width:22px;height:22px;min-width:22px;border-radius:6px;border:2px solid var(--border);background:var(--card);cursor:pointer;transition:all .2s;margin-top:1px;position:relative}
+.checklist input[type="checkbox"]:checked{background:var(--accent);border-color:var(--accent)}
+.checklist input[type="checkbox"]:checked::after{content:'\f00c';font-family:'Font Awesome 6 Free';font-weight:900;font-size:.7rem;color:#fff;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
+.checklist .check-text{font-size:.92rem;line-height:1.5}
+.checklist input:checked~.check-text{text-decoration:line-through;opacity:.5}
+
+/* ── Footer ── */
+footer{grid-column:1/-1;padding:40px 24px;text-align:center;border-top:1px solid var(--border);font-size:.82rem;color:var(--fg-muted)}
+footer a{color:var(--accent)}
+
+/* ── Toast ── */
+#toast-container{position:fixed;bottom:24px;right:24px;z-index:2000;display:flex;flex-direction:column;gap:8px}
+.toast{padding:12px 20px;border-radius:10px;background:var(--fg);color:var(--bg);font-size:.88rem;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.2);opacity:0;transform:translateY(12px);transition:all .3s cubic-bezier(.16,1,.3,1);pointer-events:none}
+.toast.show{opacity:1;transform:translateY(0)}
+
+/* ── Scrim ── */
+#scrim{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:900;opacity:0;pointer-events:none;transition:opacity .3s}
+#scrim.open{opacity:1;pointer-events:auto}
+
+/* ── Responsive ── */
+@media(max-width:880px){
+  .wrap{grid-template-columns:1fr}
+  #rail{position:fixed;top:0;left:0;height:100vh;width:280px;transform:translateX(-100%);transition:transform .35s cubic-bezier(.16,1,.3,1);z-index:950;padding-top:72px;border-right:1px solid var(--border)}
+  #rail.open{transform:translateX(0)}
+  #menuBtn{display:flex}
+  main{padding:0 16px 60px}
+  .topbar-inner{padding:10px 16px}
+  .spectrum-text .view{padding:20px}
+  .snap-card{padding:28px 24px}
+  .chart-wrap{padding:16px}
+}
+
+@media(max-width:480px){
+  .hero-title{font-size:2.2rem}
+  .section{padding:40px 0 0}
+  .snap-actions{flex-direction:column}
+  .snap-btn{width:100%;justify-content:center}
+}
+
+/* ── Reduced Motion ── */
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:0s!important;transition-duration:0s!important}
+  html{scroll-behavior:auto}
+  .reveal{opacity:1;transform:none}
+  #progress{transition:none}
+}
+
+/* ── Selection ── */
+::selection{background:var(--accent);color:#fff}
+</style>
+</head>
+<body>
+
+<!-- Progress Bar -->
+<div id="progress" role="progressbar" aria-label="Reading progress"></div>
+
+<!-- Topbar -->
+<header id="topbar">
+  <div class="topbar-inner">
+    <a href="https://iggym.github.io/cogitatio-elegans/" class="home-link">Cogitatio Elegans</a>
+    <nav class="breadcrumb" aria-label="Breadcrumb">Agriculture <span>/</span> Synthetic Fertilizers</nav>
+    <span class="reading-time" id="readingTime"></span>
+    <div class="topbar-controls">
+      <button class="ctrl-btn" id="fontBtn" aria-label="Toggle text size" title="Toggle text size">Aa</button>
+      <button class="ctrl-btn" id="themeBtn" aria-label="Toggle theme" title="Toggle theme"><i class="fas fa-moon"></i></button>
+      <button class="ctrl-btn" id="menuBtn" aria-label="Open menu" title="Open menu"><i class="fas fa-bars"></i></button>
+    </div>
+  </div>
+</header>
+
+<!-- Scrim Overlay -->
+<div id="scrim" aria-hidden="true"></div>
+
+<!-- Layout -->
+<div class="wrap">
+  <!-- Sidebar Rail -->
+  <aside id="rail" aria-label="Section navigation">
+    <nav>
+      <a href="#hero">Overview</a>
+      <a href="#opening">Bread from Air</a>
+      <a href="#reframe">The Devil's Bargain</a>
+      <a href="#connections">Roots in the Rig</a>
+      <a href="#data">By the Numbers</a>
+      <a href="#nuance">Two Sides, Same Coin</a>
+      <a href="#agency">Breaking the Chain</a>
+      <a href="#action">First Things First</a>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main>
+    <article>
+
+      <!-- ═══ HERO ═══ -->
+      <section id="hero" class="section">
+        <h1 class="hero-title reveal">Bread from Air</h1>
+        <p class="hero-sub reveal">The most important invention of the 20th century fed billions — and built a dependency no one meant to sign.</p>
+
+        <!-- Spectrum Visualization -->
+        <div class="spectrum reveal" id="spectrum">
+          <div class="spectrum-labels">
+            <span class="left">Legacy View</span>
+            <span class="right">Shifted View</span>
+          </div>
+          <div class="spectrum-track" id="spectrumTrack">
+            <div class="spectrum-thumb" id="spectrumThumb" tabindex="0" role="slider" aria-label="Perspective slider" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
+          </div>
+          <div class="spectrum-text" id="spectrumText">
+            <div class="view legacy">Synthetic nitrogen fertilizers were a pure humanitarian breakthrough that permanently solved global food scarcity and fueled the exponential expansion of the human population.</div>
+            <div class="view shifted">By converting fossil fuels directly into agricultural growth, synthetic fertilizers decoupled farming from natural soil regeneration and localized solar energy loops, tying human survival directly to finite petrochemical extraction.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ OPENING ═══ -->
+      <section id="opening" class="section">
+        <div class="section-label reveal">Scene</div>
+        <h2 class="section-title reveal">Bread from Air</h2>
+        <p class="lead reveal">1909. A laboratory in Karlsruhe, Germany. Fritz Haber forces nitrogen — the gas that makes up 78% of every breath you have ever taken — into a reaction with hydrogen under extremes of heat and pressure the world had never seen. Out comes ammonia. The air itself becomes bread.</p>
+        <p class="reveal">Within three decades, two billion people who would have starved will instead eat. The world's population will quadruple. The Haber-Bosch process will be called the most important invention of the 20th century. Two Nobel Prizes will be awarded for it. And it will be built on a bargain no one read the fine print of.</p>
+        <p class="reveal">Today, <strong>half the nitrogen in your body was forged in a furnace, not grown in a field.</strong> Half the protein in your muscles, the DNA in your cells, the neurotransmitters in your brain — they were built from ammonia that was, in turn, built from fossil gas. You are, in the most literal sense, made from petroleum and air.</p>
+      </section>
+
+      <!-- ═══ REFRAME ═══ -->
+      <section id="reframe" class="section">
+        <div class="section-label reveal">Reframe</div>
+        <h2 class="section-title reveal">The Devil's Bargain</h2>
+        <p class="lead reveal">Synthetic fertilizers didn't solve hunger. They replaced one dependency with a more dangerous one.</p>
+        <p class="reveal">By converting fossil fuels directly into agricultural growth, we decoupled farming from natural soil regeneration and tied human survival to finite petrochemical extraction. Every harvest is now, at its root, a petroleum withdrawal. We didn't eliminate scarcity — we disguised it as abundance, and the bill is compounding.</p>
+        <p class="reveal">For ten thousand years, agriculture was powered by the sun. Soil fertility came from nitrogen-fixing bacteria, from legumes, from manure, from the slow cycling of organic matter. The farm was a loop — what was taken from the soil was returned. It was a solar energy system, limited but self-sustaining.</p>
+        <p class="reveal">The Haber-Bosch process broke that loop. It allowed us to bypass the sun entirely — to pull nitrogen from the air and hydrogen from natural gas, combine them under extreme pressure, and inject the result directly into the soil. Farming became, in effect, a fossil fuel extraction process wearing a straw hat.</p>
+      </section>
+
+      <!-- ═══ CONNECTIONS ═══ -->
+      <section id="connections" class="section">
+        <div class="section-label reveal">Connections</div>
+        <h2 class="section-title reveal">Roots in the Rig</h2>
+        <p class="reveal">The connections are hidden in plain sight. Natural gas is the primary feedstock for synthetic nitrogen production. The methane is stripped of its hydrogen, which is then combined with atmospheric nitrogen under 200–300 atmospheres of pressure and 400–500°C of heat. The process consumes roughly <strong>1–2% of the world's total energy supply</strong> and releases over 400 million tonnes of CO₂ annually.</p>
+        <p class="reveal">But the cascade doesn't stop at the factory gate. When synthetic nitrogen is applied to fields, only about 50% is taken up by crops. The rest runs off into waterways, triggering algal blooms that choke oxygen from the water. The Gulf of Mexico now hosts a dead zone the size of New Jersey every summer. Similar dead zones have been documented in over 400 coastal areas worldwide.</p>
+        <p class="reveal">Meanwhile, the soil itself is changing. Continuous synthetic nitrogen application suppresses the natural microorganisms that fix nitrogen, mine phosphorus, and build soil structure. The soil becomes an addict — requiring ever-increasing doses just to maintain the same yield. The living ecosystem beneath our feet degrades into a mere substrate for chemical injection.</p>
+
+        <!-- Canvas Node Network -->
+        <div class="canvas-wrap reveal" style="max-width:640px">
+          <canvas id="networkCanvas" width="640" height="420"></canvas>
+          <div class="canvas-tooltip" id="canvasTooltip"></div>
+        </div>
+        <p style="font-size:.82rem;color:var(--fg-muted);text-align:center;margin-top:-20px" class="reveal">Hover or tap nodes to explore the system connections</p>
+      </section>
+
+      <!-- ═══ DATA ═══ -->
+      <section id="data" class="section">
+        <div class="section-label reveal">Data</div>
+        <h2 class="section-title reveal">By the Numbers</h2>
+        <p class="reveal">The data tells the same story the soil does: a system that is accelerating, not stabilizing. Global synthetic nitrogen consumption has risen from 4 million tonnes in 1950 to over 110 million tonnes today — tracking population growth nearly one-to-one, and consuming more fossil fuel with each passing year.</p>
+
+        <div class="chart-wrap reveal">
+          <div class="chart-toggle">
+            <button class="on" data-set="fertilizer" aria-label="Toggle fertilizer data">Fertilizer Use</button>
+            <button class="on" data-set="population" aria-label="Toggle population data">Population</button>
+            <button data-set="gas" aria-label="Toggle gas data">Gas for Fertilizer</button>
+          </div>
+          <canvas id="dataChart" height="280"></canvas>
+        </div>
+      </section>
+
+      <!-- ═══ NUANCE ═══ -->
+      <section id="nuance" class="section">
+        <div class="section-label reveal">Nuance</div>
+        <h2 class="section-title reveal">Two Sides, Same Coin</h2>
+        <p class="reveal">To be clear: the Haber-Bosch process feeds roughly <strong>four billion people</strong>. Without it, the global food system would collapse. The green revolution that lifted much of Asia and Latin America out of famine was powered by synthetic nitrogen. This is not a simple story of villainy.</p>
+        <p class="reveal">But complexity is not the same as neutrality. The same process that feeds billions also creates a dependency that deepens every year. Global population continues to grow — projected to reach nearly 10 billion by 2050 — requiring even more synthetic nitrogen, even more natural gas, even more CO₂, even more dead zones. The system is not in equilibrium. It is accelerating.</p>
+        <p class="reveal">The fossil fuel connection is not incidental — it is foundational. When gas prices spiked in 2021–2022, fertilizer prices tripled, and food insecurity surged across Africa and South Asia. The system's stability is not a property of the soil. It is a property of the gas market.</p>
+        <p class="reveal"><strong>Technological interventions that overcome ecological constraints often substitute immediate scarcity for catastrophic, systemic fragility.</strong> The Haber-Bosch process is the textbook case.</p>
+
+        <!-- Perspective Snap Card -->
+        <div class="snap-card reveal" id="snapCard">
+          <div class="snap-quote" id="snapQuote">Half the nitrogen in your body was forged in a furnace, not grown in a field.</div>
+          <div class="snap-actions">
+            <button class="snap-btn" id="copyBtn" aria-label="Copy quote"><i class="fas fa-copy"></i> Copy</button>
+            <button class="snap-btn" id="shareXBtn" aria-label="Share on X"><i class="fab fa-x-twitter"></i> Share on X</button>
+            <button class="snap-btn" id="shareLinkedInBtn" aria-label="Share on LinkedIn"><i class="fab fa-linkedin-in"></i> Share on LinkedIn</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ AGENCY ═══ -->
+      <section id="agency" class="section">
+        <div class="section-label reveal">Agency</div>
+        <h2 class="section-title reveal">Breaking the Chain</h2>
+        <p class="reveal">The loop can be rewired. Regenerative agriculture practices — cover crops, crop rotation, no-till farming, integrated livestock — can restore soil microbiomes and reduce synthetic nitrogen dependency by 30–50% while maintaining yields. Precision agriculture, using sensors and data to apply fertilizer only where and when it's needed, can cut nitrogen use by 20–40% without reducing output.</p>
+        <p class="reveal">The food waste problem is staggering: roughly <strong>30% of all food produced is never eaten</strong>. That's 30% of the fertilizer, the fossil fuel, the dead zones, the emissions — wasted. Cutting food waste in half would be equivalent to removing hundreds of millions of tonnes of synthetic nitrogen from the system.</p>
+        <p class="reveal">Farmers are already making this transition. In Denmark, national policies have reduced nitrogen fertilizer use by 40% since 1990 while maintaining crop yields. In parts of sub-Saharan Africa, agroforestry and intercropping are producing yields comparable to synthetic-dependent systems — at a fraction of the cost and environmental damage.</p>
+        <p class="reveal">The question is not whether we can decouple food from fossil fuels. It is whether we will do it fast enough.</p>
+      </section>
+
+      <!-- ═══ CTA ═══ -->
+      <section id="action" class="section">
+        <div class="section-label reveal">Action</div>
+        <h2 class="section-title reveal">First Things First</h2>
+        <p class="reveal">The shift begins with a single question, asked honestly: where did this food come from? Not the store. Not the brand. The soil. The gas. The furnace. That question — asked once, genuinely — starts the rewiring.</p>
+
+        <div class="action-card reveal" id="actionCard">
+          <h3>Your 24-Hour Shift</h3>
+          <p class="action-sub">Complete these actions to begin decoupling your awareness from the default story.</p>
+          <div class="gauge-wrap">
+            <div class="gauge-label">Progress: <span id="gaugePercent">0%</span></div>
+            <div class="gauge-track"><div class="gauge-fill" id="gaugeFill"></div></div>
+          </div>
+          <div class="checklist">
+            <label><input type="checkbox" data-action="trace"><span class="check-text">Trace one meal back to its source today — look at the label, find the farm or origin</span></label>
+            <label><input type="checkbox" data-action="local"><span class="check-text">Find one local or regenerative farm within 50 miles of you</span></label>
+            <label><input type="checkbox" data-action="waste"><span class="check-text">Eliminate food waste from one meal today — plan portions, use leftovers</span></label>
+            <label><input type="checkbox" data-action="share"><span class="check-text">Share this perspective with one person — in person, by message, or by link</span></label>
+            <label><input type="checkbox" data-action="read"><span class="check-text">Read one article about regenerative agriculture or soil health</span></label>
+          </div>
+        </div>
+      </section>
+
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <p>Part of <a href="https://iggym.github.io/cogitatio-elegans/">Cogitatio Elegans</a> — Perspectives that rewire thinking.</p>
+    <p style="margin-top:6px;font-size:.75rem;opacity:.6">Category: Agriculture &middot; Environment &middot; Systems Thinking</p>
+  </footer>
+</div>
+
+<!-- Toast Container -->
+<div id="toast-container" aria-live="polite"></div>
+
+<script>
+/* ═══════════════════════════════════════════
+   INITIALIZATION & GLOBALS
+   ═══════════════════════════════════════════ */
+const $ = (s, p = document) => p.querySelector(s);
+const $$ = (s, p = document) => [...p.querySelectorAll(s)];
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ═══════════════════════════════════════════
+   THEME TOGGLE
+   ═══════════════════════════════════════════ */
+const themeBtn = $('#themeBtn');
+const html = document.documentElement;
+
+function setTheme(theme) {
+  html.setAttribute('data-theme', theme);
+  const icon = themeBtn.querySelector('i');
+  icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+  localStorage.setItem('theme', theme);
+  // Update chart colors if chart exists
+  if (window.dataChart) updateChartTheme();
+}
+
+// Detect system preference or saved preference
+const savedTheme = localStorage.getItem('theme');
+const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+if (savedTheme) setTheme(savedTheme);
+else if (systemDark) setTheme('dark');
+
+themeBtn.addEventListener('click', () => {
+  const current = html.getAttribute('data-theme');
+  setTheme(current === 'dark' ? 'light' : 'dark');
+});
+
+/* ═══════════════════════════════════════════
+   FONT SIZE TOGGLE
+   ═══════════════════════════════════════════ */
+const fontSizes = [15, 17, 20];
+let fontIndex = 1;
+const fontBtn = $('#fontBtn');
+
+fontBtn.addEventListener('click', () => {
+  fontIndex = (fontIndex + 1) % fontSizes.length;
+  html.style.setProperty('--font-size-base', fontSizes[fontIndex] + 'px');
+  showToast(`Text size: ${fontSizes[fontIndex]}px`);
+});
+
+/* ═══════════════════════════════════════════
+   MOBILE MENU
+   ═══════════════════════════════════════════ */
+const menuBtn = $('#menuBtn');
+const rail = $('#rail');
+const scrim = $('#scrim');
+
+function openMenu() {
+  rail.classList.add('open');
+  scrim.classList.add('open');
+  menuBtn.setAttribute('aria-expanded', 'true');
+}
+function closeMenu() {
+  rail.classList.remove('open');
+  scrim.classList.remove('open');
+  menuBtn.setAttribute('aria-expanded', 'false');
+}
+
+menuBtn.addEventListener('click', openMenu);
+scrim.addEventListener('click', closeMenu);
+
+// Close menu on rail link click (mobile)
+ $$('a', rail).forEach(a => a.addEventListener('click', () => {
+  if (window.innerWidth <= 880) closeMenu();
+}));
+
+/* ═══════════════════════════════════════════
+   READING TIME
+   ═══════════════════════════════════════════ */
+const articleText = $('article').innerText;
+const wordCount = articleText.trim().split(/\s+/).length;
+const readMins = Math.max(1, Math.ceil(wordCount / 225));
+ $('#readingTime').textContent = readMins + ' min read';
+
+/* ═══════════════════════════════════════════
+   SCROLL PROGRESS
+   ═══════════════════════════════════════════ */
+const progressBar = $('#progress');
+
+function updateProgress() {
+  const scrollTop = window.scrollY;
+  const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+  const pct = docHeight > 0 ? Math.min(100, (scrollTop / docHeight) * 100) : 0;
+  progressBar.style.width = pct + '%';
+}
+
+window.addEventListener('scroll', updateProgress, { passive: true });
+updateProgress();
+
+/* ═══════════════════════════════════════════
+   SCROLLSPY (IntersectionObserver)
+   ═══════════════════════════════════════════ */
+const railLinks = $$('a', rail);
+const sections = $$('section[id]');
+
+const spyObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const id = entry.target.id;
+      railLinks.forEach(link => {
+        link.classList.toggle('active', link.getAttribute('href') === '#' + id);
+      });
+    }
+  });
+}, { rootMargin: '-20% 0px -60% 0px', threshold: 0 });
+
+sections.forEach(s => spyObserver.observe(s));
+
+/* ═══════════════════════════════════════════
+   REVEAL ANIMATIONS
+   ═══════════════════════════════════════════ */
+if (!prefersReducedMotion) {
+  const revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        revealObserver.unobserve(entry.target);
+      }
+    });
+  }, { rootMargin: '0px 0px -60px 0px', threshold: 0.1 });
+
+  $$('.reveal').forEach(el => revealObserver.observe(el));
+} else {
+  $$('.reveal').forEach(el => el.classList.add('visible'));
+}
+
+/* ═══════════════════════════════════════════
+   SPECTRUM SLIDER
+   ═══════════════════════════════════════════ */
+const spectrumTrack = $('#spectrumTrack');
+const spectrumThumb = $('#spectrumThumb');
+const spectrumText = $('#spectrumText');
+let sliderVal = 0;
+let isDragging = false;
+
+function updateSpectrum(val) {
+  sliderVal = Math.max(0, Math.min(100, val));
+  spectrumThumb.style.left = sliderVal + '%';
+  spectrumThumb.setAttribute('aria-valuenow', Math.round(sliderVal));
+  // Shift the text container
+  if (sliderVal > 50) {
+    spectrumText.classList.add('shifted');
+  } else {
+    spectrumText.classList.remove('shifted');
+  }
+  // Interpolate thumb border color
+  const ratio = sliderVal / 100;
+  spectrumThumb.style.borderColor = ratio > 0.5 ? 'var(--green)' : 'var(--accent)';
+}
+
+function getSliderPos(e) {
+  const rect = spectrumTrack.getBoundingClientRect();
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  return ((clientX - rect.left) / rect.width) * 100;
+}
+
+spectrumTrack.addEventListener('mousedown', (e) => { isDragging = true; updateSpectrum(getSliderPos(e)); });
+spectrumThumb.addEventListener('mousedown', (e) => { isDragging = true; e.stopPropagation(); });
+window.addEventListener('mousemove', (e) => { if (isDragging) updateSpectrum(getSliderPos(e)); });
+window.addEventListener('mouseup', () => { isDragging = false; });
+
+spectrumTrack.addEventListener('touchstart', (e) => { isDragging = true; updateSpectrum(getSliderPos(e)); }, { passive: true });
+spectrumThumb.addEventListener('touchstart', (e) => { isDragging = true; }, { passive: true });
+window.addEventListener('touchmove', (e) => { if (isDragging) updateSpectrum(getSliderPos(e)); }, { passive: true });
+window.addEventListener('touchend', () => { isDragging = false; });
+
+// Keyboard support
+spectrumThumb.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowUp') { updateSpectrum(sliderVal + 5); e.preventDefault(); }
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') { updateSpectrum(sliderVal - 5); e.preventDefault(); }
+});
+
+updateSpectrum(0);
+
+/* ═══════════════════════════════════════════
+   CANVAS NODE NETWORK
+   ═══════════════════════════════════════════ */
+const canvas = $('#networkCanvas');
+const ctx = canvas.getContext('2d');
+const tooltip = $('#canvasTooltip');
+const dpr = window.devicePixelRatio || 1;
+
+// Scale canvas for high DPI
+const cw = 640, ch = 420;
+canvas.width = cw * dpr;
+canvas.height = ch * dpr;
+canvas.style.width = '100%';
+canvas.style.height = 'auto';
+ctx.scale(dpr, dpr);
+
+const nodes = [
+  { id: 'gas', label: 'Natural Gas', x: 90, y: 80, color: '#8a6a2e', info: 'Methane (CH₄) is the primary feedstock. Hydrogen is stripped from natural gas to combine with atmospheric nitrogen.' },
+  { id: 'haber', label: 'Haber-Bosch', x: 250, y: 80, color: '#c4882e', info: 'Nitrogen + hydrogen combine at 200–300 atm and 400–500°C. Consumes 1–2% of global energy annually.' },
+  { id: 'fert', label: 'Synthetic Fertilizer', x: 250, y: 210, color: '#b83a2a', info: 'Only ~50% of applied nitrogen is taken up by crops. The rest enters waterways and atmosphere.' },
+  { id: 'yield', label: 'Crop Yield', x: 420, y: 140, color: '#3a7a4a', info: 'Yields doubled in the 20th century. But maintaining them now requires ever-increasing fertilizer doses.' },
+  { id: 'pop', label: 'Population', x: 560, y: 200, color: '#5a8a6a', info: '4 billion people depend on Haber-Bosch nitrogen. Projected 10 billion by 2050.' },
+  { id: 'soil', label: 'Soil Degradation', x: 90, y: 320, color: '#8a4a2a', info: 'Synthetic nitrogen suppresses natural microorganisms. Soil organic carbon declines, requiring more inputs.' },
+  { id: 'water', label: 'Water Pollution', x: 280, y: 350, color: '#4a6a8a', info: 'Nitrogen runoff triggers algal blooms. Over 400 coastal dead zones documented worldwide.' },
+  { id: 'dead', label: 'Dead Zones', x: 460, y: 350, color: '#6a3a4a', info: 'The Gulf of Mexico dead zone reaches the size of New Jersey each summer — directly caused by runoff.' },
+  { id: 'food', label: 'Food Security', x: 560, y: 310, color: '#6a8a3a', info: 'Stability depends on fossil fuel markets, not soil health. Gas price spikes = food crises.' }
+];
+
+const edges = [
+  [0, 1], [1, 2], [2, 3], [3, 4], [2, 5], [2, 6], [6, 7], [5, 8], [4, 8]
+];
+
+let hoveredNode = null;
+let animTime = 0;
+
+function getCanvasScale() {
+  const rect = canvas.getBoundingClientRect();
+  return { sx: cw / rect.width, sy: ch / rect.height, rect };
+}
+
+function drawNetwork() {
+  ctx.clearRect(0, 0, cw, ch);
+
+  // Determine highlighted nodes
+  const highlightSet = new Set();
+  if (hoveredNode !== null) {
+    highlightSet.add(hoveredNode);
+    edges.forEach(([a, b]) => {
+      if (a === hoveredNode) highlightSet.add(b);
+      if (b === hoveredNode) highlightSet.add(a);
+    });
+  }
+
+  // Draw edges
+  edges.forEach(([a, b]) => {
+    const na = nodes[a], nb = nodes[b];
+    const isHighlighted = hoveredNode !== null && (a === hoveredNode || b === hoveredNode);
+    ctx.beginPath();
+    ctx.moveTo(na.x, na.y);
+    ctx.lineTo(nb.x, nb.y);
+    ctx.strokeStyle = isHighlighted ? 'rgba(196,136,46,0.7)' : (hoveredNode !== null ? 'rgba(128,128,128,0.12)' : 'rgba(128,128,128,0.25)');
+    ctx.lineWidth = isHighlighted ? 2.5 : 1.2;
+    ctx.stroke();
+  });
+
+  // Draw nodes
+  nodes.forEach((n, i) => {
+    const isHovered = hoveredNode === i;
+    const isRelated = highlightSet.has(i);
+    const dimmed = hoveredNode !== null && !isRelated;
+    const pulse = prefersReducedMotion ? 0 : Math.sin(animTime * 2 + i) * 2;
+    const r = Math.max(1, (isHovered ? 22 : 16) + pulse);
+
+    // Glow
+    if (isHovered) {
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, r + 8, 0, Math.PI * 2);
+      ctx.fillStyle = n.color + '22';
+      ctx.fill();
+    }
+
+    // Node circle
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+    ctx.fillStyle = dimmed ? n.color + '33' : n.color;
+    ctx.fill();
+    ctx.strokeStyle = dimmed ? 'rgba(128,128,128,0.1)' : '#fff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Label
+    ctx.font = `600 ${isHovered ? 12 : 10.5}px 'Source Sans 3', sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = dimmed ? 'rgba(128,128,128,0.25)' : (isHovered ? '#fff' : 'var(--fg)');
+    // Use computed color for dark/light mode
+    const computedFg = getComputedStyle(document.documentElement).getPropertyValue('--fg').trim();
+    ctx.fillStyle = dimmed ? 'rgba(128,128,128,0.25)' : (isHovered ? '#ffffff' : computedFg);
+    ctx.fillText(n.label, n.x, n.y + r + 16);
+  });
+}
+
+function animateNetwork() {
+  animTime += 0.016;
+  drawNetwork();
+  if (!prefersReducedMotion) requestAnimationFrame(animateNetwork);
+}
+
+// Mouse interaction
+canvas.addEventListener('mousemove', (e) => {
+  const { sx, rect } = getCanvasScale();
+  const mx = (e.clientX - rect.left) * sx;
+  const my = (e.clientY - rect.top) * (ch / rect.height);
+
+  hoveredNode = null;
+  for (let i = 0; i < nodes.length; i++) {
+    const dx = mx - nodes[i].x, dy = my - nodes[i].y;
+    if (Math.sqrt(dx * dx + dy * dy) < 24) {
+      hoveredNode = i;
+      break;
+    }
+  }
+
+  if (hoveredNode !== null) {
+    const n = nodes[hoveredNode];
+    tooltip.innerHTML = `<strong>${n.label}</strong><br>${n.info}`;
+    tooltip.classList.add('show');
+    const rect2 = canvas.getBoundingClientRect();
+    const tx = (n.x / cw) * rect2.width + 16;
+    const ty = (n.y / ch) * rect2.height - 10;
+    tooltip.style.left = Math.min(tx, rect2.width - 240) + 'px';
+    tooltip.style.top = ty + 'px';
+    canvas.style.cursor = 'pointer';
+  } else {
+    tooltip.classList.remove('show');
+    canvas.style.cursor = 'default';
+  }
+
+  if (prefersReducedMotion) drawNetwork();
+});
+
+canvas.addEventListener('mouseleave', () => {
+  hoveredNode = null;
+  tooltip.classList.remove('show');
+  if (prefersReducedMotion) drawNetwork();
+});
+
+// Touch support
+canvas.addEventListener('touchstart', (e) => {
+  const touch = e.touches[0];
+  const { sx, rect } = getCanvasScale();
+  const mx = (touch.clientX - rect.left) * sx;
+  const my = (touch.clientY - rect.top) * (ch / rect.height);
+
+  hoveredNode = null;
+  for (let i = 0; i < nodes.length; i++) {
+    const dx = mx - nodes[i].x, dy = my - nodes[i].y;
+    if (Math.sqrt(dx * dx + dy * dy) < 30) {
+      hoveredNode = i;
+      break;
+    }
+  }
+
+  if (hoveredNode !== null) {
+    const n = nodes[hoveredNode];
+    tooltip.innerHTML = `<strong>${n.label}</strong><br>${n.info}`;
+    tooltip.classList.add('show');
+    const rect2 = canvas.getBoundingClientRect();
+    const tx = (n.x / cw) * rect2.width + 16;
+    const ty = (n.y / ch) * rect2.height - 10;
+    tooltip.style.left = Math.min(tx, rect2.width - 240) + 'px';
+    tooltip.style.top = ty + 'px';
+  }
+
+  if (prefersReducedMotion) drawNetwork();
+}, { passive: true });
+
+canvas.addEventListener('touchend', () => {
+  hoveredNode = null;
+  tooltip.classList.remove('show');
+  if (prefersReducedMotion) drawNetwork();
+});
+
+// Start animation
+if (!prefersReducedMotion) animateNetwork();
+else drawNetwork();
+
+/* ═══════════════════════════════════════════
+   CHART.JS VISUALIZATION
+   ═══════════════════════════════════════════ */
+const chartData = {
+  labels: ['1950', '1960', '1970', '1980', '1990', '2000', '2010', '2020'],
+  datasets: {
+    fertilizer: {
+      label: 'Nitrogen Fertilizer (Mt N/yr)',
+      data: [4, 12, 32, 60, 78, 85, 104, 113],
+      borderColor: '#c4882e',
+      backgroundColor: 'rgba(196,136,46,0.12)',
+      yAxisID: 'y',
+      tension: 0.35,
+      pointRadius: 5,
+      pointHoverRadius: 8,
+      borderWidth: 2.5,
+      fill: true
+    },
+    population: {
+      label: 'World Population (billions)',
+      data: [2.5, 3.0, 3.7, 4.4, 5.3, 6.1, 6.9, 7.8],
+      borderColor: '#3a7a4a',
+      backgroundColor: 'rgba(58,122,74,0.12)',
+      yAxisID: 'y1',
+      tension: 0.35,
+      pointRadius: 5,
+      pointHoverRadius: 8,
+      borderWidth: 2.5,
+      fill: true
+    },
+    gas: {
+      label: 'Gas for Fertilizer (EJ/yr)',
+      data: [0.1, 0.3, 0.8, 1.5, 2.0, 2.5, 3.2, 3.8],
+      borderColor: '#8a4a2a',
+      backgroundColor: 'rgba(138,74,42,0.12)',
+      yAxisID: 'y',
+      tension: 0.35,
+      pointRadius: 5,
+      pointHoverRadius: 8,
+      borderWidth: 2.5,
+      fill: true,
+      borderDash: [6, 3]
+    }
+  }
+};
+
+const isDark = () => html.getAttribute('data-theme') === 'dark';
+const chartFg = () => isDark() ? '#e8e0d0' : '#2a1f0e';
+const chartGrid = () => isDark() ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+
+const chartCtx = $('#dataChart').getContext('2d');
+window.dataChart = new Chart(chartCtx, {
+  type: 'line',
+  data: {
+    labels: chartData.labels,
+    datasets: [chartData.datasets.fertilizer, chartData.datasets.population]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: {
+        labels: { color: chartFg(), font: { family: "'Source Sans 3', sans-serif", size: 12, weight: '600' }, usePointStyle: true, pointStyleWidth: 12 }
+      },
+      tooltip: {
+        backgroundColor: isDark() ? '#2a2a28' : '#fffefa',
+        titleColor: chartFg(),
+        bodyColor: chartFg(),
+        borderColor: isDark() ? '#3a3630' : '#e0d8c8',
+        borderWidth: 1,
+        cornerRadius: 8,
+        padding: 12,
+        titleFont: { family: "'Source Sans 3', sans-serif", weight: '700' },
+        bodyFont: { family: "'Source Sans 3', sans-serif" }
+      }
+    },
+    scales: {
+      x: {
+        ticks: { color: chartFg(), font: { family: "'Source Sans 3', sans-serif", size: 11 } },
+        grid: { color: chartGrid() }
+      },
+      y: {
+        type: 'linear',
+        display: true,
+        position: 'left',
+        title: { display: true, text: 'Million tonnes N / EJ', color: chartFg(), font: { family: "'Source Sans 3', sans-serif", size: 11, weight: '600' } },
+        ticks: { color: chartFg(), font: { family: "'Source Sans 3', sans-serif", size: 11 } },
+        grid: { color: chartGrid() }
+      },
+      y1: {
+        type: 'linear',
+        display: true,
+        position: 'right',
+        title: { display: true, text: 'Population (billions)', color: chartFg(), font: { family: "'Source Sans 3', sans-serif", size: 11, weight: '600' } },
+        ticks: { color: chartFg(), font: { family: "'Source Sans 3', sans-serif", size: 11 } },
+        grid: { drawOnChartArea: false }
+      }
+    }
+  }
+});
+
+// Chart toggle buttons
+ $$('.chart-toggle button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const set = btn.dataset.set;
+    const isOn = btn.classList.contains('on');
+    btn.classList.toggle('on');
+
+    const ds = chartData.datasets[set];
+    if (!ds) return;
+
+    const existingIdx = window.dataChart.data.datasets.findIndex(d => d.label === ds.label);
+    if (isOn && existingIdx > -1) {
+      window.dataChart.data.datasets.splice(existingIdx, 1);
+    } else if (!isOn && existingIdx === -1) {
+      window.dataChart.data.datasets.push(ds);
+    }
+    window.dataChart.update();
+  });
+});
+
+function updateChartTheme() {
+  const chart = window.dataChart;
+  if (!chart) return;
+  chart.options.plugins.legend.labels.color = chartFg();
+  chart.options.plugins.tooltip.backgroundColor = isDark() ? '#2a2a28' : '#fffefa';
+  chart.options.plugins.tooltip.titleColor = chartFg();
+  chart.options.plugins.tooltip.bodyColor = chartFg();
+  chart.options.plugins.tooltip.borderColor = isDark() ? '#3a3630' : '#e0d8c8';
+  chart.options.scales.x.ticks.color = chartFg();
+  chart.options.scales.x.grid.color = chartGrid();
+  chart.options.scales.y.ticks.color = chartFg();
+  chart.options.scales.y.grid.color = chartGrid();
+  chart.options.scales.y.title.color = chartFg();
+  chart.options.scales.y1.ticks.color = chartFg();
+  chart.options.scales.y1.title.color = chartFg();
+  chart.update();
+}
+
+/* ═══════════════════════════════════════════
+   COPY & SHARE
+   ═══════════════════════════════════════════ */
+const snapQuote = $('#snapQuote');
+const quoteText = snapQuote.textContent.trim();
+const pageUrl = encodeURIComponent(window.location.href);
+const quoteEncoded = encodeURIComponent(quoteText + ' — Bread from Air');
+
+ $('#copyBtn').addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(quoteText);
+    showToast('Quote copied to clipboard');
+  } catch {
+    showToast('Could not copy — try selecting manually');
+  }
+});
+
+ $('#shareXBtn').addEventListener('click', () => {
+  const url = `https://twitter.com/intent/tweet?text=${quoteEncoded}&url=${pageUrl}`;
+  window.open(url, '_blank', 'noopener,noreferrer,width=600,height=400');
+});
+
+ $('#shareLinkedInBtn').addEventListener('click', () => {
+  const url = `https://www.linkedin.com/sharing/share-offsite/?url=${pageUrl}`;
+  window.open(url, '_blank', 'noopener,noreferrer,width=600,height=400');
+});
+
+/* ═══════════════════════════════════════════
+   CHECKLIST & PROGRESS GAUGE
+   ═══════════════════════════════════════════ */
+const gaugeFill = $('#gaugeFill');
+const gaugePercent = $('#gaugePercent');
+const checkboxes = $$('.checklist input[type="checkbox"]');
+const totalActions = checkboxes.length;
+
+function updateGauge() {
+  const checked = checkboxes.filter(cb => cb.checked).length;
+  const pct = Math.round((checked / totalActions) * 100);
+  gaugeFill.style.width = pct + '%';
+  gaugePercent.textContent = pct + '%';
+  // Save state
+  const state = checkboxes.map(cb => cb.checked);
+  localStorage.setItem('actionState', JSON.stringify(state));
+}
+
+// Load saved state
+try {
+  const saved = JSON.parse(localStorage.getItem('actionState'));
+  if (saved && saved.length === totalActions) {
+    checkboxes.forEach((cb, i) => { cb.checked = saved[i]; });
+  }
+} catch {}
+
+checkboxes.forEach(cb => cb.addEventListener('change', updateGauge));
+updateGauge();
+
+/* ═══════════════════════════════════════════
+   TOAST SYSTEM
+   ═══════════════════════════════════════════ */
+const toastContainer = $('#toast-container');
+
+function showToast(msg, duration = 3000) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  toastContainer.appendChild(t);
+  requestAnimationFrame(() => t.classList.add('show'));
+  setTimeout(() => {
+    t.classList.remove('show');
+    setTimeout(() => t.remove(), 300);
+  }, duration);
+}
+
+/* ═══════════════════════════════════════════
+   SNAP CARD GRADIENT SCROLL EFFECT
+   ═══════════════════════════════════════════ */
+const snapCard = $('#snapCard');
+
+if (!prefersReducedMotion) {
+  const snapObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      const ratio = entry.intersectionRatio;
+      const hue = 30 + ratio * 100; // shift hue from amber to green
+      snapCard.style.background = `linear-gradient(135deg, hsl(${hue}, 60%, 38%), hsl(${hue + 40}, 45%, 22%))`;
+    });
+  }, { threshold: Array.from({ length: 11 }, (_, i) => i / 10) });
+
+  snapObserver.observe(snapCard);
+}
+</script>
+</body>
+</html>
