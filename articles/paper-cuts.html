@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paper Cuts — How Filing Systems Built the Bureaucracy They Were Meant to Destroy</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* ── CSS Custom Properties ── */
+        :root {
+            --bg: #FAF6F0;
+            --fg: #1A1610;
+            --muted: #8B7E6A;
+            --accent: #C4532E;
+            --accent-light: #E8734A;
+            --accent-glow: rgba(196,83,46,0.15);
+            --card: #FFFFFF;
+            --border: #E0D8CC;
+            --surface: #F0EAE0;
+            --font-display: 'Playfair Display', Georgia, serif;
+            --font-body: 'Source Sans 3', system-ui, sans-serif;
+            --text-base: 1.05rem;
+            --line-height: 1.8;
+            --radius: 8px;
+            --sidebar-w: 220px;
+            --topbar-h: 56px;
+            --transition: 0.35s cubic-bezier(0.4,0,0.2,1);
+        }
+        [data-theme="dark"] {
+            --bg: #141210;
+            --fg: #F0E8DC;
+            --muted: #9B8E7A;
+            --accent: #E8734A;
+            --accent-light: #F09060;
+            --accent-glow: rgba(232,115,74,0.18);
+            --card: #1E1C18;
+            --border: #2E2A24;
+            --surface: #1A1816;
+        }
+        [data-size="sm"] { --text-base: 0.92rem; }
+        [data-size="md"] { --text-base: 1.05rem; }
+        [data-size="lg"] { --text-base: 1.22rem; }
+
+        /* ── Reset & Base ── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; scroll-padding-top: calc(var(--topbar-h) + 24px); }
+        body {
+            font-family: var(--font-body);
+            font-size: var(--text-base);
+            line-height: var(--line-height);
+            color: var(--fg);
+            background: var(--bg);
+            -webkit-font-smoothing: antialiased;
+            transition: background var(--transition), color var(--transition);
+        }
+        ::selection { background: var(--accent); color: #fff; }
+        a { color: var(--accent); text-decoration: none; }
+        a:hover { color: var(--accent-light); }
+        img { max-width: 100%; display: block; }
+
+        /* ── Progress Bar ── */
+        #progress {
+            position: fixed; top: 0; left: 0; height: 3px; z-index: 9999;
+            background: linear-gradient(90deg, var(--accent), var(--accent-light));
+            width: 0%; transition: width 0.1s linear;
+        }
+
+        /* ── Topbar ── */
+        #topbar {
+            position: sticky; top: 0; z-index: 1000;
+            height: var(--topbar-h);
+            display: flex; align-items: center; gap: 12px;
+            padding: 0 24px;
+            background: rgba(250,246,240,0.72);
+            backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+            border-bottom: 1px solid var(--border);
+            transition: background var(--transition);
+        }
+        [data-theme="dark"] #topbar { background: rgba(20,18,16,0.78); }
+        #topbar .home-link {
+            font-family: var(--font-display); font-weight: 700; font-size: 1.1rem;
+            color: var(--fg); white-space: nowrap;
+        }
+        #topbar .breadcrumb {
+            font-size: 0.82rem; color: var(--muted); white-space: nowrap;
+            overflow: hidden; text-overflow: ellipsis;
+        }
+        #topbar .breadcrumb span { margin: 0 6px; }
+        #topbar .reading-time {
+            font-size: 0.78rem; color: var(--muted); white-space: nowrap;
+            margin-left: auto;
+        }
+        .topbar-controls { display: flex; align-items: center; gap: 6px; }
+        .topbar-btn {
+            width: 34px; height: 34px; border: 1px solid var(--border); border-radius: 6px;
+            background: var(--card); color: var(--fg); cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.82rem; transition: all 0.2s;
+        }
+        .topbar-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .topbar-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+        #drawer-btn { display: none; }
+
+        /* ── Layout Grid ── */
+        .wrap {
+            display: grid;
+            grid-template-columns: var(--sidebar-w) 1fr;
+            max-width: 1120px;
+            margin: 0 auto;
+            min-height: calc(100vh - var(--topbar-h));
+        }
+
+        /* ── Sidebar Rail ── */
+        #rail {
+            position: sticky; top: var(--topbar-h);
+            height: calc(100vh - var(--topbar-h));
+            overflow-y: auto; padding: 32px 20px;
+            border-right: 1px solid var(--border);
+            transition: transform var(--transition);
+        }
+        #rail nav { display: flex; flex-direction: column; gap: 4px; }
+        #rail .rail-label {
+            font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.1em; color: var(--muted); margin-bottom: 12px;
+        }
+        #rail a {
+            display: block; padding: 8px 12px; border-radius: 6px;
+            font-size: 0.88rem; color: var(--muted); transition: all 0.2s;
+            border-left: 2px solid transparent;
+        }
+        #rail a:hover { color: var(--fg); background: var(--surface); }
+        #rail a.active {
+            color: var(--accent); border-left-color: var(--accent);
+            background: var(--accent-glow); font-weight: 600;
+        }
+
+        /* ── Main Content ── */
+        main {
+            padding: 40px 48px 80px;
+            max-width: 680px;
+        }
+        main h1, main h2, main h3 { font-family: var(--font-display); }
+
+        /* ── Hero ── */
+        .hero { margin-bottom: 56px; }
+        .hero-kicker {
+            font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.12em; color: var(--accent); margin-bottom: 12px;
+        }
+        .hero h1 {
+            font-size: clamp(2.2rem, 5vw, 3.4rem); font-weight: 900;
+            line-height: 1.12; margin-bottom: 20px; color: var(--fg);
+        }
+        .hero-sub {
+            font-size: 1.15rem; color: var(--muted); line-height: 1.7;
+            max-width: 540px;
+        }
+
+        /* ── Spectrum Visualization ── */
+        .spectrum {
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 28px 32px;
+            margin: 40px 0 48px; position: relative; overflow: hidden;
+        }
+        .spectrum::before {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(135deg, var(--accent-glow), transparent 60%);
+            pointer-events: none;
+        }
+        .spectrum-labels {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 16px; position: relative;
+        }
+        .spectrum-labels span {
+            font-size: 0.78rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.08em; padding: 4px 12px; border-radius: 20px;
+            transition: all 0.3s;
+        }
+        .spectrum-labels .legacy { background: var(--surface); color: var(--muted); }
+        .spectrum-labels .shifted { background: var(--accent); color: #fff; }
+        .spectrum-slider {
+            width: 100%; -webkit-appearance: none; appearance: none;
+            height: 6px; border-radius: 3px; outline: none; cursor: pointer;
+            background: linear-gradient(90deg, var(--muted) 0%, var(--accent) 100%);
+            position: relative;
+        }
+        .spectrum-slider::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 22px; height: 22px;
+            border-radius: 50%; background: var(--accent); border: 3px solid var(--card);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.18); cursor: grab;
+        }
+        .spectrum-slider::-moz-range-thumb {
+            width: 22px; height: 22px; border-radius: 50%;
+            background: var(--accent); border: 3px solid var(--card);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.18); cursor: grab;
+        }
+        .spectrum-callout {
+            margin-top: 20px; padding: 16px 20px; border-radius: 6px;
+            background: var(--surface); font-size: 0.95rem; line-height: 1.65;
+            color: var(--fg); position: relative; transition: all 0.3s;
+            min-height: 80px;
+        }
+
+        /* ── Section Styling ── */
+        .section-block { margin-bottom: 56px; }
+        .section-block h2 {
+            font-size: 1.75rem; font-weight: 900; margin-bottom: 20px;
+            color: var(--fg); position: relative; padding-bottom: 12px;
+        }
+        .section-block h2::after {
+            content: ''; position: absolute; bottom: 0; left: 0;
+            width: 40px; height: 3px; background: var(--accent); border-radius: 2px;
+        }
+        .section-block p { margin-bottom: 18px; color: var(--fg); }
+
+        /* ── Perspective Snap ── */
+        .snap-card {
+            position: relative; margin: 48px 0; padding: 36px 32px;
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: var(--radius); overflow: hidden;
+        }
+        .snap-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+            background: linear-gradient(90deg, var(--accent), var(--accent-light));
+        }
+        .snap-card blockquote {
+            font-family: var(--font-display); font-size: 1.5rem;
+            font-weight: 700; line-height: 1.4; color: var(--fg);
+            margin-bottom: 20px; position: relative;
+        }
+        .snap-card .snap-actions {
+            display: flex; gap: 8px; flex-wrap: wrap;
+        }
+        .snap-btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 6px 14px; border-radius: 6px; font-size: 0.82rem;
+            font-weight: 600; border: 1px solid var(--border);
+            background: var(--surface); color: var(--fg); cursor: pointer;
+            transition: all 0.2s;
+        }
+        .snap-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .snap-btn.copied { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+        /* ── Canvas Diagram ── */
+        .diagram-wrap {
+            margin: 40px 0; background: var(--card); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 24px; overflow: hidden;
+        }
+        .diagram-wrap h3 {
+            font-size: 1rem; font-weight: 700; margin-bottom: 12px;
+            color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em;
+        }
+        #networkCanvas { width: 100%; height: 360px; display: block; cursor: pointer; }
+        .diagram-tooltip {
+            position: absolute; padding: 8px 14px; background: var(--fg);
+            color: var(--bg); font-size: 0.82rem; border-radius: 6px;
+            pointer-events: none; opacity: 0; transition: opacity 0.2s;
+            z-index: 10; white-space: nowrap;
+        }
+
+        /* ── Chart ── */
+        .chart-wrap {
+            margin: 40px 0; background: var(--card); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 24px;
+        }
+        .chart-wrap h3 {
+            font-size: 1rem; font-weight: 700; margin-bottom: 16px;
+            color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em;
+        }
+        .chart-filters {
+            display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;
+        }
+        .chart-filter-btn {
+            padding: 5px 14px; border-radius: 20px; font-size: 0.78rem;
+            font-weight: 600; border: 1px solid var(--border);
+            background: var(--surface); color: var(--muted); cursor: pointer;
+            transition: all 0.2s;
+        }
+        .chart-filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+        .chart-filter-btn:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
+
+        /* ── CTA Checklist ── */
+        .action {
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 32px; margin: 48px 0;
+            position: relative; overflow: hidden;
+        }
+        .action::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+            background: linear-gradient(90deg, var(--accent), var(--accent-light));
+        }
+        .action h2 {
+            font-size: 1.5rem; font-weight: 900; margin-bottom: 8px;
+        }
+        .action .action-sub { color: var(--muted); margin-bottom: 24px; font-size: 0.95rem; }
+        .checklist { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+        .checklist li {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 16px; border-radius: 6px; background: var(--surface);
+            transition: all 0.25s; cursor: pointer;
+        }
+        .checklist li:hover { background: var(--accent-glow); }
+        .checklist li.checked { background: var(--accent-glow); }
+        .checklist input[type="checkbox"] {
+            width: 20px; height: 20px; accent-color: var(--accent);
+            cursor: pointer; flex-shrink: 0;
+        }
+        .checklist label { cursor: pointer; font-size: 0.95rem; flex: 1; }
+        .checklist li.checked label { text-decoration: line-through; color: var(--muted); }
+        .progress-gauge {
+            margin-top: 24px; display: flex; align-items: center; gap: 14px;
+        }
+        .gauge-track {
+            flex: 1; height: 8px; background: var(--surface);
+            border-radius: 4px; overflow: hidden;
+        }
+        .gauge-fill {
+            height: 100%; width: 0%; border-radius: 4px;
+            background: linear-gradient(90deg, var(--accent), var(--accent-light));
+            transition: width 0.4s cubic-bezier(0.4,0,0.2,1);
+        }
+        .gauge-text { font-size: 0.82rem; font-weight: 700; color: var(--accent); min-width: 36px; }
+
+        /* ── Footer ── */
+        footer {
+            padding: 32px 0; border-top: 1px solid var(--border);
+            color: var(--muted); font-size: 0.82rem;
+        }
+
+        /* ── Reveal Animations ── */
+        .reveal {
+            opacity: 0; transform: translateY(28px);
+            transition: opacity 0.65s ease, transform 0.65s ease;
+        }
+        .reveal.visible { opacity: 1; transform: translateY(0); }
+
+        /* ── Scrim ── */
+        #scrim {
+            display: none; position: fixed; inset: 0; z-index: 900;
+            background: rgba(0,0,0,0.45); backdrop-filter: blur(4px);
+        }
+        #scrim.open { display: block; }
+
+        /* ── Responsive ── */
+        @media (max-width: 880px) {
+            .wrap { grid-template-columns: 1fr; }
+            #rail {
+                position: fixed; top: 0; left: 0; z-index: 950;
+                width: 280px; height: 100vh;
+                background: var(--card); border-right: 1px solid var(--border);
+                transform: translateX(-100%);
+                padding-top: calc(var(--topbar-h) + 24px);
+            }
+            #rail.open { transform: translateX(0); }
+            #drawer-btn { display: flex; }
+            main { padding: 32px 20px 60px; }
+            #topbar .breadcrumb { display: none; }
+            .snap-card blockquote { font-size: 1.25rem; }
+            .hero h1 { font-size: clamp(1.8rem, 6vw, 2.6rem); }
+        }
+        @media (max-width: 480px) {
+            main { padding: 24px 16px 48px; }
+            .spectrum { padding: 20px; }
+            .snap-card { padding: 24px 20px; }
+            .action { padding: 24px 20px; }
+        }
+
+        /* ── Reduced Motion ── */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+            html { scroll-behavior: auto; }
+            .reveal { opacity: 1; transform: none; }
+        }
+
+        /* ── Subtle background pattern ── */
+        body::before {
+            content: ''; position: fixed; inset: 0; z-index: -1;
+            background:
+                radial-gradient(ellipse at 20% 10%, var(--accent-glow) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 90%, rgba(139,126,106,0.06) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        /* ── Focus states ── */
+        :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+        /* ── Custom scrollbar ── */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+    </style>
+</head>
+<body>
+    <!-- Reading Progress Bar -->
+    <div id="progress" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+
+    <!-- Sticky Topbar -->
+    <header id="topbar">
+        <button id="drawer-btn" class="topbar-btn" aria-label="Open navigation menu">
+            <i class="fas fa-bars"></i>
+        </button>
+        <a href="https://iggym.github.io/cogitatio-elegans/" class="home-link">Cogitatio</a>
+        <div class="breadcrumb">
+            <span>Home</span><i class="fas fa-chevron-right" style="font-size:0.6rem"></i>
+            <span>Perspectives</span><i class="fas fa-chevron-right" style="font-size:0.6rem"></i>
+            <span>Record-Keeping</span>
+        </div>
+        <span class="reading-time" id="readingTime"></span>
+        <div class="topbar-controls">
+            <button class="topbar-btn" id="size-btn" aria-label="Change text size" title="Text size">A</button>
+            <button class="topbar-btn" id="theme-btn" aria-label="Toggle dark mode" title="Toggle theme">
+                <i class="fas fa-moon"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Mobile Scrim -->
+    <div id="scrim" aria-hidden="true"></div>
+
+    <!-- Main Grid -->
+    <div class="wrap">
+        <!-- Sidebar Rail -->
+        <aside id="rail" aria-label="Article navigation">
+            <nav>
+                <div class="rail-label">In This Article</div>
+                <a href="#paper-cuts" data-section="paper-cuts">Paper Cuts</a>
+                <a href="#tail-wags-dog" data-section="tail-wags-dog">Tail Wags Dog</a>
+                <a href="#ghost-in-files" data-section="ghost-in-files">Ghost in Files</a>
+                <a href="#other-side" data-section="other-side">Other Side</a>
+                <a href="#needle-moves" data-section="needle-moves">Needle Moves</a>
+                <a href="#draw-the-line" data-section="draw-the-line">Draw the Line</a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main>
+            <article>
+                <!-- Hero -->
+                <header class="hero reveal">
+                    <div class="hero-kicker">Perspective Shift</div>
+                    <h1>How the Filing Cabinet Built the Bureaucracy It Was Meant to Destroy</h1>
+                    <p class="hero-sub">The invention that promised to organize the modern office didn't reduce clutter. It generated it — and then demanded more clerks to manage the flood it created.</p>
+                </header>
+
+                <!-- Spectrum Visualization -->
+                <section class="spectrum reveal" aria-label="Perspective spectrum comparison">
+                    <div class="spectrum-labels">
+                        <span class="legacy" id="legacyLabel">Legacy View</span>
+                        <span class="shifted" id="shiftedLabel">Shifted View</span>
+                    </div>
+                    <input type="range" class="spectrum-slider" id="spectrumSlider" min="0" max="100" value="0" aria-label="Shift perspective from legacy to shifted">
+                    <div class="spectrum-callout" id="spectrumCallout">
+                        Filing systems organized documents and reduced physical clutter in offices. They made it possible to find what you needed.
+                    </div>
+                </section>
+
+                <!-- Opening Scene -->
+                <section id="paper-cuts" class="section-block reveal">
+                    <h2>Paper Cuts</h2>
+                    <p>In 1893, a clerk at the U.S. Pension Bureau watched a colleague spend three days hunting for a single document among stacks of ledgers, flat files, and pigeonholes. The office held records for over 900,000 pension claims — each one a folded bundle, each one stacked flat, each one invisible until you physically pulled it from the pile. Edwin Seibels later said the idea came to him like a bolt: a vertical filing system where every document stood upright, visible, accessible. He built the first vertical filing cabinet. The world hailed it as salvation.</p>
+                    <p>And for a moment, it was. You could find a file in minutes instead of days. The desk cleared. The stacks receded. But something else happened next — something nobody predicted, and nobody wanted.</p>
+                </section>
+
+                <!-- Bold Reframe -->
+                <section id="tail-wags-dog" class="section-block reveal">
+                    <h2>Tail Wags Dog</h2>
+                    <p>The filing cabinet didn't reduce paperwork. It <strong>generated</strong> it.</p>
+                    <p>By making document storage cheap and frictionless, filing systems exponentially expanded the generation of bureaucratic paperwork, institutional creep, and administrative surveillance. Organizations didn't become leaner. They became choked by their own records.</p>
+                    <p>The very efficiency of the filing system created a new logic: if you can file it, you should file it. If you can store it, you should generate it. The bottleneck moved from storage to the sheer volume of what was now being produced. The cabinet didn't solve the paper problem. It moved the paper problem one step downstream — and then multiplied it.</p>
+                </section>
+
+                <!-- Interactive Node Diagram -->
+                <section class="diagram-wrap reveal" aria-label="Interactive feedback loop diagram">
+                    <h3>The Feedback Loop</h3>
+                    <p style="font-size:0.88rem;color:var(--muted);margin-bottom:12px;">Hover or tap a node to trace how filing systems create self-reinforcing bureaucratic expansion.</p>
+                    <div style="position:relative;">
+                        <canvas id="networkCanvas"></canvas>
+                        <div class="diagram-tooltip" id="diagramTooltip"></div>
+                    </div>
+                </section>
+
+                <!-- Hidden Connections -->
+                <section id="ghost-in-files" class="section-block reveal">
+                    <h2>Ghost in Files</h2>
+                    <p>Before the filing cabinet, there was a natural brake on paperwork: the physical cost of storing it. Flat files, bound ledgers, and pigeonholes were limited. You couldn't keep everything, so you had to decide what mattered. That decision was itself a form of intelligence — a filter applied by necessity.</p>
+                    <p>The filing cabinet removed that constraint. And then the feedback loop began:</p>
+                    <p>Cheap storage made it easy to keep more records. More records required more administrative processes to manage them. More processes generated more records. More records demanded more filing cabinets. More filing cabinets meant more cheap storage. And around it went — each revolution of the cycle adding layers of institutional weight.</p>
+                    <p>Each new filing cabinet didn't just hold paper. It held a justification for the next clerk, the next form, the next layer of oversight. The system didn't just store information. It <em>incentivized</em> the production of information that served no purpose beyond its own perpetuation.</p>
+                </section>
+
+                <!-- Perspective Snap Card -->
+                <div class="snap-card reveal" id="snapCard">
+                    <blockquote id="snapText">The filing cabinet didn't organize the modern office. It invented it.</blockquote>
+                    <div class="snap-actions">
+                        <button class="snap-btn" id="copyBtn" aria-label="Copy this quote">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
+                        <button class="snap-btn" id="shareXBtn" aria-label="Share on X">
+                            <i class="fab fa-x-twitter"></i> Share
+                        </button>
+                        <button class="snap-btn" id="shareLinkedInBtn" aria-label="Share on LinkedIn">
+                            <i class="fab fa-linkedin-in"></i> Share
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Chart.js Visualization -->
+                <section class="chart-wrap reveal" aria-label="Data visualization">
+                    <h3>The Divergence</h3>
+                    <p style="font-size:0.88rem;color:var(--muted);margin-bottom:12px;">As filing capacity grew linearly, paperwork volume grew exponentially — and administrative overhead followed close behind.</p>
+                    <div class="chart-filters">
+                        <button class="chart-filter-btn active" data-dataset="0">Filing Capacity</button>
+                        <button class="chart-filter-btn active" data-dataset="1">Paperwork Volume</button>
+                        <button class="chart-filter-btn active" data-dataset="2">Admin Overhead</button>
+                    </div>
+                    <canvas id="chartCanvas" height="280"></canvas>
+                </section>
+
+                <!-- Credibility and Nuance -->
+                <section id="other-side" class="section-block reveal">
+                    <h2>Other Side</h2>
+                    <p>Yes, filing systems did make it possible to find documents faster. Pension claims were processed more quickly. Tax records became retrievable. Corporate archives became searchable. The gains were real, and they mattered.</p>
+                    <p>But those gains came with a hidden cost. The U.S. federal government's paper holdings grew from manageable quantities in the 19th century to billions of pages by the mid-20th century. The pension office that Seibels worked in didn't shrink. It ballooned. The filing system didn't reduce the number of clerks. It required more of them — to file, to retrieve, to cross-reference, to maintain.</p>
+                    <p>The counterargument says: "Without filing, we'd have chaos." But what we got was a more organized chaos that multiplied itself. The filing cabinet didn't eliminate disorder. It gave disorder a shelf and a label — and then it printed ten more copies of the label and filed those too.</p>
+                    <p>Efficiency in information storage does not simplify institutional operations. It accelerates internal complexity and bureaucratic bloat. The evidence is not in the tidy rows of folders. It is in the hiring rolls, the budget lines, and the ever-expanding square footage devoted to records that no one will ever read.</p>
+                </section>
+
+                <!-- Narrative Agency -->
+                <section id="needle-moves" class="section-block reveal">
+                    <h2>Needle Moves</h2>
+                    <p>The pattern repeats today in digital form. Cheap cloud storage doesn't reduce data — it generates more of it. Email archives don't reduce communication overhead — they increase it. Every efficiency in information storage creates a new flood of information to store, and then a new layer of tooling to manage the flood.</p>
+                    <p>But recognizing the pattern gives you power over it. Organizations that thrive are not the ones with the most storage. They are the ones that build friction back into the system — not by making things harder, but by making deliberate choices about what to keep and what to let go. The most effective filing system is not the one that holds everything. It is the one that holds the right things.</p>
+                    <p>This is not a call to return to chaos. It is a call to recognize that the cabinet is not neutral. Every shelf you add changes the calculus of what gets created. Every terabyte you provision changes the calculus of what gets saved. The question is not whether you can store it. The question is whether the storage itself is creating something you didn't ask for.</p>
+                </section>
+
+                <!-- CTA Checklist -->
+                <section id="draw-the-line" class="action reveal">
+                    <h2>Draw the Line</h2>
+                    <p class="action-sub">Within the next 24 hours, take one concrete step. Check each item as you complete it.</p>
+                    <ul class="checklist">
+                        <li>
+                            <input type="checkbox" id="c1">
+                            <label for="c1">Identify one record-keeping process that exists because it <em>can</em> be filed — not because it serves a purpose</label>
+                        </li>
+                        <li>
+                            <input type="checkbox" id="c2">
+                            <label for="c2">Delete or archive one stale document, report, or folder that no one has touched in over six months</label>
+                        </li>
+                        <li>
+                            <input type="checkbox" id="c3">
+                            <label for="c3">Question one standing report or recurring form — ask whether its output is ever read</label>
+                        </li>
+                        <li>
+                            <input type="checkbox" id="c4">
+                            <label for="c4">Propose eliminating one redundant approval step or administrative layer</label>
+                        </li>
+                        <li>
+                            <input type="checkbox" id="c5">
+                            <label for="c5">Share this perspective shift with one colleague who influences process design</label>
+                        </li>
+                    </ul>
+                    <div class="progress-gauge">
+                        <div class="gauge-track">
+                            <div class="gauge-fill" id="gaugeFill"></div>
+                        </div>
+                        <span class="gauge-text" id="gaugeText">0%</span>
+                    </div>
+                </section>
+
+                <!-- Footer -->
+                <footer>
+                    <p>Perspective-shift article from <a href="https://iggym.github.io/cogitatio-elegans/">Cogitatio Elegans</a>. Grounded in the reference: "Efficiency in information storage does not simplify institutional operations; it accelerates internal complexity and bureaucratic bloat."</p>
+                </footer>
+            </article>
+        </main>
+    </div>
+
+    <script>
+        /* ──────────────────────────────────────────────
+           INITIALIZATION & THEME
+        ────────────────────────────────────────────── */
+        const html = document.documentElement;
+        const sizes = ['sm', 'md', 'lg'];
+        let sizeIdx = 1;
+
+        // Detect system theme preference
+        function getPreferredTheme() {
+            const stored = localStorage.getItem('theme');
+            if (stored) return stored;
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        html.setAttribute('data-theme', getPreferredTheme());
+
+        // Theme toggle
+        const themeBtn = document.getElementById('theme-btn');
+        themeBtn.addEventListener('click', () => {
+            const current = html.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+            localStorage.setItem('theme', next);
+            themeBtn.innerHTML = next === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+            // Re-render chart with new colors
+            if (window.bureaucracyChart) updateChartTheme();
+        });
+        // Set initial icon
+        themeBtn.innerHTML = getPreferredTheme() === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+
+        // Text size toggle
+        const sizeBtn = document.getElementById('size-btn');
+        html.setAttribute('data-size', sizes[sizeIdx]);
+        sizeBtn.addEventListener('click', () => {
+            sizeIdx = (sizeIdx + 1) % sizes.length;
+            html.setAttribute('data-size', sizes[sizeIdx]);
+            sizeBtn.style.fontSize = sizes[sizeIdx] === 'sm' ? '0.75rem' : sizes[sizeIdx] === 'lg' ? '1rem' : '0.88rem';
+        });
+
+        /* ──────────────────────────────────────────────
+           READING TIME
+        ────────────────────────────────────────────── */
+        (function calcReadingTime() {
+            const text = document.querySelector('article').innerText;
+            const words = text.trim().split(/\s+/).length;
+            const minutes = Math.ceil(words / 220);
+            document.getElementById('readingTime').textContent = minutes + ' min read';
+        })();
+
+        /* ──────────────────────────────────────────────
+           SCROLL PROGRESS & SCROLLSPY
+        ────────────────────────────────────────────── */
+        const progressBar = document.getElementById('progress');
+        const railLinks = document.querySelectorAll('#rail a[data-section]');
+        const sections = [];
+
+        railLinks.forEach(link => {
+            const id = link.getAttribute('data-section');
+            const el = document.getElementById(id);
+            if (el) sections.push({ id, el, link });
+        });
+
+        function updateProgress() {
+            const scrollTop = window.scrollY;
+            const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+            const pct = Math.min(100, Math.max(0, (scrollTop / docHeight) * 100));
+            progressBar.style.width = pct + '%';
+            progressBar.setAttribute('aria-valuenow', Math.round(pct));
+        }
+
+        // IntersectionObserver for scrollspy
+        const spyObserver = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    railLinks.forEach(l => l.classList.remove('active'));
+                    const match = sections.find(s => s.el === entry.target);
+                    if (match) match.link.classList.add('active');
+                }
+            });
+        }, { rootMargin: '-20% 0px -60% 0px', threshold: 0 });
+
+        sections.forEach(s => spyObserver.observe(s.el));
+        window.addEventListener('scroll', updateProgress, { passive: true });
+
+        /* ──────────────────────────────────────────────
+           REVEAL ON SCROLL
+        ────────────────────────────────────────────── */
+        const revealEls = document.querySelectorAll('.reveal');
+        const revealObserver = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    revealObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.12 });
+        revealEls.forEach(el => revealObserver.observe(el));
+
+        /* ──────────────────────────────────────────────
+           MOBILE DRAWER
+        ────────────────────────────────────────────── */
+        const rail = document.getElementById('rail');
+        const scrim = document.getElementById('scrim');
+        const drawerBtn = document.getElementById('drawer-btn');
+
+        function openDrawer() { rail.classList.add('open'); scrim.classList.add('open'); }
+        function closeDrawer() { rail.classList.remove('open'); scrim.classList.remove('open'); }
+
+        drawerBtn.addEventListener('click', openDrawer);
+        scrim.addEventListener('click', closeDrawer);
+        railLinks.forEach(link => link.addEventListener('click', closeDrawer));
+
+        /* ──────────────────────────────────────────────
+           SPECTRUM VISUALIZATION
+        ────────────────────────────────────────────── */
+        const spectrumSlider = document.getElementById('spectrumSlider');
+        const spectrumCallout = document.getElementById('spectrumCallout');
+        const legacyLabel = document.getElementById('legacyLabel');
+        const shiftedLabel = document.getElementById('shiftedLabel');
+
+        const callouts = [
+            { min: 0, max: 20, text: "Filing systems organized documents and reduced physical clutter in offices. They made it possible to find what you needed, when you needed it." },
+            { min: 21, max: 40, text: "Filing systems made storage easier — but they also made it easier to keep documents that would have been discarded. The filter of necessity began to weaken." },
+            { min: 41, max: 60, text: "With cheap storage, organizations stopped asking 'do we need this?' and started asking 'where should we file this?' The shift from selection to retention was subtle but profound." },
+            { min: 61, max: 80, text: "More records meant more administrative processes. More processes meant more records. The feedback loop accelerated — each filing cabinet justifying the next clerk, the next form, the next layer of oversight." },
+            { min: 81, max: 100, text: "Filing systems didn't reduce clutter. They generated it. By making storage frictionless, they exponentially expanded bureaucratic paperwork, institutional creep, and administrative surveillance — creating organizations choked by their own records." }
+        ];
+
+        spectrumSlider.addEventListener('input', () => {
+            const val = parseInt(spectrumSlider.value);
+            const match = callouts.find(c => val >= c.min && val <= c.max);
+            if (match) spectrumCallout.textContent = match.text;
+
+            // Update label emphasis
+            const shift = val / 100;
+            legacyLabel.style.opacity = 1 - shift * 0.6;
+            shiftedLabel.style.opacity = 0.4 + shift * 0.6;
+            if (val > 50) {
+                legacyLabel.style.background = 'var(--surface)';
+                legacyLabel.style.color = 'var(--muted)';
+                shiftedLabel.style.background = 'var(--accent)';
+                shiftedLabel.style.color = '#fff';
+            } else {
+                legacyLabel.style.background = 'var(--accent)';
+                legacyLabel.style.color = '#fff';
+                shiftedLabel.style.background = 'var(--surface)';
+                shiftedLabel.style.color = 'var(--muted)';
+            }
+        });
+
+        /* ──────────────────────────────────────────────
+           INTERACTIVE CANVAS NODE DIAGRAM
+        ────────────────────────────────────────────── */
+        const canvas = document.getElementById('networkCanvas');
+        const ctx = canvas.getContext('2d');
+        const tooltip = document.getElementById('diagramTooltip');
+        let hoveredNode = null;
+        let animFrame = 0;
+
+        // Node data
+        const nodes = [
+            { id: 0, label: 'Filing System', x: 0.5, y: 0.5, desc: 'The central innovation that made storage cheap and frictionless.' },
+            { id: 1, label: 'Cheap Storage', x: 0.5, y: 0.15, desc: 'Lowered the cost of keeping records — no need to decide what matters.' },
+            { id: 2, label: 'More Records', x: 0.82, y: 0.3, desc: 'Volume of paperwork exploded as retention replaced selection.' },
+            { id: 3, label: 'Admin Overhead', x: 0.82, y: 0.7, desc: 'More clerks, more forms, more processes to manage the growing pile.' },
+            { id: 4, label: 'Institutional Creep', x: 0.5, y: 0.85, desc: 'Organizations expanded their reach into more areas of life and work.' },
+            { id: 5, label: 'Surveillance', x: 0.18, y: 0.7, desc: 'Comprehensive records enabled new forms of monitoring and control.' },
+            { id: 6, label: 'Bureaucratic Bloat', x: 0.18, y: 0.3, desc: 'Self-reinforcing expansion of rules, roles, and red tape.' }
+        ];
+
+        const edges = [
+            [0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 0],
+            [2, 0], [3, 6], [5, 4]
+        ];
+
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width * window.devicePixelRatio;
+            canvas.height = 360 * window.devicePixelRatio;
+            canvas.style.width = rect.width + 'px';
+            canvas.style.height = '360px';
+            ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        function getNodePixelPos(node) {
+            const w = canvas.clientWidth;
+            const h = 360;
+            return { px: node.x * w, py: node.y * h };
+        }
+
+        function drawNetwork() {
+            const w = canvas.clientWidth;
+            const h = 360;
+            ctx.clearRect(0, 0, w, h);
+            animFrame++;
+
+            const isDark = html.getAttribute('data-theme') === 'dark';
+            const nodeColor = isDark ? '#E8734A' : '#C4532E';
+            const nodeBg = isDark ? '#1E1C18' : '#FFFFFF';
+            const edgeColor = isDark ? 'rgba(232,115,74,0.2)' : 'rgba(196,83,46,0.15)';
+            const edgeActiveColor = isDark ? 'rgba(232,115,74,0.7)' : 'rgba(196,83,46,0.6)';
+            const textColor = isDark ? '#F0E8DC' : '#1A1610';
+            const mutedColor = isDark ? '#9B8E7A' : '#8B7E6A';
+
+            // Draw edges
+            edges.forEach(([fromId, toId]) => {
+                const from = getNodePixelPos(nodes[fromId]);
+                const to = getNodePixelPos(nodes[toId]);
+                const isActive = hoveredNode !== null && (hoveredNode === fromId || hoveredNode === toId);
+                ctx.beginPath();
+                ctx.moveTo(from.px, from.py);
+                ctx.lineTo(to.px, to.py);
+                ctx.strokeStyle = isActive ? edgeActiveColor : edgeColor;
+                ctx.lineWidth = isActive ? 2.5 : 1.5;
+
+                // Animated dash for active edges
+                if (isActive) {
+                    ctx.setLineDash([6, 4]);
+                    ctx.lineDashOffset = -animFrame * 0.5;
+                } else {
+                    ctx.setLineDash([]);
+                }
+                ctx.stroke();
+                ctx.setLineDash([]);
+            });
+
+            // Draw nodes
+            nodes.forEach((node, i) => {
+                const { px, py } = getNodePixelPos(node);
+                const isHovered = hoveredNode === i;
+                const isConnected = hoveredNode !== null && edges.some(
+                    ([a, b]) => (a === hoveredNode && b === i) || (b === hoveredNode && a === i)
+                );
+                const radius = isHovered ? 26 : (isConnected ? 22 : 18);
+                const pulse = Math.sin(animFrame * 0.03 + i) * 2;
+
+                // Glow for hovered
+                if (isHovered) {
+                    ctx.beginPath();
+                    ctx.arc(px, py, radius + 8 + pulse, 0, Math.PI * 2);
+                    ctx.fillStyle = isDark ? 'rgba(232,115,74,0.12)' : 'rgba(196,83,46,0.1)';
+                    ctx.fill();
+                }
+
+                // Node circle
+                ctx.beginPath();
+                ctx.arc(px, py, radius + (isConnected ? pulse * 0.5 : 0), 0, Math.PI * 2);
+                ctx.fillStyle = isHovered ? nodeColor : (isConnected ? nodeColor : nodeBg);
+                ctx.fill();
+                ctx.strokeStyle = nodeColor;
+                ctx.lineWidth = isHovered ? 3 : 2;
+                ctx.stroke();
+
+                // Label
+                ctx.fillStyle = isHovered ? '#fff' : (isConnected ? nodeColor : textColor);
+                ctx.font = `${isHovered ? '700' : '600'} ${isHovered ? 12 : 11}px "Source Sans 3", sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                // Wrap text if needed
+                const words = node.label.split(' ');
+                if (words.length > 1 && !isHovered) {
+                    ctx.fillText(words[0], px, py - 6);
+                    ctx.fillText(words.slice(1).join(' '), px, py + 8);
+                } else {
+                    ctx.fillText(node.label, px, py);
+                }
+            });
+
+            requestAnimationFrame(drawNetwork);
+        }
+        drawNetwork();
+
+        // Mouse interaction for canvas
+        function getHoveredNode(mx, my) {
+            for (let i = nodes.length - 1; i >= 0; i--) {
+                const { px, py } = getNodePixelPos(nodes[i]);
+                const dist = Math.sqrt((mx - px) ** 2 + (my - py) ** 2);
+                if (dist < 28) return i;
+            }
+            return null;
+        }
+
+        canvas.addEventListener('mousemove', e => {
+            const rect = canvas.getBoundingClientRect();
+            const mx = e.clientX - rect.left;
+            const my = e.clientY - rect.top;
+            const idx = getHoveredNode(mx, my);
+            hoveredNode = idx;
+            canvas.style.cursor = idx !== null ? 'pointer' : 'default';
+
+            if (idx !== null) {
+                tooltip.textContent = nodes[idx].desc;
+                tooltip.style.left = (e.clientX - rect.left + 12) + 'px';
+                tooltip.style.top = (e.clientY - rect.top - 36) + 'px';
+                tooltip.style.opacity = '1';
+            } else {
+                tooltip.style.opacity = '0';
+            }
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            hoveredNode = null;
+            tooltip.style.opacity = '0';
+        });
+
+        // Touch support
+        canvas.addEventListener('touchstart', e => {
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            const mx = touch.clientX - rect.left;
+            const my = touch.clientY - rect.top;
+            const idx = getHoveredNode(mx, my);
+            hoveredNode = idx;
+            if (idx !== null) {
+                tooltip.textContent = nodes[idx].desc;
+                tooltip.style.left = (mx + 12) + 'px';
+                tooltip.style.top = (my - 36) + 'px';
+                tooltip.style.opacity = '1';
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', () => {
+            setTimeout(() => { hoveredNode = null; tooltip.style.opacity = '0'; }, 2000);
+        });
+
+        /* ──────────────────────────────────────────────
+           CHART.JS VISUALIZATION
+        ────────────────────────────────────────────── */
+        const chartCtx = document.getElementById('chartCanvas').getContext('2d');
+        const decades = ['1880', '1890', '1900', '1910', '1920', '1930', '1940', '1950', '1960', '1970', '1980'];
+
+        const chartData = {
+            filing: [1, 1.8, 2.8, 4, 5.2, 6.5, 7.8, 9, 10.2, 11, 12],
+            paperwork: [1, 1.5, 3, 6, 12, 20, 30, 42, 58, 78, 100],
+            overhead: [1, 1.2, 2, 4, 8, 14, 22, 30, 40, 52, 65]
+        };
+
+        function getChartColors() {
+            const isDark = html.getAttribute('data-theme') === 'dark';
+            return {
+                filing: isDark ? '#E8734A' : '#C4532E',
+                paperwork: isDark ? '#D4A017' : '#B8860B',
+                overhead: isDark ? '#9B8E7A' : '#8B7E6A',
+                grid: isDark ? 'rgba(240,232,220,0.08)' : 'rgba(26,22,16,0.06)',
+                text: isDark ? '#9B8E7A' : '#8B7E6A'
+            };
+        }
+
+        let chartColors = getChartColors();
+
+        window.bureaucracyChart = new Chart(chartCtx, {
+            type: 'line',
+            data: {
+                labels: decades,
+                datasets: [
+                    {
+                        label: 'Filing Capacity',
+                        data: chartData.filing,
+                        borderColor: chartColors.filing,
+                        backgroundColor: chartColors.filing + '18',
+                        fill: true, tension: 0.35, pointRadius: 4, pointHoverRadius: 7,
+                        borderWidth: 2.5
+                    },
+                    {
+                        label: 'Paperwork Volume',
+                        data: chartData.paperwork,
+                        borderColor: chartColors.paperwork,
+                        backgroundColor: chartColors.paperwork + '18',
+                        fill: true, tension: 0.35, pointRadius: 4, pointHoverRadius: 7,
+                        borderWidth: 2.5
+                    },
+                    {
+                        label: 'Admin Overhead',
+                        data: chartData.overhead,
+                        borderColor: chartColors.overhead,
+                        backgroundColor: chartColors.overhead + '18',
+                        fill: true, tension: 0.35, pointRadius: 4, pointHoverRadius: 7,
+                        borderWidth: 2.5
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: {
+                        labels: { usePointStyle: true, color: chartColors.text, font: { family: "'Source Sans 3', sans-serif", size: 12 } }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(26,22,16,0.92)',
+                        titleFont: { family: "'Source Sans 3', sans-serif" },
+                        bodyFont: { family: "'Source Sans 3', sans-serif" },
+                        padding: 12, cornerRadius: 8
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { color: chartColors.grid },
+                        ticks: { color: chartColors.text, font: { family: "'Source Sans 3', sans-serif", size: 11 } }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'Relative Index', color: chartColors.text, font: { family: "'Source Sans 3', sans-serif", size: 12 } },
+                        grid: { color: chartColors.grid },
+                        ticks: { color: chartColors.text, font: { family: "'Source Sans 3', sans-serif", size: 11 } }
+                    }
+                }
+            }
+        });
+
+        // Chart filter toggles
+        document.querySelectorAll('.chart-filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                btn.classList.toggle('active');
+                const idx = parseInt(btn.getAttribute('data-dataset'));
+                window.bureaucracyChart.data.datasets[idx].hidden = !btn.classList.contains('active');
+                window.bureaucracyChart.update();
+            });
+        });
+
+        // Update chart theme on toggle
+        function updateChartTheme() {
+            chartColors = getChartColors();
+            const chart = window.bureaucracyChart;
+            const ds = chart.data.datasets;
+            ds[0].borderColor = chartColors.filing;
+            ds[0].backgroundColor = chartColors.filing + '18';
+            ds[1].borderColor = chartColors.paperwork;
+            ds[1].backgroundColor = chartColors.paperwork + '18';
+            ds[2].borderColor = chartColors.overhead;
+            ds[2].backgroundColor = chartColors.overhead + '18';
+            chart.options.scales.x.grid.color = chartColors.grid;
+            chart.options.scales.y.grid.color = chartColors.grid;
+            chart.options.scales.x.ticks.color = chartColors.text;
+            chart.options.scales.y.ticks.color = chartColors.text;
+            chart.options.scales.y.title.color = chartColors.text;
+            chart.options.plugins.legend.labels.color = chartColors.text;
+            chart.update();
+        }
+
+        /* ──────────────────────────────────────────────
+           PERSPECTIVE SNAP — COPY & SHARE
+        ────────────────────────────────────────────── */
+        const snapText = document.getElementById('snapText').textContent.trim();
+        const copyBtn = document.getElementById('copyBtn');
+
+        copyBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(snapText).then(() => {
+                copyBtn.classList.add('copied');
+                copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied';
+                setTimeout(() => {
+                    copyBtn.classList.remove('copied');
+                    copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy';
+                }, 2000);
+            });
+        });
+
+        // Share on X
+        document.getElementById('shareXBtn').addEventListener('click', () => {
+            const text = encodeURIComponent(snapText + ' — A perspective shift on institutional record-keeping');
+            const url = encodeURIComponent(window.location.href);
+            window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank', 'width=600,height=400');
+        });
+
+        // Share on LinkedIn
+        document.getElementById('shareLinkedInBtn').addEventListener('click', () => {
+            const url = encodeURIComponent(window.location.href);
+            window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}`, '_blank', 'width=600,height=400');
+        });
+
+        // Dynamic gradient shift on scroll for snap card
+        const snapCard = document.getElementById('snapCard');
+        window.addEventListener('scroll', () => {
+            const rect = snapCard.getBoundingClientRect();
+            const viewH = window.innerHeight;
+            const pct = Math.max(0, Math.min(1, (viewH - rect.top) / (viewH + rect.height)));
+            const hue = 15 + pct * 10; // warm hue shift
+            const alpha = 0.04 + pct * 0.08;
+            snapCard.style.background = `linear-gradient(135deg, hsla(${hue}, 70%, 50%, ${alpha}), var(--card) 60%)`;
+        }, { passive: true });
+
+        /* ──────────────────────────────────────────────
+           CTA CHECKLIST PROGRESS
+        ────────────────────────────────────────────── */
+        const checkboxes = document.querySelectorAll('.checklist input[type="checkbox"]');
+        const gaugeFill = document.getElementById('gaugeFill');
+        const gaugeText = document.getElementById('gaugeText');
+
+        function updateGauge() {
+            const total = checkboxes.length;
+            const checked = Array.from(checkboxes).filter(cb => cb.checked).length;
+            const pct = Math.round((checked / total) * 100);
+            gaugeFill.style.width = pct + '%';
+            gaugeText.textContent = pct + '%';
+
+            // Update li styling
+            checkboxes.forEach(cb => {
+                cb.closest('li').classList.toggle('checked', cb.checked);
+            });
+        }
+
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', updateGauge);
+            // Also trigger on label click
+            cb.closest('li').addEventListener('click', e => {
+                if (e.target !== cb) {
+                    cb.checked = !cb.checked;
+                    updateGauge();
+                }
+            });
+        });
+
+        /* ──────────────────────────────────────────────
+           INITIAL SCROLL PROGRESS
+        ────────────────────────────────────────────── */
+        updateProgress();
+    </script>
+</body>
+</html>
+
+  
