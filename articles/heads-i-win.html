@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heads I Win | The Architecture of Socialized Ruin</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #f4f4f9;
+            --fg: #111;
+            --muted: #555;
+            --accent: #d62828;
+            --accent-2: #003049;
+            --card: #ffffff;
+            --border: #ddd;
+            --glass: rgba(255, 255, 255, 0.7);
+            --base-font-size: 18px;
+            --transition: 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #0a0a12;
+                --fg: #eaeaea;
+                --muted: #aaa;
+                --accent: #ff4d4d;
+                --accent-2: #4cc9f0;
+                --card: #14141f;
+                --border: #2a2a3a;
+                --glass: rgba(15, 15, 25, 0.7);
+            }
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--bg);
+            color: var(--fg);
+            font-family: 'Georgia', 'Times New Roman', serif;
+            font-size: var(--base-font-size);
+            line-height: 1.7;
+            transition: background var(--transition), color var(--transition);
+        }
+
+        /* --- Progress & Topbar --- */
+        #progress {
+            position: fixed;
+            top: 0; left: 0;
+            height: 4px;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent), var(--accent-2));
+            z-index: 1000;
+            transition: width 0.1s linear;
+        }
+
+        #topbar {
+            position: fixed;
+            top: 4px; left: 0; right: 0;
+            height: 60px;
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            z-index: 999;
+        }
+
+        .topbar-left { display: flex; align-items: center; gap: 15px; }
+        .home-link { 
+            font-weight: bold; 
+            text-decoration: none; 
+            color: var(--accent-2);
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+        .breadcrumb { font-size: 0.9rem; color: var(--muted); font-family: 'Segoe UI', sans-serif; }
+        .topbar-right { display: flex; align-items: center; gap: 15px; }
+        
+        .topbar-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--fg);
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 0.85rem;
+            transition: var(--transition);
+        }
+        .topbar-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+        .menu-btn { display: none; font-size: 1.5rem; background: none; border: none; color: var(--fg); cursor: pointer;}
+
+        .reading-time { font-size: 0.85rem; color: var(--muted); font-family: 'Segoe UI', sans-serif; display: none; }
+        @media(min-width: 600px) { .reading-time { display: block; } }
+
+        /* --- Layout --- */
+        .wrap {
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding-top: 80px;
+        }
+
+        #rail {
+            position: sticky;
+            top: 80px;
+            height: calc(100vh - 80px);
+            padding: 40px 20px;
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+        }
+
+        #rail a {
+            display: block;
+            color: var(--muted);
+            text-decoration: none;
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 0.9rem;
+            padding: 8px 12px;
+            border-left: 3px solid transparent;
+            margin-bottom: 4px;
+            transition: var(--transition);
+        }
+        #rail a:hover { color: var(--fg); background: var(--card); }
+        #rail a.active { color: var(--accent); border-left-color: var(--accent); font-weight: bold; }
+
+        main {
+            padding: 40px 50px 100px 50px;
+            max-width: 75ch;
+        }
+
+        #scrim {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 998;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        #scrim.open { opacity: 1; pointer-events: auto; }
+
+        /* --- Typography & Content --- */
+        h1 {
+            font-size: 2.8rem;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+        }
+        h2 {
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 1.8rem;
+            margin: 3rem 0 1.5rem 0;
+            color: var(--accent-2);
+        }
+        p { margin-bottom: 1.5rem; }
+        strong { color: var(--accent); font-weight: 800; }
+
+        /* --- Reveal Animations --- */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+        .reveal.visible { opacity: 1; transform: translateY(0); }
+
+        /* --- Interactive Elements --- */
+        .spectrum-container {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin: 2rem 0;
+        }
+        .spectrum-labels { display: flex; justify-content: space-between; margin-bottom: 10px; font-family: 'Segoe UI', sans-serif; font-size: 0.9rem; color: var(--muted);}
+        .spectrum-slider { width: 100%; -webkit-appearance: none; height: 8px; background: var(--border); border-radius: 4px; outline: none; }
+        .spectrum-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; background: var(--accent); border-radius: 50%; cursor: pointer; border: 2px solid var(--card); }
+        .spectrum-slider::-moz-range-thumb { width: 24px; height: 24px; background: var(--accent); border-radius: 50%; cursor: pointer; border: 2px solid var(--card); }
+        .spectrum-output { margin-top: 20px; font-style: italic; text-align: center; color: var(--fg); min-height: 50px; transition: var(--transition);}
+
+        .snap-card {
+            position: relative;
+            background: linear-gradient(135deg, var(--accent-2), var(--accent));
+            color: #fff;
+            padding: 40px;
+            border-radius: 16px;
+            margin: 3rem 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        .snap-card .quote { font-size: 1.5rem; font-family: 'Georgia', serif; margin-bottom: 20px; z-index: 2; position: relative; }
+        .snap-controls { display: flex; gap: 10px; justify-content: flex-end; z-index: 2; position: relative;}
+        .snap-btn { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: #fff; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-family: 'Segoe UI', sans-serif; transition: var(--transition); font-size: 0.9rem;}
+        .snap-btn:hover { background: #fff; color: var(--accent); }
+
+        canvas.diagram { width: 100%; height: 350px; background: var(--card); border-radius: 8px; border: 1px solid var(--border); margin: 2rem 0; cursor: pointer; touch-action: none;}
+        .chart-container { margin: 2rem 0; height: 400px; }
+        .chart-filters { display: flex; gap: 10px; margin-bottom: 10px; }
+        .filter-btn { padding: 6px 12px; border: 1px solid var(--border); background: var(--card); color: var(--muted); cursor: pointer; border-radius: 6px; font-family: 'Segoe UI', sans-serif; transition: var(--transition); font-size: 0.85rem; }
+        .filter-btn.active { background: var(--accent-2); color: #fff; border-color: var(--accent-2); }
+
+        .action {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-top: 2rem;
+        }
+        .checklist { list-style: none; margin: 20px 0; }
+        .checklist li { margin-bottom: 12px; display: flex; align-items: center; font-family: 'Segoe UI', sans-serif; }
+        .checklist input { margin-right: 12px; width: 20px; height: 20px; accent-color: var(--accent); cursor: pointer; }
+        .progress-gauge { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; margin-top: 20px; }
+        .gauge-fill { height: 100%; width: 0%; background: var(--accent); transition: width 0.4s ease; }
+
+        @media (max-width: 880px) {
+            .wrap { grid-template-columns: 1fr; }
+            #rail {
+                position: fixed;
+                top: 0; left: 0;
+                height: 100vh;
+                width: 280px;
+                background: var(--card);
+                z-index: 999;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                padding-top: 80px;
+                border-right: 1px solid var(--border);
+            }
+            #rail.open { transform: translateX(0); }
+            .menu-btn { display: block; }
+            main { padding: 20px; }
+            h1 { font-size: 2.2rem; }
+            .reading-time { display: none; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+            .reveal { opacity: 1; transform: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="progress"></div>
+    
+    <header id="topbar">
+        <div class="topbar-left">
+            <button class="menu-btn" id="menuBtn" aria-label="Open menu">☰</button>
+            <a href="https://iggym.github.io/cogitatio-elegans/" class="home-link">Cogitatio</a>
+            <span class="breadcrumb">/ Finance / Architecture</span>
+        </div>
+        <div class="topbar-right">
+            <span class="reading-time" id="readTime">5 min read</span>
+            <button class="topbar-btn" id="fontToggle">Aa</button>
+            <button class="topbar-btn" id="themeToggle">◑</button>
+        </div>
+    </header>
+
+    <div id="scrim"></div>
+
+    <div class="wrap">
+        <nav id="rail">
+            <a href="#sec1">Glass Towers, Cardboard Boxes</a>
+            <a href="#sec2">Heads I Win</a>
+            <a href="#sec3">Risk's Riptide</a>
+            <a href="#sec4">Fine Print Footnotes</a>
+            <a href="#sec5">Pockets of Resistance</a>
+            <a href="#sec6">Check the Ledger</a>
+        </nav>
+
+        <main>
+            <article>
+                <h1 id="sec1">Glass Towers, Cardboard Boxes</h1>
+                <p class="reveal">
+                    The fluorescent lights flicker out in a manufacturing plant in Ohio. A line worker named Sarah tapes her last cardboard box, packing up photographs and coffee mugs from a locker she has used for fourteen years. Three states away, in a glass tower overlooking Manhattan, a private equity manager signs a stack of restructuring documents. His fund took over Sarah’s company, loaded it with debt, extracted millions in "management fees," and ultimately pushed it into bankruptcy. 
+                </p>
+                <p class="reveal">
+                    Sarah loses her pension and her livelihood. The manager’s firm faces no consequences. His personal assets remain untouched. He takes the elevator down to a waiting car, checking his phone for the next acquisition target. This is not an accident of economics. It is a feature of architecture.
+                </p>
+
+                <h2 id="sec2">Heads I Win</h2>
+                <p class="reveal">
+                    We are taught to revere the modern corporation. The conventional wisdom dictates that the evolution of limited liability corporations and complex credit systems was a masterstroke of capitalism, engineered to encourage bold entrepreneurial risk-taking, venture creation, and economic innovation. By capping an investor's potential loss to the exact amount they invested, society unlocked a reservoir of capital that built railroads, microchips, and the internet.
+                </p>
+                <p class="reveal">
+                    But this narrative obscures a darker reality. Limited liability and modern financial engineering primarily functioned to insulate capital owners from the catastrophic downsides of enterprise failure. Rather than encouraging bold daring, these mechanisms effectively shifted systemic risk downward, depositing it squarely onto labor, creditors, and taxpayers. This institutionalized mechanism transformed corporate structures into shields for risk aversion rather than vehicles for daring innovation.
+                </p>
+
+                <!-- Interactive Spectrum -->
+                <div class="spectrum-container reveal">
+                    <div class="spectrum-labels">
+                        <span>Conventional View</span>
+                        <span>The Reframe</span>
+                    </div>
+                    <input type="range" min="0" max="100" value="0" class="spectrum-slider" id="spectrumSlider">
+                    <div class="spectrum-output" id="spectrumOutput">
+                        Limited liability encourages bold entrepreneurial risk-taking, venture creation, and economic innovation.
+                    </div>
+                </div>
+
+                <p class="reveal">
+                    When the gamble pays off, the capital owners reap the rewards. When the gamble fails, the losses are socialized. It is a financial heads-I-win, tails-you-lose machine.
+                </p>
+
+                <h2 id="sec3">Risk's Riptide</h2>
+                <p class="reveal">
+                    To understand how this works, look past the stock ticker and trace the flow of risk. When a corporation takes on massive debt to execute a leveraged buyout, the risk of that debt doesn't disappear. It flows through the corporate veil. If the company collapses, the creditors take a haircut, the employees lose their income stream, and the local municipality loses its tax base. The equity holders—the architects of the risk—simply walk away.
+                </p>
+                <p class="reveal">
+                    The legal firewall of the corporation ensures that ruin does not travel upward. Click the nodes in the diagram below to see how risk and reward flow asymmetrically through the architecture of a corporation.
+                </p>
+
+                <canvas class="diagram reveal" id="riskNetwork"></canvas>
+
+                <div class="snap-card reveal" id="snapCard">
+                    <p class="quote" id="snapQuote">Financial innovations celebrated as engines of enterprise are frequently legal architectures designed to privatize reward while socializing ruin.</p>
+                    <div class="snap-controls">
+                        <button class="snap-btn" id="copyBtn">Copy</button>
+                        <button class="snap-btn" id="shareTwitter">X</button>
+                        <button class="snap-btn" id="shareLinkedIn">LinkedIn</button>
+                    </div>
+                </div>
+
+                <h2 id="sec4">Fine Print Footnotes</h2>
+                <p class="reveal">
+                    Acknowledging this asymmetry does not mean dismantling the entire concept of the corporation. Without limited liability, no rational person would invest in an experimental cancer drug or a rocket ship; the threat of infinite liability would paralyze all progress. The legal architecture is necessary.
+                </p>
+                <p class="reveal">
+                    But the scale has tipped. We have moved from insulating investors from direct accidents to engineering financial instruments that allow private equity to extract value from fragile communities with zero exposure. The data visualizes this divergence over recent decades. While productivity and executive compensation have soared, the insulation of capital has grown absolute, leaving the working class to absorb the shocks of repeated financial crises.
+                </p>
+
+                <div class="chart-container reveal">
+                    <div class="chart-filters">
+                        <button class="filter-btn active" data-filter="both">Both</button>
+                        <button class="filter-btn" data-filter="reward">Privatized Reward</button>
+                        <button class="filter-btn" data-filter="ruin">Socialized Ruin</button>
+                    </div>
+                    <canvas id="econChart"></canvas>
+                </div>
+
+                <h2 id="sec5">Pockets of Resistance</h2>
+                <p class="reveal">
+                    If the system is designed to socialize ruin, the solution is not merely to regulate it, but to reverse the flow. Meaningful change happens when capital is forced to have skin in the game, and when communities refuse to act as unconsenting shock absorbers for distant financial engineers.
+                </p>
+                <p class="reveal">
+                    Change begins with small, decisive choices. Moving your money out of mega-banks that finance leveraged buyouts and into local credit unions starves the machine of its raw material. Supporting legislation that mandates clawbacks for executives who bankrupt their companies forces risk back up the chain. 
+                </p>
+
+                <h2 id="sec6">Check the Ledger</h2>
+                <p class="reveal">
+                    You do not need to be a legislator to shift the architecture. You can begin severing your own complicity in the socialization of ruin today. Execute these steps within the next 24 hours to align your financial footprint with your values.
+                </p>
+
+                <div class="action reveal">
+                    <ul class="checklist">
+                        <li><input type="checkbox" id="c1"><label for="c1">Audit your banking relationships and identify if your funds support leveraged buyouts.</label></li>
+                        <li><input type="checkbox" id="c2"><label for="c2">Move a portion of your savings or checking to a local credit union or community bank.</label></li>
+                        <li><input type="checkbox" id="c3"><label for="c3">Research and contact your representatives about corporate accountability or "skin in the game" legislation.</label></li>
+                    </ul>
+                    <div class="progress-gauge">
+                        <div class="gauge-fill" id="gaugeFill"></div>
+                    </div>
+                </div>
+
+            </article>
+        </main>
+    </div>
+
+    <script>
+        // --- Global State & Utilities ---
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const darkModeMedia = window.matchMedia('(prefers-color-scheme: dark)');
+        let isDark = darkModeMedia.matches;
+
+        // --- Progress & Scrollspy ---
+        const progress = document.getElementById('progress');
+        const railLinks = document.querySelectorAll('#rail a');
+        const sections = document.querySelectorAll('h2, h1');
+
+        const updateProgress = () => {
+            const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+            const scrollTop = window.scrollY;
+            progress.style.width = `${(scrollTop / scrollHeight) * 100}%`;
+        };
+        window.addEventListener('scroll', updateProgress, { passive: true });
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const id = entry.target.id;
+                    railLinks.forEach(link => {
+                        link.classList.toggle('active', link.getAttribute('href') === `#${id}`);
+                    });
+                }
+            });
+        }, { rootMargin: '0px 0px -70% 0px' });
+
+        sections.forEach(sec => observer.observe(sec));
+
+        // --- Reveal Animations ---
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    revealObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.reveal').forEach(el => {
+            if (prefersReducedMotion) {
+                el.classList.add('visible');
+            } else {
+                revealObserver.observe(el);
+            }
+        });
+
+        // --- Mobile Nav ---
+        const menuBtn = document.getElementById('menuBtn');
+        const rail = document.getElementById('rail');
+        const scrim = document.getElementById('scrim');
+
+        const toggleNav = (open) => {
+            rail.classList.toggle('open', open);
+            scrim.classList.toggle('open', open);
+        };
+        menuBtn.addEventListener('click', () => toggleNav(!rail.classList.contains('open')));
+        scrim.addEventListener('click', () => toggleNav(false));
+        railLinks.forEach(link => link.addEventListener('click', () => {
+            if (window.innerWidth < 880) toggleNav(false);
+        }));
+
+        // --- Topbar Controls ---
+        const fontToggle = document.getElementById('fontToggle');
+        const themeToggle = document.getElementById('themeToggle');
+        const root = document.documentElement;
+
+        let fontState = 0; // 0: normal, 1: large, 2: x-large
+        const fontSizes = ['18px', '20px', '16px'];
+        fontToggle.addEventListener('click', () => {
+            fontState = (fontState + 1) % 3;
+            root.style.setProperty('--base-font-size', fontSizes[fontState]);
+        });
+
+        themeToggle.addEventListener('click', () => {
+            isDark = !isDark;
+            root.setAttribute('data-theme', isDark ? 'dark' : 'light');
+            // Manually override variables for manual toggle
+            if (isDark) {
+                root.style.setProperty('--bg', '#0a0a12');
+                root.style.setProperty('--fg', '#eaeaea');
+                root.style.setProperty('--muted', '#aaa');
+                root.style.setProperty('--accent', '#ff4d4d');
+                root.style.setProperty('--accent-2', '#4cc9f0');
+                root.style.setProperty('--card', '#14141f');
+                root.style.setProperty('--border', '#2a2a3a');
+                root.style.setProperty('--glass', 'rgba(15, 15, 25, 0.7)');
+            } else {
+                root.style.setProperty('--bg', '#f4f4f9');
+                root.style.setProperty('--fg', '#111');
+                root.style.setProperty('--muted', '#555');
+                root.style.setProperty('--accent', '#d62828');
+                root.style.setProperty('--accent-2', '#003049');
+                root.style.setProperty('--card', '#ffffff');
+                root.style.setProperty('--border', '#ddd');
+                root.style.setProperty('--glass', 'rgba(255, 255, 255, 0.7)');
+            }
+            // Re-render canvas/charts to match new theme
+            drawNetwork();
+            updateChartColors();
+        });
+
+        // --- Reading Time ---
+        const articleText = document.querySelector('article').innerText;
+        const wordCount = articleText.split(/\s+/).length;
+        document.getElementById('readTime').textContent = `${Math.ceil(wordCount / 220)} min read`;
+
+        // --- Spectrum Slider ---
+        const slider = document.getElementById('spectrumSlider');
+        const spectrumOutput = document.getElementById('spectrumOutput');
+        
+        const spectrumTexts = [
+            "Limited liability encourages bold entrepreneurial risk-taking, venture creation, and economic innovation.",
+            "Limited liability functions to insulate capital owners, shifting systemic risk downward onto labor and taxpayers.",
+            "Financial architectures privatize reward while socializing ruin, creating shields for risk aversion."
+        ];
+
+        slider.addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            let text;
+            if (val < 33) text = spectrumTexts[0];
+            else if (val < 66) text = spectrumTexts[1];
+            else text = spectrumTexts[2];
+            spectrumOutput.style.opacity = '0';
+            setTimeout(() => {
+                spectrumOutput.textContent = text;
+                spectrumOutput.style.opacity = '1';
+            }, 200);
+        });
+
+        // --- Snap Card Share/Copy ---
+        const snapQuote = document.getElementById('snapQuote').innerText;
+        const copyBtn = document.getElementById('copyBtn');
+        const twBtn = document.getElementById('shareTwitter');
+        const liBtn = document.getElementById('shareLinkedIn');
+        const currentUrl = window.location.href;
+
+        copyBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(`"${snapQuote}" - ${currentUrl}`);
+            copyBtn.innerText = 'Copied!';
+            setTimeout(() => copyBtn.innerText = 'Copy', 2000);
+        });
+
+        twBtn.addEventListener('click', () => {
+            window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent('"' + snapQuote + '"')}&url=${encodeURIComponent(currentUrl)}`, '_blank');
+        });
+
+        liBtn.addEventListener('click', () => {
+            window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(currentUrl)}`, '_blank');
+        });
+
+        // Snap Card Gradient Shift on Scroll
+        const snapCard = document.getElementById('snapCard');
+        window.addEventListener('scroll', () => {
+            const rect = snapCard.getBoundingClientRect();
+            const windowHeight = window.innerHeight;
+            // Calculate scroll progress relative to the card
+            const progress = Math.max(0, Math.min(1, 1 - (rect.top / windowHeight)));
+            const hue1 = 200 + (progress * 160); // Blue to Red
+            const hue2 = 350 - (progress * 150); // Red to Blue
+            snapCard.style.background = `linear-gradient(135deg, hsl(${hue1}, 70%, 40%), hsl(${hue2}, 80%, 50%))`;
+        }, { passive: true });
+
+        // --- Checklist Progress ---
+        const checkboxes = document.querySelectorAll('.checklist input[type="checkbox"]');
+        const gaugeFill = document.getElementById('gaugeFill');
+        checkboxes.forEach(cb => cb.addEventListener('change', () => {
+            const checked = document.querySelectorAll('.checklist input:checked').length;
+            const total = checkboxes.length;
+            gaugeFill.style.width = `${(checked / total) * 100}%`;
+        }));
+
+        // --- Canvas Interactive Network ---
+        const canvas = document.getElementById('riskNetwork');
+        const ctx = canvas.getContext('2d');
+        let nodes = [
+            { id: 0, label: 'Capital Owners', x: 0.5, y: 0.15, r: 30, type: 'capital' },
+            { id: 1, label: 'Corporate Veil', x: 0.5, y: 0.45, r: 25, type: 'shield' },
+            { id: 2, label: 'Labor', x: 0.15, y: 0.85, r: 25, type: 'risk' },
+            { id: 3, label: 'Taxpayers', x: 0.5, y: 0.85, r: 25, type: 'risk' },
+            { id: 4, label: 'Creditors', x: 0.85, y: 0.85, r: 25, type: 'risk' }
+        ];
+        let edges = [
+            { from: 0, to: 1, type: 'reward', label: 'Profits Flow Up' },
+            { from: 1, to: 0, type: 'reward', label: 'Insulated from Loss' },
+            { from: 1, to: 2, type: 'risk', label: 'Job Loss / Pension Cut' },
+            { from: 1, to: 3, type: 'risk', label: 'Bailouts / Tax Breaks Lost' },
+            { from: 1, to: 4, type: 'risk', label: 'Debt Defaulted' }
+        ];
+        let hoveredNode = null;
+        let animPhase = 0;
+
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+            canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+
+        function drawNetwork() {
+            if (!canvas.width) resizeCanvas();
+            const w = canvas.offsetWidth;
+            const h = canvas.offsetHeight;
+            ctx.clearRect(0, 0, w, h);
+
+            const css = getComputedStyle(root);
+            const colors = {
+                capital: css.getPropertyValue('--accent-2').trim(),
+                shield: css.getPropertyValue('--muted').trim(),
+                risk: css.getPropertyValue('--accent').trim(),
+                text: css.getPropertyValue('--fg').trim(),
+                muted: css.getPropertyValue('--muted').trim()
+            };
+
+            // Draw Edges
+            edges.forEach(edge => {
+                const fromNode = nodes[edge.from];
+                const toNode = nodes[edge.to];
+                
+                ctx.beginPath();
+                ctx.moveTo(fromNode.x * w, fromNode.y * h);
+                ctx.lineTo(toNode.x * w, toNode.y * h);
+                
+                let lineColor = edge.type === 'reward' ? colors.capital : colors.risk;
+                ctx.strokeStyle = lineColor;
+                ctx.lineWidth = (hoveredNode === fromNode || hoveredNode === toNode) ? 3 : 1;
+                ctx.globalAlpha = (hoveredNode && hoveredNode !== fromNode && hoveredNode !== toNode) ? 0.1 : 0.4;
+                ctx.stroke();
+                ctx.globalAlpha = 1;
+
+                // Animated dots if active
+                if (!prefersReducedMotion && (!hoveredNode || hoveredNode === fromNode || hoveredNode === toNode)) {
+                    const t = (animPhase % 100) / 100;
+                    const dotX = fromNode.x + (toNode.x - fromNode.x) * t;
+                    const dotY = fromNode.y + (toNode.y - fromNode.y) * t;
+                    ctx.beginPath();
+                    ctx.arc(dotX * w, dotY * h, 4, 0, Math.PI * 2);
+                    ctx.fillStyle = lineColor;
+                    ctx.fill();
+                }
+            });
+
+            // Draw Nodes
+            nodes.forEach(node => {
+                ctx.beginPath();
+                ctx.arc(node.x * w, node.y * h, node.r, 0, Math.PI * 2);
+                let fillColor = colors[node.type];
+                if (hoveredNode === node) {
+                    ctx.fillStyle = fillColor;
+                    ctx.shadowColor = fillColor;
+                    ctx.shadowBlur = 15;
+                } else if (hoveredNode && hoveredNode !== node) {
+                    ctx.fillStyle = colors.muted;
+                    ctx.shadowBlur = 0;
+                } else {
+                    ctx.fillStyle = fillColor;
+                    ctx.shadowBlur = 0;
+                }
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                // Label
+                ctx.fillStyle = colors.text;
+                ctx.font = '600 12px "Segoe UI", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(node.label, node.x * w, node.y * h + node.r + 18);
+            });
+            
+            // Draw tooltip if hovered
+            if (hoveredNode) {
+                const relevantEdges = edges.filter(e => e.from === hoveredNode.id || e.to === hoveredNode.id);
+                let tooltipText = relevantEdges.map(e => e.label).join('\n');
+                
+                ctx.font = '500 13px "Segoe UI", sans-serif';
+                const textWidth = ctx.measureText(tooltipText.split('\n')[0]).width;
+                const textHeight = 20 * relevantEdges.length;
+                
+                let tx = hoveredNode.x * w - (textWidth/2) - 10;
+                let ty = hoveredNode.y * h - node.r - textHeight - 20;
+                
+                ctx.fillStyle = css.getPropertyValue('--card').trim();
+                ctx.strokeStyle = css.getPropertyValue('--border').trim();
+                ctx.lineWidth = 1;
+                ctx.fillRect(tx, ty, textWidth + 20, textHeight + 10);
+                ctx.strokeRect(tx, ty, textWidth + 20, textHeight + 10);
+                
+                ctx.fillStyle = colors.text;
+                ctx.textAlign = 'left';
+                relevantEdges.forEach((e, i) => {
+                    ctx.fillText(e.label, tx + 10, ty + 16 + (i * 20));
+                });
+            }
+        }
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mx = e.clientX - rect.left;
+            const my = e.clientY - rect.top;
+            const w = canvas.offsetWidth;
+            const h = canvas.offsetHeight;
+            
+            let found = null;
+            for (let node of nodes) {
+                const dx = mx - (node.x * w);
+                const dy = my - (node.y * h);
+                if (Math.sqrt(dx*dx + dy*dy) < node.r) {
+                    found = node;
+                    break;
+                }
+            }
+            
+            if (found !== hoveredNode) {
+                hoveredNode = found;
+                canvas.style.cursor = found ? 'pointer' : 'default';
+                drawNetwork();
+            }
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            hoveredNode = null;
+            drawNetwork();
+        });
+
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+            drawNetwork();
+        });
+
+        if (!prefersReducedMotion) {
+            setInterval(() => {
+                animPhase++;
+                drawNetwork();
+            }, 30);
+        } else {
+            drawNetwork();
+        }
+
+        // --- Chart.js Visualization ---
+        const ctxChart = document.getElementById('econChart').getContext('2d');
+        let econChart;
+
+        const chartData = {
+            labels: ['1980', '1990', '2000', '2010', '2020'],
+            datasets: [
+                {
+                    label: 'Executive Compensation & Dividends (Privatized Reward)',
+                    data: [50, 120, 300, 450, 600],
+                    borderColor: getComputedStyle(root).getPropertyValue('--accent-2').trim(),
+                    backgroundColor: 'rgba(0, 48, 73, 0.1)',
+                    yAxisID: 'y',
+                },
+                {
+                    label: 'Worker Wage Stagnation & Pension Losses (Socialized Ruin)',
+                    data: [40, 45, 50, 48, 52],
+                    borderColor: getComputedStyle(root).getPropertyValue('--accent').trim(),
+                    backgroundColor: 'rgba(214, 40, 40, 0.1)',
+                    yAxisID: 'y1',
+                }
+            ]
+        };
+
+        function getChartOptions(filter) {
+            return {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    tooltip: {
+                        backgroundColor: getComputedStyle(root).getPropertyValue('--card').trim(),
+                        titleColor: getComputedStyle(root).getPropertyValue('--fg').trim(),
+                        bodyColor: getComputedStyle(root).getPropertyValue('--fg').trim(),
+                        borderColor: getComputedStyle(root).getPropertyValue('--border').trim(),
+                        borderWidth: 1
+                    },
+                    legend: {
+                        labels: { color: getComputedStyle(root).getPropertyValue('--fg').trim() }
+                    }
+                },
+                scales: {
+                    x: { ticks: { color: getComputedStyle(root).getPropertyValue('--muted').trim() }, grid: { color: getComputedStyle(root).getPropertyValue('--border').trim() } },
+                    y: { 
+                        type: 'linear', display: filter !== 'ruin', position: 'left',
+                        ticks: { color: getComputedStyle(root).getPropertyValue('--muted').trim() },
+                        grid: { color: getComputedStyle(root).getPropertyValue('--border').trim() }
+                    },
+                    y1: { 
+                        type: 'linear', display: filter !== 'reward', position: 'right',
+                        ticks: { color: getComputedStyle(root).getPropertyValue('--muted').trim() },
+                        grid: { drawOnChartArea: false }
+                    }
+                }
+            };
+        }
+
+        function buildChart(filter = 'both') {
+            let datasets = chartData.datasets;
+            if (filter === 'reward') datasets = [chartData.datasets[0]];
+            if (filter === 'ruin') datasets = [chartData.datasets[1]];
+
+            if (econChart) econChart.destroy();
+            econChart = new Chart(ctxChart, {
+                type: 'line',
+                data: { labels: chartData.labels, datasets: datasets },
+                options: getChartOptions(filter)
+            });
+        }
+
+        function updateChartColors() {
+            if (econChart) {
+                chartData.datasets[0].borderColor = getComputedStyle(root).getPropertyValue('--accent-2').trim();
+                chartData.datasets[1].borderColor = getComputedStyle(root).getPropertyValue('--accent').trim();
+                buildChart(document.querySelector('.filter-btn.active').getAttribute('data-filter'));
+            }
+        }
+
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                buildChart(btn.getAttribute('data-filter'));
+            });
+        });
+
+        buildChart();
+
+    </script>
+</body>
+</html>
