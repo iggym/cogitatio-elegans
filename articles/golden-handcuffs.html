@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Golden Handcuffs: The 8-Hour Illusion</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #f4f4f9;
+            --card-bg: #ffffff;
+            --text: #1a1a2e;
+            --text-muted: #555;
+            --accent: #e94560;
+            --accent-2: #0f3460;
+            --border: #e0e0e0;
+            --topbar-bg: rgba(255, 255, 255, 0.75);
+            --progress-grad: linear-gradient(90deg, #e94560, #0f3460);
+            --code-bg: #f0f0f0;
+            --snap-bg: #fff0f3;
+            --snap-text: #e94560;
+        }
+
+        [data-theme="dark"] {
+            --bg: #0a0a12;
+            --card-bg: #16213e;
+            --text: #eaeaea;
+            --text-muted: #a0a0a0;
+            --accent: #e94560;
+            --accent-2: #00d4ff;
+            --border: #2a2a40;
+            --topbar-bg: rgba(22, 33, 62, 0.75);
+            --progress-grad: linear-gradient(90deg, #00d4ff, #e94560);
+            --code-bg: #0f3460;
+            --snap-bg: #2a1525;
+            --snap-text: #ff6b81;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        /* Progress Bar */
+        #progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 4px;
+            width: 0%;
+            background: var(--progress-grad);
+            z-index: 1000;
+            transition: width 0.1s linear;
+        }
+
+        /* Topbar */
+        #topbar {
+            position: fixed;
+            top: 4px;
+            left: 0;
+            right: 0;
+            height: 56px;
+            background: var(--topbar-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            z-index: 999;
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .home-link {
+            font-weight: 700;
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 1.1rem;
+        }
+
+        .breadcrumb {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .reading-time {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        .btn-icon, .menu-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-icon:hover, .menu-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .menu-btn { display: none; }
+
+        /* Layout */
+        .wrap {
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding-top: 80px;
+        }
+
+        /* Sidebar Nav */
+        #rail {
+            position: sticky;
+            top: 80px;
+            height: calc(100vh - 80px);
+            padding: 32px 16px;
+            border-right: 1px solid var(--border);
+        }
+
+        #rail nav { display: flex; flex-direction: column; gap: 12px; }
+
+        #rail a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            padding: 8px 12px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            border-left: 3px solid transparent;
+        }
+
+        #rail a:hover { color: var(--text); background: var(--card-bg); }
+        #rail a.active {
+            color: var(--accent);
+            border-left-color: var(--accent);
+            font-weight: 600;
+            background: var(--card-bg);
+        }
+
+        /* Main Content */
+        main {
+            padding: 40px 56px;
+            max-width: 720px;
+        }
+
+        h1, h2, h3 { line-height: 1.3; margin-bottom: 16px; }
+        h1 { font-size: 2.4rem; margin-bottom: 24px; }
+        h2 { font-size: 1.8rem; margin-top: 48px; }
+        p { margin-bottom: 20px; }
+        strong { color: var(--accent-2); }
+        [data-theme="dark"] strong { color: var(--accent-2); }
+
+        /* Reveal Animations */
+        .reveal {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Perspective Snap */
+        .snap-container {
+            background: var(--snap-bg);
+            border-left: 4px solid var(--accent);
+            padding: 24px;
+            margin: 32px 0;
+            border-radius: 0 8px 8px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .snap-text {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--snap-text);
+            line-height: 1.4;
+            margin-bottom: 16px;
+            z-index: 2;
+            position: relative;
+        }
+
+        .snap-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .snap-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .snap-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .snap-btn.copied { background: var(--accent); color: white; border-color: var(--accent); }
+
+        /* Interactive Spectrum */
+        .spectrum {
+            background: var(--card-bg);
+            padding: 32px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            margin: 32px 0;
+        }
+        .spectrum-header { display: flex; justify-content: space-between; margin-bottom: 16px; font-weight: 600; font-size: 0.9rem; }
+        .spectrum-slider {
+            width: 100%;
+            height: 8px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: var(--border);
+            border-radius: 4px;
+            outline: none;
+        }
+        .spectrum-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            border: 3px solid var(--card-bg);
+            box-shadow: 0 0 0 1px var(--accent);
+        }
+        .spectrum-callout {
+            margin-top: 20px;
+            padding: 16px;
+            background: var(--bg);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            min-height: 60px;
+            transition: all 0.3s ease;
+        }
+
+        /* Canvas Diagram */
+        .canvas-container {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            margin: 32px 0;
+            position: relative;
+        }
+        #loopCanvas { width: 100%; height: 360px; cursor: pointer; }
+        .canvas-legend {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-top: 12px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Chart.js Container */
+        .chart-container {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin: 32px 0;
+            height: 400px;
+        }
+
+        /* Action Checklist */
+        .action {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 32px;
+            margin: 48px 0;
+        }
+        .checklist { list-style: none; margin: 20px 0; }
+        .checklist li {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .checklist li:hover { background: var(--bg); }
+        .checklist input { margin-right: 16px; width: 20px; height: 20px; cursor: pointer; accent-color: var(--accent); }
+        .checklist label { cursor: pointer; flex-grow: 1; }
+        .checklist li.checked label { text-decoration: line-through; color: var(--text-muted); }
+        
+        .gauge-container { margin-top: 24px; }
+        .gauge-label { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 8px; }
+        .gauge-track {
+            height: 12px;
+            background: var(--border);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .gauge-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--progress-grad);
+            transition: width 0.4s ease;
+        }
+
+        /* Scrim & Mobile */
+        #scrim {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            z-index: 998;
+        }
+        #scrim.active { opacity: 1; pointer-events: auto; }
+
+        @media (max-width: 880px) {
+            .wrap { grid-template-columns: 1fr; }
+            .menu-btn { display: flex; }
+            .breadcrumb, .reading-time { display: none; }
+            main { padding: 20px; }
+            
+            #rail {
+                position: fixed;
+                top: 60px;
+                left: 0;
+                width: 280px;
+                height: 100vh;
+                background: var(--card-bg);
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                z-index: 999;
+                padding-top: 40px;
+            }
+            #rail.open { transform: translateX(0); }
+        }
+
+        /* Motion Preferences */
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            .reveal { transition: none; opacity: 1; transform: none; }
+            #progress { transition: none; }
+            * { animation: none !important; transition: none !important; }
+        }
+
+        /* Font Size Adjustment */
+        body[data-fontsize="md"] main { font-size: 17px; }
+        body[data-fontsize="lg"] main { font-size: 19px; }
+        body[data-fontsize="xl"] main { font-size: 21px; }
+
+        figure { margin: 32px 0; }
+        figcaption { font-size: 0.85rem; color: var(--text-muted); text-align: center; margin-top: 8px; }
+    </style>
+</head>
+<body data-fontsize="md">
+
+    <div id="progress"></div>
+    
+    <header id="topbar">
+        <div class="topbar-left">
+            <button class="menu-btn" id="menuBtn" aria-label="Open menu">☰</button>
+            <a href="https://iggym.github.io/cogitatio-elegans/" class="home-link">Cogitatio</a>
+            <span class="breadcrumb">/ Labor & Economy</span>
+        </div>
+        <div class="topbar-right">
+            <span class="reading-time" id="readingTime">5 min read</span>
+            <button class="btn-icon" id="fontBtn" aria-label="Adjust text size">A+</button>
+            <button class="btn-icon" id="themeBtn" aria-label="Toggle theme">🌓</button>
+        </div>
+    </header>
+
+    <div id="scrim"></div>
+
+    <div class="wrap">
+        <aside id="rail">
+            <nav>
+                <a href="#scene">The Scales Tip</a>
+                <a href="#reframe">Golden Handcuffs</a>
+                <a href="#connections">Gears in the Machine</a>
+                <a href="#nuance">Reading the Fine Print</a>
+                <a href="#agency">Stepping Off the Treadmill</a>
+                <a href="#action">Take the Wheel</a>
+            </nav>
+        </aside>
+
+        <main>
+            <article>
+                <section id="scene" class="reveal">
+                    <h1>The 8-Hour Illusion</h1>
+                    <p>The year is 1926. The rhythmic, deafening clatter of the Highland Park assembly line dictates the pulse of every man in the room. For ten hours a day, six days a week, workers attach wheels to axles, repeating the same motion thousands of times until their muscles scream in unison with the factory whistles. Then, Henry Ford makes an announcement that reverberates through the industrial world: the workday is being cut to eight hours, and the week to five days.</p>
+                    <p>Newspapers celebrate a monumental humanitarian victory. Labor activists cheer, having finally wrested precious hours of rest from the tight fists of industrialists. It is a classic tale of David versus Goliath, of human dignity triumphing over capitalist greed. But behind the closed doors of Ford’s executive suite, the math tells a wildly different story.</p>
+                </section>
+
+                <section id="reframe" class="reveal">
+                    <h2>Golden Handcuffs</h2>
+                    <p>The conventional history books got it wrong. The adoption of the 8-hour workday was not a pure humanitarian victory achieved by labor activists against resistant, short-sighted industrialists. It was a calculated engineering specification for a consumer economy.</p>
+                    <p>Ford didn’t shorten the workday out of the goodness of his heart. The continuous assembly-line intensity required physical recovery to prevent total burnout—a broken worker can’t turn a wrench. But more crucially, Ford realized a terrifying flaw in the mass-production model: it doesn’t matter how cheaply you can build a Model T if the men building them are too busy working to drive them.</p>
+                    <p>The 8-hour workday was the minimum required dosage of leisure needed to keep the consumer loop spinning.</p>
+
+                    <div class="spectrum">
+                        <div class="spectrum-header">
+                            <span>Labor Victory</span>
+                            <span>Consumption Loop</span>
+                        </div>
+                        <input type="range" min="0" max="100" value="50" class="spectrum-slider" id="spectrumSlider" aria-label="Perspective spectrum">
+                        <div class="spectrum-callout" id="spectrumCallout">
+                            Drag the slider to reveal the dual nature of the 8-hour workday. See how the perspective shifts from a human rights victory to an economic mechanism.
+                        </div>
+                    </div>
+                </section>
+
+                <section id="connections" class="reveal">
+                    <h2>Gears in the Machine</h2>
+                    <p>The hidden connection here is the symbiotic loop between high-intensity production and mass consumption. They are not separate economic phases; they are the same gear turning. You cannot have one without the other.</p>
+                    <p>To sustain the relentless pace of the assembly line, industrialists needed workers who were not just physically capable, but economically willing to buy the goods they produced. Limits on working hours function less as altruistic concessions than as structural mechanisms designed to sustain this very loop. The weekend wasn't a break from the economy; it was the engine of it.</p>
+                    
+                    <div class="snap-container">
+                        <p class="snap-text" id="snapText">You weren't given time off to rest; you were given time to shop.</p>
+                        <div class="snap-actions">
+                            <button class="snap-btn" id="copyBtn">📋 Copy</button>
+                            <button class="snap-btn" id="twitterBtn">𝕏 Share</button>
+                            <button class="snap-btn" id="linkedinBtn">in Share</button>
+                        </div>
+                    </div>
+
+                    <p>This feedback loop is the invisible architecture of modern capitalism. Tap the nodes below to see how the system sustains itself.</p>
+
+                    <div class="canvas-container">
+                        <canvas id="loopCanvas"></canvas>
+                        <div class="canvas-legend">
+                            <span>● Production Nodes</span>
+                            <span>● Consumption Nodes</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="nuance" class="reveal">
+                    <h2>Reading the Fine Print</h2>
+                    <p>This is not to say that labor activists did not fight bloody, grueling battles for shorter hours. They did. The Haymarket affair and decades of strikes created the political pressure necessary for change. But pressure alone doesn't institutionalize a global standard.</p>
+                    <p>What allowed the 8-hour day to stick wasn't just labor pain; it was industrial logic. Ford himself explicitly stated that giving workers more leisure time was essential to stimulate the purchase of automobiles. The industrialists who resisted were simply looking at the short-term ledger. The ones who embraced it—like Ford—saw the long-term matrix. If the economic math didn't work, the humanitarian concession would have been crushed.</p>
+                    
+                    <div class="chart-container">
+                        <canvas id="econChart"></canvas>
+                    </div>
+                </section>
+
+                <section id="agency" class="reveal">
+                    <h2>Stepping Off the Treadmill</h2>
+                    <p>Today, we have inherited the 8-hour workday as a moral baseline. But we are no longer standing on an assembly line. The physical limits that once necessitated the 8-hour cap have been obliterated by digital automation, yet we cling to the timecard as if our survival depends on it.</p>
+                    <p>The system still expects high-intensity production followed by high-volume consumption. But meaningful change is possible when we recognize that our time was institutionalized for a specific economic function. We can choose to use our leisure not as consumers, but as creators.</p>
+                </section>
+
+                <section id="action" class="reveal">
+                    <h2>Take the Wheel</h2>
+                    <p>The most radical act of rebellion against the institutionalized workday is not working less—it is reclaiming the leisure time you have. Break the consumption loop.</p>
+                    
+                    <div class="action">
+                        <h3>The 24-Hour Decoupling Challenge</h3>
+                        <p>Execute these three steps within the next 24 hours to reclaim a fragment of your leisure from the consumption loop.</p>
+                        
+                        <ul class="checklist" id="checklist">
+                            <li data-id="0">
+                                <input type="checkbox" id="task0">
+                                <label for="task0">Identify one hour of "leisure" time you typically spend consuming content.</label>
+                            </li>
+                            <li data-id="1">
+                                <input type="checkbox" id="task1">
+                                <label for="task1">Replace that hour with a purely creative act (writing, building, coding, fixing).</label>
+                            </li>
+                            <li data-id="2">
+                                <input type="checkbox" id="task2">
+                                <label for="task2">Refuse to purchase anything non-essential during this reclaimed time.</label>
+                            </li>
+                        </ul>
+
+                        <div class="gauge-container">
+                            <div class="gauge-label">
+                                <span>Reclamation Progress</span>
+                                <span id="gaugePercent">0%</span>
+                            </div>
+                            <div class="gauge-track">
+                                <div class="gauge-fill" id="gaugeFill"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </article>
+        </main>
+    </div>
+
+    <script>
+        // --- Basic Setup & State ---
+        const body = document.body;
+        const themeBtn = document.getElementById('themeBtn');
+        const fontBtn = document.getElementById('fontBtn');
+        const menuBtn = document.getElementById('menuBtn');
+        const rail = document.getElementById('rail');
+        const scrim = document.getElementById('scrim');
+
+        // Theme Management
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+        let currentTheme = localStorage.getItem('theme') || (prefersDark.matches ? 'dark' : 'light');
+        body.setAttribute('data-theme', currentTheme);
+
+        themeBtn.addEventListener('click', () => {
+            currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            body.setAttribute('data-theme', currentTheme);
+            localStorage.setItem('theme', currentTheme);
+            updateChartColors();
+        });
+
+        // Font Size Management
+        const fontSizes = ['md', 'lg', 'xl'];
+        let currentFontIndex = 0;
+        fontBtn.addEventListener('click', () => {
+            currentFontIndex = (currentFontIndex + 1) % fontSizes.length;
+            body.setAttribute('data-fontsize', fontSizes[currentFontIndex]);
+        });
+
+        // Mobile Menu
+        menuBtn.addEventListener('click', () => {
+            rail.classList.add('open');
+            scrim.classList.add('active');
+        });
+        scrim.addEventListener('click', () => {
+            rail.classList.remove('open');
+            scrim.classList.remove('active');
+        });
+
+        // --- Reading Progress ---
+        const progress = document.getElementById('progress');
+        window.addEventListener('scroll', () => {
+            const scrollTop = document.documentElement.scrollTop;
+            const scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const percent = (scrollTop / scrollHeight) * 100;
+            progress.style.width = percent + '%';
+        });
+
+        // --- Scrollspy ---
+        const sections = document.querySelectorAll('section');
+        const navLinks = document.querySelectorAll('#rail a');
+
+        const observerOptions = {
+            rootMargin: '-20% 0px -70% 0px'
+        };
+
+        const sectionObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const id = entry.target.getAttribute('id');
+                    navLinks.forEach(link => {
+                        link.classList.toggle('active', link.getAttribute('href') === `#${id}`);
+                    });
+                }
+            });
+        }, observerOptions);
+
+        sections.forEach(section => sectionObserver.observe(section));
+
+        // --- Reveal Animations ---
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    revealObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+        // --- Reading Time Estimate ---
+        const mainContent = document.querySelector('main');
+        const words = mainContent.innerText.split(/\s+/).length;
+        const readTime = Math.ceil(words / 220);
+        document.getElementById('readingTime').textContent = `${readTime} min read`;
+
+        // --- Spectrum Slider ---
+        const slider = document.getElementById('spectrumSlider');
+        const callout = document.getElementById('spectrumCallout');
+
+        const spectrumTexts = [
+            "A monumental victory for human dignity, wrested from the grips of greedy industrialists.",
+            "A pragmatic compromise: workers survive the line, but the factory keeps its pace.",
+            "The equilibrium of burnout: enough rest to work hard, enough pay to need the products.",
+            "A structural mechanism: leisure time is strictly the fuel for mass consumption.",
+            "The perfect loop: produce for 8 hours, consume for the rest. The system sustains itself."
+        ];
+
+        function updateSpectrum() {
+            const val = parseInt(slider.value);
+            const index = Math.floor((val / 100) * (spectrumTexts.length - 1));
+            callout.textContent = spectrumTexts[index];
+            
+            // Color shift based on slider
+            const ratio = val / 100;
+            const r = Math.round(233 - (233 * ratio)); 
+            const g = Math.round(69 + (52 * ratio));
+            const b = Math.round(96 - (96 * ratio) + (96 * ratio)); 
+            callout.style.borderColor = `rgb(${r},${g},${b})`;
+        }
+
+        slider.addEventListener('input', updateSpectrum);
+        updateSpectrum();
+
+        // --- Perspective Snap Share/Copy ---
+        const snapText = document.getElementById('snapText').innerText;
+        const shareUrl = window.location.href;
+        const shareText = encodeURIComponent(`${snapText} - ${shareUrl}`);
+
+        document.getElementById('copyBtn').addEventListener('click', (e) => {
+            navigator.clipboard.writeText(snapText);
+            e.target.classList.add('copied');
+            e.target.innerText = '✓ Copied';
+            setTimeout(() => {
+                e.target.classList.remove('copied');
+                e.target.innerText = '📋 Copy';
+            }, 2000);
+        });
+
+        document.getElementById('twitterBtn').addEventListener('click', () => {
+            window.open(`https://twitter.com/intent/tweet?text=${shareText}`, '_blank');
+        });
+
+        document.getElementById('linkedinBtn').addEventListener('click', () => {
+            window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`, '_blank');
+        });
+
+        // --- Canvas Network Diagram ---
+        const canvas = document.getElementById('loopCanvas');
+        const ctx = canvas.getContext('2d');
+        let canvasWidth, canvasHeight;
+        let nodes = [];
+        let hoveredNode = -1;
+        let animationFrame;
+
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width * window.devicePixelRatio;
+            canvas.height = 360 * window.devicePixelRatio;
+            canvas.style.width = `${rect.width}px`;
+            canvas.style.height = '360px';
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            canvasWidth = rect.width;
+            canvasHeight = 360;
+            setupNodes();
+        }
+
+        function setupNodes() {
+            const cx = canvasWidth / 2;
+            const cy = canvasHeight / 2;
+            const radius = Math.min(canvasWidth, canvasHeight) / 3.2;
+            const labels = [
+                { text: "Production", type: "prod" },
+                { text: "Wages", type: "prod" },
+                { text: "Leisure Time", type: "cons" },
+                { text: "Consumption", type: "cons" }
+            ];
+
+            nodes = labels.map((label, i) => {
+                const angle = (i / labels.length) * Math.PI * 2 - Math.PI / 2;
+                return {
+                    x: cx + Math.cos(angle) * radius,
+                    y: cy + Math.sin(angle) * radius,
+                    radius: 35,
+                    label: label.text,
+                    type: label.type,
+                    index: i
+                };
+            });
+        }
+
+        function drawDiagram() {
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+            
+            // Draw connections
+            for (let i = 0; i < nodes.length; i++) {
+                const startNode = nodes[i];
+                const endNode = nodes[(i + 1) % nodes.length];
+                
+                ctx.beginPath();
+                ctx.moveTo(startNode.x, startNode.y);
+                ctx.lineTo(endNode.x, endNode.y);
+                
+                // Highlight active connection
+                if (hoveredNode === i) {
+                    ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--accent').trim();
+                    ctx.lineWidth = 3;
+                } else {
+                    ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--border').trim();
+                    ctx.lineWidth = 1.5;
+                }
+                ctx.stroke();
+
+                // Draw arrow
+                const angle = Math.atan2(endNode.y - startNode.y, endNode.x - startNode.x);
+                const arrowX = endNode.x - Math.cos(angle) * (endNode.radius + 8);
+                const arrowY = endNode.y - Math.sin(angle) * (endNode.radius + 8);
+                ctx.beginPath();
+                ctx.moveTo(arrowX, arrowY);
+                ctx.lineTo(arrowX - 8 * Math.cos(angle - Math.PI / 6), arrowY - 8 * Math.sin(angle - Math.PI / 6));
+                ctx.lineTo(arrowX - 8 * Math.cos(angle + Math.PI / 6), arrowY - 8 * Math.sin(angle + Math.PI / 6));
+                ctx.closePath();
+                ctx.fillStyle = hoveredNode === i ? getComputedStyle(document.body).getPropertyValue('--accent').trim() : getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
+                ctx.fill();
+            }
+
+            // Draw nodes
+            nodes.forEach((node, i) => {
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
+                const isActive = hoveredNode === i;
+                
+                if (node.type === 'prod') {
+                    ctx.fillStyle = isActive ? 'rgba(233, 69, 96, 0.2)' : getComputedStyle(document.body).getPropertyValue('--card-bg').trim();
+                    ctx.strokeStyle = '#e94560';
+                } else {
+                    ctx.fillStyle = isActive ? 'rgba(15, 52, 96, 0.2)' : getComputedStyle(document.body).getPropertyValue('--card-bg').trim();
+                    ctx.strokeStyle = '#0f3460';
+                }
+                
+                [data-theme="dark"] ctx.strokeStyle = node.type === 'prod' ? '#e94560' : '#00d4ff';
+                
+                ctx.lineWidth = isActive ? 3 : 1.5;
+                ctx.fill();
+                ctx.stroke();
+
+                // Text
+                ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--text').trim();
+                ctx.font = `${isActive ? 'bold ' : ''}14px -apple-system, BlinkMacSystemFont, "Segoe UI"`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(node.label, node.x, node.y);
+            });
+        }
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            let foundHover = -1;
+            nodes.forEach((node, i) => {
+                const dist = Math.hypot(x - node.x, y - node.y);
+                if (dist < node.radius) foundHover = i;
+            });
+            
+            if (foundHover !== hoveredNode) {
+                hoveredNode = foundHover;
+                canvas.style.cursor = hoveredNode !== -1 ? 'pointer' : 'default';
+                drawDiagram();
+            }
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            if (hoveredNode !== -1) {
+                hoveredNode = -1;
+                drawDiagram();
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+            drawDiagram();
+        });
+
+        // Only animate if motion is allowed
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+        if (!prefersReducedMotion.matches) {
+            resizeCanvas();
+            drawDiagram();
+        } else {
+            resizeCanvas();
+            drawDiagram();
+        }
+
+        // --- Chart.js Visualization ---
+        let econChart;
+        const chartCtx = document.getElementById('econChart').getContext('2d');
+        
+        function getChartColors() {
+            const isDark = body.getAttribute('data-theme') === 'dark';
+            return {
+                text: isDark ? '#eaeaea' : '#1a1a2e',
+                grid: isDark ? '#2a2a40' : '#e0e0e0',
+                prod: '#e94560',
+                cons: isDark ? '#00d4ff' : '#0f3460'
+            };
+        }
+
+        function buildChart() {
+            const colors = getChartColors();
+            if (econChart) econChart.destroy();
+
+            econChart = new Chart(chartCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['1910s (Pre-Ford)', '1926 (Policy Shift)', '1930s (Post-Shift)'],
+                    datasets: [
+                        {
+                            label: 'Production Capacity (Index)',
+                            data: [45, 65, 90],
+                            backgroundColor: colors.prod + '80',
+                            borderColor: colors.prod,
+                            borderWidth: 2,
+                            yAxisID: 'y',
+                        },
+                        {
+                            label: 'Leisure-Consumption Hours (Index)',
+                            data: [20, 50, 75],
+                            type: 'line',
+                            borderColor: colors.cons,
+                            backgroundColor: colors.cons + '20',
+                            tension: 0.3,
+                            fill: true,
+                            yAxisID: 'y1',
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        tooltip: {
+                            backgroundColor: colors.grid,
+                            titleColor: colors.text,
+                            bodyColor: colors.text,
+                        },
+                        legend: {
+                            labels: { color: colors.text }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: colors.text },
+                            grid: { color: colors.grid }
+                        },
+                        y: {
+                            type: 'linear',
+                            position: 'left',
+                            title: { display: true, text: 'Production', color: colors.prod },
+                            ticks: { color: colors.prod },
+                            grid: { color: colors.grid }
+                        },
+                        y1: {
+                            type: 'linear',
+                            position: 'right',
+                            title: { display: true, text: 'Consumption', color: colors.cons },
+                            ticks: { color: colors.cons },
+                            grid: { drawOnChartArea: false }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function updateChartColors() {
+            buildChart();
+        }
+
+        buildChart();
+
+        // --- Checklist Progress ---
+        const checks = document.querySelectorAll('.checklist input[type="checkbox"]');
+        const gaugeFill = document.getElementById('gaugeFill');
+        const gaugePercent = document.getElementById('gaugePercent');
+
+        checks.forEach(check => {
+            check.addEventListener('change', (e) => {
+                const li = e.target.parentElement;
+                li.classList.toggle('checked', e.target.checked);
+                
+                const checkedCount = document.querySelectorAll('.checklist input:checked').length;
+                const percent = (checkedCount / checks.length) * 100;
+                
+                gaugeFill.style.width = percent + '%';
+                gaugePercent.textContent = Math.round(percent) + '%';
+            });
+        });
+
+    </script>
+</body>
+</html>
