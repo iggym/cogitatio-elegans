@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-text-size="md">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Algorithm's Shadow — Predictive Policing and Algorithmic Feedback Loops</title>
+  <meta name="description" content="Predictive policing doesn't forecast crime. It forecasts where police have already chosen to look — and calls it data science.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    /* ===== CSS Custom Properties ===== */
+    :root {
+      --text-size: 18px;
+      --bg: #0F0E0C;
+      --bg-elevated: #1A1815;
+      --card: #1E1C18;
+      --border: #2E2A24;
+      --fg: #E8E0D4;
+      --fg-muted: #8A8279;
+      --accent: #D4A853;
+      --accent-dim: #8B6914;
+      --accent-glow: rgba(212,168,83,0.12);
+      --danger: #C44D3E;
+      --success: #5A9E6F;
+      --font-display: 'Cormorant Garamond', serif;
+      --font-body: 'Source Sans 3', sans-serif;
+      --radius: 8px;
+      --rail-w: 220px;
+      --topbar-h: 56px;
+    }
+    [data-theme="light"] {
+      --bg: #F5F0E8;
+      --bg-elevated: #FFFDF8;
+      --card: #FFFFFF;
+      --border: #D8D0C4;
+      --fg: #1A1612;
+      --fg-muted: #6B6560;
+      --accent: #B8860B;
+      --accent-dim: #8B6914;
+      --accent-glow: rgba(184,134,11,0.08);
+      --danger: #A83828;
+      --success: #3D7A50;
+    }
+    [data-text-size="sm"] { --text-size: 16px; }
+    [data-text-size="md"] { --text-size: 18px; }
+    [data-text-size="lg"] { --text-size: 21px; }
+
+    /* ===== Reset & Base ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; scroll-padding-top: calc(var(--topbar-h) + 24px); }
+    body {
+      font-family: var(--font-body);
+      font-size: var(--text-size);
+      line-height: 1.75;
+      color: var(--fg);
+      background: var(--bg);
+      overflow-x: hidden;
+      transition: background 0.4s, color 0.4s;
+    }
+    ::selection { background: var(--accent); color: #0F0E0C; }
+    a { color: var(--accent); text-decoration: none; transition: color 0.2s; }
+    a:hover { color: var(--fg); }
+    a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    img, canvas, svg { max-width: 100%; height: auto; display: block; }
+
+    /* ===== Noise Overlay ===== */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.035;
+      z-index: 10000;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 256px 256px;
+    }
+
+    /* ===== Progress Bar ===== */
+    #progress {
+      position: fixed; top: 0; left: 0; height: 3px; z-index: 10001;
+      background: linear-gradient(90deg, var(--accent-dim), var(--accent), #E8C56D);
+      width: 0%; transition: width 0.1s linear;
+    }
+
+    /* ===== Topbar ===== */
+    #topbar {
+      position: fixed; top: 0; left: 0; right: 0; height: var(--topbar-h); z-index: 9999;
+      background: color-mix(in srgb, var(--bg) 75%, transparent);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      transition: background 0.4s;
+    }
+    .topbar-inner {
+      max-width: 1200px; margin: 0 auto; height: 100%;
+      display: flex; align-items: center; gap: 16px;
+      padding: 0 24px; font-size: 14px;
+    }
+    .home-link {
+      font-family: var(--font-display); font-weight: 700; font-size: 17px;
+      color: var(--fg); white-space: nowrap; letter-spacing: 0.02em;
+    }
+    .home-link:hover { color: var(--accent); }
+    .breadcrumb { display: flex; align-items: center; gap: 6px; color: var(--fg-muted); font-size: 13px; }
+    .breadcrumb a { color: var(--fg-muted); }
+    .breadcrumb a:hover { color: var(--accent); }
+    .breadcrumb .sep { opacity: 0.4; }
+    .breadcrumb .current { color: var(--fg); font-weight: 600; }
+    .reading-time { margin-left: auto; color: var(--fg-muted); font-size: 13px; white-space: nowrap; }
+    .controls { display: flex; align-items: center; gap: 6px; }
+    .size-btn, .theme-toggle, .menu-btn {
+      background: transparent; border: 1px solid var(--border); color: var(--fg-muted);
+      border-radius: 6px; cursor: pointer; font-family: var(--font-body);
+      font-size: 13px; padding: 4px 8px; transition: all 0.2s;
+    }
+    .size-btn:hover, .theme-toggle:hover, .menu-btn:hover { color: var(--accent); border-color: var(--accent); }
+    .size-btn.active { background: var(--accent); color: #0F0E0C; border-color: var(--accent); font-weight: 700; }
+    .size-btn sup { font-size: 9px; }
+    .menu-btn { display: none; font-size: 16px; padding: 4px 10px; }
+
+    /* ===== Scrim ===== */
+    #scrim {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9997;
+      opacity: 0; pointer-events: none; transition: opacity 0.3s;
+    }
+    #scrim.open { opacity: 1; pointer-events: auto; }
+
+    /* ===== Grid Layout ===== */
+    .wrap {
+      display: grid; grid-template-columns: var(--rail-w) 1fr;
+      max-width: 1200px; margin: 0 auto;
+      min-height: 100vh; padding-top: var(--topbar-h);
+    }
+
+    /* ===== Sidebar Rail ===== */
+    #rail {
+      position: sticky; top: calc(var(--topbar-h) + 24px);
+      height: fit-content; max-height: calc(100vh - var(--topbar-h) - 48px);
+      overflow-y: auto; padding: 32px 20px 32px 24px;
+      border-right: 1px solid var(--border);
+    }
+    .rail-header {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.12em; color: var(--fg-muted); margin-bottom: 16px;
+    }
+    #rail ul { list-style: none; }
+    #rail li { margin-bottom: 4px; }
+    .rail-link {
+      display: block; padding: 6px 12px; border-radius: 6px;
+      font-size: 14px; color: var(--fg-muted); transition: all 0.2s;
+      border-left: 2px solid transparent;
+    }
+    .rail-link:hover { color: var(--fg); background: var(--accent-glow); }
+    .rail-link.active {
+      color: var(--accent); font-weight: 600;
+      border-left-color: var(--accent); background: var(--accent-glow);
+    }
+
+    /* ===== Main Content ===== */
+    main { padding: 0 24px 80px; max-width: 760px; }
+    article { padding-top: 40px; }
+
+    /* ===== Hero ===== */
+    .hero {
+      position: relative; padding: 64px 0 48px; margin-bottom: 16px;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: ''; position: absolute; top: 20%; left: 50%;
+      width: 500px; height: 500px; border-radius: 50%;
+      background: radial-gradient(circle, var(--accent-glow), transparent 70%);
+      transform: translate(-50%, -50%); animation: heroGlow 8s ease-in-out infinite;
+      pointer-events: none;
+    }
+    .hero-tag {
+      display: inline-block; font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.14em;
+      color: var(--accent); border: 1px solid var(--accent-dim);
+      padding: 4px 12px; border-radius: 20px; margin-bottom: 20px;
+      position: relative;
+    }
+    .hero h1 {
+      font-family: var(--font-display); font-size: clamp(42px, 7vw, 72px);
+      font-weight: 700; line-height: 1.05; letter-spacing: -0.02em;
+      color: var(--fg); margin-bottom: 20px; position: relative;
+    }
+    .subtitle {
+      font-size: 1.15em; color: var(--fg-muted); line-height: 1.6;
+      max-width: 560px; position: relative;
+    }
+    .hero-meta {
+      display: flex; gap: 16px; margin-top: 20px; font-size: 13px;
+      color: var(--fg-muted); position: relative;
+    }
+    .hero-meta span { padding: 2px 0; }
+    .hero-category { border-left: 2px solid var(--accent-dim); padding-left: 12px; }
+
+    /* ===== Article Sections ===== */
+    article section { margin-bottom: 48px; }
+    article h2 {
+      font-family: var(--font-display); font-size: clamp(28px, 4vw, 40px);
+      font-weight: 700; line-height: 1.15; margin-bottom: 20px;
+      color: var(--fg); letter-spacing: -0.01em;
+    }
+    article p { margin-bottom: 20px; color: var(--fg); }
+    article p:last-child { margin-bottom: 0; }
+
+    /* ===== Perspective Snap (inline) ===== */
+    .perspective-snap {
+      font-family: var(--font-display); font-size: 1.35em; font-weight: 600;
+      font-style: italic; line-height: 1.5; color: var(--accent);
+      border-left: 3px solid var(--accent); padding: 12px 0 12px 24px;
+      margin: 32px 0; position: relative;
+    }
+
+    /* ===== Spectrum Visualization ===== */
+    .spectrum {
+      margin: 0 0 48px; padding: 0;
+    }
+    .spectrum-header {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 12px; margin-bottom: 16px;
+    }
+    .spectrum-header h3 {
+      font-family: var(--font-display); font-size: 1.3em; font-weight: 700;
+      color: var(--fg);
+    }
+    .spectrum-toggles { display: flex; gap: 8px; }
+    .spectrum-btn {
+      background: var(--card); border: 1px solid var(--border); color: var(--fg-muted);
+      padding: 6px 16px; border-radius: 20px; cursor: pointer;
+      font-family: var(--font-body); font-size: 13px; font-weight: 600;
+      transition: all 0.25s;
+    }
+    .spectrum-btn:hover { border-color: var(--accent); color: var(--fg); }
+    .spectrum-btn.active {
+      background: var(--accent); color: #0F0E0C; border-color: var(--accent);
+    }
+    .spectrum-canvas-wrap {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden; position: relative;
+    }
+    .spectrum-canvas-wrap canvas { width: 100%; display: block; }
+    .spectrum-caption {
+      margin-top: 12px; font-size: 0.9em; color: var(--fg-muted);
+      line-height: 1.6; font-style: italic; transition: opacity 0.3s;
+    }
+    .spectrum-legend {
+      display: flex; align-items: center; gap: 16px; margin-top: 10px;
+      font-size: 12px; color: var(--fg-muted);
+    }
+    .legend-bar {
+      width: 120px; height: 10px; border-radius: 5px;
+      background: linear-gradient(90deg, #1A1815, #6B4C1F, #D4A853, #E8C56D);
+    }
+
+    /* ===== Loop Canvas ===== */
+    .loop-header {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 12px; margin-bottom: 16px;
+    }
+    .loop-header h3 {
+      font-family: var(--font-display); font-size: 1.3em; font-weight: 700;
+      color: var(--fg);
+    }
+    .loop-btn {
+      background: var(--card); border: 1px solid var(--accent-dim); color: var(--accent);
+      padding: 8px 20px; border-radius: 20px; cursor: pointer;
+      font-family: var(--font-body); font-size: 13px; font-weight: 700;
+      transition: all 0.25s; text-transform: uppercase; letter-spacing: 0.06em;
+    }
+    .loop-btn:hover { background: var(--accent); color: #0F0E0C; }
+    .loop-btn.broken { background: var(--success); color: #fff; border-color: var(--success); }
+    .loop-canvas-wrap {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+    }
+    .loop-canvas-wrap canvas { width: 100%; display: block; }
+
+    /* ===== Chart ===== */
+    .chart-header {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 12px; margin-bottom: 16px;
+    }
+    .chart-header h3 {
+      font-family: var(--font-display); font-size: 1.3em; font-weight: 700;
+      color: var(--fg);
+    }
+    .chart-toggles { display: flex; gap: 8px; }
+    .chart-toggle {
+      background: var(--card); border: 1px solid var(--border); color: var(--fg-muted);
+      padding: 6px 14px; border-radius: 20px; cursor: pointer;
+      font-family: var(--font-body); font-size: 12px; font-weight: 600;
+      transition: all 0.25s; display: flex; align-items: center; gap: 6px;
+    }
+    .chart-toggle::before {
+      content: ''; width: 10px; height: 10px; border-radius: 50%; display: inline-block;
+    }
+    .chart-toggle[data-dataset="arrests"]::before { background: var(--accent); }
+    .chart-toggle[data-dataset="crime"]::before { background: var(--fg-muted); }
+    .chart-toggle:hover { border-color: var(--accent); color: var(--fg); }
+    .chart-toggle.active { border-color: var(--accent); color: var(--fg); }
+    .chart-canvas-wrap {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px; overflow: hidden;
+    }
+    .chart-canvas-wrap canvas { width: 100% !important; }
+    figure figcaption {
+      margin-top: 12px; font-size: 0.88em; color: var(--fg-muted);
+      line-height: 1.6; font-style: italic;
+    }
+
+    /* ===== Snap Card ===== */
+    .snap-card {
+      position: relative; margin: 48px 0; padding: 40px 32px 28px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+    }
+    .snap-gradient {
+      position: absolute; top: 0; left: 0; right: 0; height: 4px;
+      background: linear-gradient(90deg, var(--accent-dim), var(--accent), #E8C56D, var(--accent-dim));
+      background-size: 200% 100%;
+      animation: gradientSlide 4s ease infinite;
+    }
+    .snap-quote {
+      font-family: var(--font-display); font-size: 1.3em; font-weight: 600;
+      font-style: italic; line-height: 1.55; color: var(--fg);
+      margin-bottom: 24px; position: relative; padding-left: 20px;
+      border-left: 3px solid var(--accent);
+    }
+    .snap-quote::before {
+      content: '\201C'; position: absolute; top: -10px; left: -8px;
+      font-size: 60px; color: var(--accent-glow); font-family: var(--font-display);
+      line-height: 1;
+    }
+    .snap-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .snap-btn {
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      color: var(--fg-muted); padding: 8px 16px; border-radius: 6px;
+      cursor: pointer; font-family: var(--font-body); font-size: 13px;
+      display: flex; align-items: center; gap: 6px; transition: all 0.2s;
+    }
+    .snap-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .snap-btn.copied { background: var(--success); color: #fff; border-color: var(--success); }
+
+    /* ===== Action Card ===== */
+    .action-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 28px; margin-top: 20px;
+    }
+    .checklist { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+    .check-item {
+      display: flex; align-items: flex-start; gap: 12px; cursor: pointer;
+      padding: 10px 12px; border-radius: 6px; transition: background 0.2s;
+    }
+    .check-item:hover { background: var(--accent-glow); }
+    .check-item input { display: none; }
+    .check-mark {
+      width: 22px; height: 22px; min-width: 22px; border: 2px solid var(--border);
+      border-radius: 5px; display: flex; align-items: center; justify-content: center;
+      transition: all 0.25s; margin-top: 2px;
+    }
+    .check-mark::after {
+      content: '\f00c'; font-family: 'Font Awesome 6 Free'; font-weight: 900;
+      font-size: 11px; color: #0F0E0C; opacity: 0; transition: opacity 0.2s;
+    }
+    .check-item input:checked + .check-mark {
+      background: var(--accent); border-color: var(--accent);
+    }
+    .check-item input:checked + .check-mark::after { opacity: 1; }
+    .check-item input:checked ~ .check-text {
+      text-decoration: line-through; color: var(--fg-muted);
+    }
+    .check-text { font-size: 0.95em; line-height: 1.5; transition: all 0.2s; }
+    .progress-gauge { margin-top: 8px; }
+    .gauge-track {
+      width: 100%; height: 8px; background: var(--bg-elevated);
+      border-radius: 4px; overflow: hidden;
+    }
+    .gauge-fill {
+      height: 100%; width: 0%; border-radius: 4px;
+      background: linear-gradient(90deg, var(--accent-dim), var(--accent));
+      transition: width 0.4s ease;
+    }
+    .gauge-label { font-size: 12px; color: var(--fg-muted); margin-top: 8px; display: block; }
+
+    /* ===== Footer ===== */
+    .article-footer {
+      margin-top: 64px; padding-top: 32px; border-top: 1px solid var(--border);
+    }
+    .footer-inner {
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 16px; font-size: 14px; color: var(--fg-muted);
+    }
+    .back-to-top {
+      font-size: 13px; color: var(--accent); font-weight: 600;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .back-to-top:hover { color: var(--fg); }
+
+    /* ===== Reveal Animations ===== */
+    .reveal {
+      opacity: 0; transform: translateY(24px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .reveal.revealed { opacity: 1; transform: translateY(0); }
+
+    /* ===== Keyframes ===== */
+    @keyframes heroGlow {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; }
+      50% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
+    }
+    @keyframes gradientSlide {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 880px) {
+      .wrap { grid-template-columns: 1fr; }
+      #rail {
+        position: fixed; top: 0; left: 0; bottom: 0; width: 280px;
+        z-index: 9998; background: var(--bg-elevated);
+        border-right: 1px solid var(--border);
+        transform: translateX(-100%); transition: transform 0.35s ease;
+        padding-top: calc(var(--topbar-h) + 24px);
+      }
+      #rail.open { transform: translateX(0); }
+      .menu-btn { display: block; }
+      .breadcrumb { display: none; }
+      main { padding: 0 16px 60px; }
+      .hero { padding: 40px 0 32px; }
+    }
+    @media (max-width: 540px) {
+      .topbar-inner { padding: 0 12px; gap: 8px; }
+      .reading-time { display: none; }
+      .size-btn { display: none; }
+      .spectrum-header { flex-direction: column; align-items: flex-start; }
+      .chart-header { flex-direction: column; align-items: flex-start; }
+      .snap-actions { flex-direction: column; }
+      .snap-btn { justify-content: center; }
+    }
+
+    /* ===== Reduced Motion ===== */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+      html { scroll-behavior: auto; }
+      .reveal { opacity: 1; transform: none; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Progress Bar -->
+  <div id="progress" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+
+  <!-- Topbar -->
+  <header id="topbar">
+    <div class="topbar-inner">
+      <a href="https://iggym.github.io/cogitatio-elegans/" class="home-link">Cogitatio Elegans</a>
+      <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="https://iggym.github.io/cogitatio-elegans/">Home</a>
+        <span class="sep">/</span>
+        <span>Articles</span>
+        <span class="sep">/</span>
+        <span class="current">The Algorithm's Shadow</span>
+      </nav>
+      <span class="reading-time" id="reading-time">5 min read</span>
+      <div class="controls">
+        <button class="size-btn" data-size="sm" aria-label="Small text">A<sup>-</sup></button>
+        <button class="size-btn active" data-size="md" aria-label="Medium text">A</button>
+        <button class="size-btn" data-size="lg" aria-label="Large text">A<sup>+</sup></button>
+        <button class="theme-toggle" id="theme-btn" aria-label="Toggle theme">
+          <i class="fas fa-moon"></i>
+        </button>
+        <button class="menu-btn" id="menu-btn" aria-label="Open navigation">
+          <i class="fas fa-bars"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Scrim Overlay -->
+  <div id="scrim" aria-hidden="true"></div>
+
+  <!-- Main Container -->
+  <div class="wrap">
+    <!-- Sidebar Navigation Rail -->
+    <nav id="rail" aria-label="Article sections">
+      <div class="rail-header">In This Article</div>
+      <ul>
+        <li><a href="#opening" class="rail-link">The Map Lies</a></li>
+        <li><a href="#reframe" class="rail-link">Mirror, Not Window</a></li>
+        <li><a href="#connections" class="rail-link">Snake Eats Tail</a></li>
+        <li><a href="#nuance" class="rail-link">Blind Spot</a></li>
+        <li><a href="#agency" class="rail-link">Break the Loop</a></li>
+        <li><a href="#action" class="rail-link">Draw the Line</a></li>
+      </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main>
+      <article>
+        <!-- Hero -->
+        <header class="hero">
+          <div class="hero-tag">Perspective Shift</div>
+          <h1>The Algorithm's Shadow</h1>
+          <p class="subtitle">Predictive policing software claims to see the future. It's actually just watching the past.</p>
+          <div class="hero-meta">
+            <span class="hero-date">July 2025</span>
+            <span class="hero-category">Technology &amp; Justice</span>
+          </div>
+        </header>
+
+        <!-- Opening Scene -->
+        <section id="opening" class="reveal">
+          <h2>The Map Lies</h2>
+          <p>Marcus is walking home from the corner store, paper bag in hand, when the cruiser slows beside him. The officer doesn't need a reason. The software already gave him one. The block Marcus lives on glows red on the precinct's dashboard — "high probability zone." The algorithm said so. The officer asks where Marcus is headed. Marcus says home. He's three doors away. The encounter is logged — another data point fed back into a system that already decided he belonged here.</p>
+          <p>Across town, in a neighborhood the algorithm painted green, someone breaks into a car. No cruiser passes by. No encounter is logged. No data point is created. The algorithm notes the absence of activity and confirms what it already believed: nothing happens there. The loop holds.</p>
+        </section>
+
+        <!-- Spectrum Visualization -->
+        <figure class="spectrum reveal">
+          <div class="spectrum-header">
+            <h3>What the Map Shows</h3>
+            <div class="spectrum-toggles">
+              <button class="spectrum-btn active" data-view="crime">Crime Prediction</button>
+              <button class="spectrum-btn" data-view="patrol">Patrol Density</button>
+            </div>
+          </div>
+          <div class="spectrum-canvas-wrap">
+            <canvas id="heatmap" width="720" height="440"></canvas>
+          </div>
+          <div class="spectrum-legend">
+            <span>Low</span>
+            <div class="legend-bar"></div>
+            <span>High</span>
+          </div>
+          <figcaption class="spectrum-caption" id="spectrum-caption">
+            The algorithm identifies these areas as high-risk crime zones based on historical data.
+          </figcaption>
+        </figure>
+
+        <!-- The Bold Reframe -->
+        <section id="reframe" class="reveal">
+          <h2>Mirror, Not Window</h2>
+          <p>Predictive policing doesn't forecast crime. It forecasts where police have already chosen to look — and then sends more police there, generating more encounters, more arrests, and more "data" to justify the next deployment. The algorithm doesn't predict the future. It stamps the past with a seal of mathematical approval and calls it foresight.</p>
+          <p>This is the core deception: the language of prediction implies discovery, as though the algorithm is uncovering something hidden. But it's not uncovering anything. It's confirming what it was told to find. The data goes in, the data comes out, and the distance between input and output is called "science."</p>
+        </section>
+
+        <!-- Feedback Loop Canvas -->
+        <figure class="reveal">
+          <div class="loop-header">
+            <h3>The Feedback Loop</h3>
+            <button class="loop-btn" id="break-loop-btn">Break the Loop</button>
+          </div>
+          <div class="loop-canvas-wrap">
+            <canvas id="loop-canvas" width="720" height="440"></canvas>
+          </div>
+          <figcaption>The cycle that transforms historical bias into self-fulfilling prophecy. Click "Break the Loop" to see how intervention interrupts it.</figcaption>
+        </figure>
+
+        <!-- The Hidden Connections -->
+        <section id="connections" class="reveal">
+          <h2>Snake Eats Tail</h2>
+          <p>The feedback loop is the engine. Historical arrest data feeds the model. The model flags neighborhoods. Police patrol flagged neighborhoods. More patrols mean more encounters. More encounters mean more arrests. More arrests mean more data. The loop tightens.</p>
+          <p>A neighborhood that was once moderately policed becomes a heat map. A heat map becomes a self-fulfilling prophecy. The algorithm sees more arrests in District A than District B and concludes District A is more dangerous — never asking whether District A simply has more police.</p>
+          <p class="perspective-snap">An algorithm trained on arrests will never find crime where police never look.</p>
+        </section>
+
+        <!-- Chart.js Visualization -->
+        <figure class="reveal">
+          <div class="chart-header">
+            <h3>Arrest Rate vs. Reported Crime Rate</h3>
+            <div class="chart-toggles">
+              <button class="chart-toggle active" data-dataset="arrests">Arrest Rate</button>
+              <button class="chart-toggle active" data-dataset="crime">Reported Crime</button>
+            </div>
+          </div>
+          <div class="chart-canvas-wrap">
+            <canvas id="chart-canvas" height="300"></canvas>
+          </div>
+          <figcaption>In over-policed districts, arrest rates far exceed reported crime rates. In under-policed districts, the gap reverses — crime goes unrecorded because no one is there to record it.</figcaption>
+        </figure>
+
+        <!-- Credibility and Nuance -->
+        <section id="nuance" class="reveal">
+          <h2>Blind Spot</h2>
+          <p>The technology isn't inherently malicious. Data-driven resource allocation can, in theory, improve emergency response times and identify underserved areas. The failure isn't in the math — it's in the input. When you feed a system arrest records instead of crime reports, victimization surveys, or community-reported incidents, you're not measuring crime. You're measuring enforcement. And enforcement in America has never been distributed equally.</p>
+          <p>The counterargument — that algorithms remove human bias — collapses under scrutiny. The algorithm doesn't replace bias. It launders it. Historical patterns of over-policing become the training data, and the output wears the credibility of a spreadsheet. The result is a system that feels objective because it's automated, but reproduces discrimination because it was trained on discrimination.</p>
+          <p>This is what makes the feedback loop so resilient: it doesn't look like bias. It looks like efficiency. Every additional arrest confirms the model's accuracy, and every confirmation deepens the commitment to the model. The system validates itself by generating the very evidence it needs to justify itself.</p>
+        </section>
+
+        <!-- Perspective Snap Card -->
+        <div class="snap-card reveal" id="snap-card">
+          <div class="snap-gradient"></div>
+          <blockquote class="snap-quote" id="snap-quote">
+            Data-driven prediction models in social systems do not forecast objective reality; they enforce historical patterns under the guise of mathematical neutrality.
+          </blockquote>
+          <div class="snap-actions">
+            <button class="snap-btn copy-btn" id="copy-btn" aria-label="Copy to clipboard">
+              <i class="fas fa-copy"></i> Copy
+            </button>
+            <button class="snap-btn share-x" id="share-x" aria-label="Share on X">
+              <i class="fab fa-x-twitter"></i> Share on X
+            </button>
+            <button class="snap-btn share-linkedin" id="share-linkedin" aria-label="Share on LinkedIn">
+              <i class="fab fa-linkedin-in"></i> Share on LinkedIn
+            </button>
+          </div>
+        </div>
+
+        <!-- Narrative Agency -->
+        <section id="agency" class="reveal">
+          <h2>Break the Loop</h2>
+          <p>Cities have broken the cycle. Oakland rejected a predictive policing contract after community pressure. Santa Cruz banned the use of predictive algorithms entirely. These aren't abstract victories — they're proof that the feedback loop can be interrupted by the same mechanism that sustains it: human decisions.</p>
+          <p>Auditing input data is the first step. If an algorithm is trained on arrest records, its outputs will reflect arrests — not crime. Requiring community oversight of algorithmic procurement ensures that the people most affected by these systems have a voice in whether they're deployed. Insisting on victimization surveys as a counterweight to arrest data introduces a second signal that the algorithm cannot ignore.</p>
+          <p>The loop is not inevitable. It is a choice, repeated every day, by every department that deploys these tools without questioning what they're actually measuring. The question is not whether algorithms can be unbiased — it's whether we're willing to build systems that measure what matters instead of what's convenient.</p>
+        </section>
+
+        <!-- CTA Checklist -->
+        <section id="action" class="action reveal">
+          <h2>Draw the Line</h2>
+          <p>One step within 24 hours. Start here.</p>
+          <div class="action-card">
+            <div class="checklist">
+              <label class="check-item">
+                <input type="checkbox" name="action-1">
+                <span class="check-mark"></span>
+                <span class="check-text">Find your city's police technology procurement records</span>
+              </label>
+              <label class="check-item">
+                <input type="checkbox" name="action-2">
+                <span class="check-mark"></span>
+                <span class="check-text">Search for "predictive policing," "risk mapping," or "algorithmic surveillance"</span>
+              </label>
+              <label class="check-item">
+                <input type="checkbox" name="action-3">
+                <span class="check-mark"></span>
+                <span class="check-text">Share findings with a local journalist or community organization</span>
+              </label>
+              <label class="check-item">
+                <input type="checkbox" name="action-4">
+                <span class="check-mark"></span>
+                <span class="check-text">Ask your city council about algorithmic oversight policy</span>
+              </label>
+            </div>
+            <div class="progress-gauge">
+              <div class="gauge-track">
+                <div class="gauge-fill" id="gauge-fill"></div>
+              </div>
+              <span class="gauge-label" id="gauge-label">0 of 4 complete</span>
+            </div>
+          </div>
+        </section>
+      </article>
+
+      <!-- Footer -->
+      <footer class="article-footer">
+        <div class="footer-inner">
+          <p>This article is part of the <a href="https://iggym.github.io/cogitatio-elegans/">Cogitatio Elegans</a> series on perspective-shifting ideas.</p>
+          <a href="#" class="back-to-top" id="back-to-top"><i class="fas fa-arrow-up"></i> Back to top</a>
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  <script>
+    /* ===== Utility: Theme Detection & Management ===== */
+    (function initTheme() {
+      const stored = localStorage.getItem('theme');
+      if (stored) {
+        document.documentElement.setAttribute('data-theme', stored);
+      } else if (window.matchMedia('(prefers-color-scheme: light)').matches) {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+      updateThemeIcon();
+    })();
+
+    function updateThemeIcon() {
+      const icon = document.querySelector('#theme-btn i');
+      if (!icon) return;
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      icon.className = isDark ? 'fas fa-moon' : 'fas fa-sun';
+    }
+
+    document.getElementById('theme-btn').addEventListener('click', function() {
+      const current = document.documentElement.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+      updateThemeIcon();
+      // Redraw canvases for new theme
+      drawHeatmap();
+      drawLoop();
+      updateChartColors();
+    });
+
+    /* ===== Text Size Toggle ===== */
+    const storedSize = localStorage.getItem('text-size');
+    if (storedSize) {
+      document.documentElement.setAttribute('data-text-size', storedSize);
+      document.querySelectorAll('.size-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.size === storedSize);
+      });
+    }
+    document.querySelectorAll('.size-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        document.documentElement.setAttribute('data-text-size', this.dataset.size);
+        localStorage.setItem('text-size', this.dataset.size);
+        document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+
+    /* ===== Reading Time Calculation ===== */
+    (function calcReadingTime() {
+      const article = document.querySelector('article');
+      if (!article) return;
+      const text = article.textContent || '';
+      const words = text.trim().split(/\s+/).length;
+      const minutes = Math.max(1, Math.ceil(words / 200));
+      const el = document.getElementById('reading-time');
+      if (el) el.textContent = minutes + ' min read';
+    })();
+
+    /* ===== Progress Bar ===== */
+    const progressBar = document.getElementById('progress');
+    function updateProgress() {
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const pct = docHeight > 0 ? Math.min(100, (scrollTop / docHeight) * 100) : 0;
+      progressBar.style.width = pct + '%';
+      progressBar.setAttribute('aria-valuenow', Math.round(pct));
+    }
+
+    /* ===== Scrollspy with IntersectionObserver ===== */
+    const railLinks = document.querySelectorAll('.rail-link');
+    const sections = document.querySelectorAll('article section[id], article figure, .snap-card');
+
+    const scrollSpyObserver = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const id = entry.target.id || entry.target.closest('section[id]')?.id;
+          if (!id) return;
+          railLinks.forEach(link => {
+            link.classList.toggle('active', link.getAttribute('href') === '#' + id);
+          });
+        }
+      });
+    }, { rootMargin: '-20% 0px -60% 0px', threshold: 0 });
+
+    document.querySelectorAll('section[id]').forEach(sec => scrollSpyObserver.observe(sec));
+
+    /* ===== Reveal Animations ===== */
+    const revealObserver = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('revealed');
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, { rootMargin: '0px 0px -60px 0px', threshold: 0.05 });
+
+    document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+    /* ===== Mobile Drawer ===== */
+    const rail = document.getElementById('rail');
+    const scrim = document.getElementById('scrim');
+    const menuBtn = document.getElementById('menu-btn');
+
+    function openDrawer() {
+      rail.classList.add('open');
+      scrim.classList.add('open');
+      menuBtn.setAttribute('aria-expanded', 'true');
+    }
+    function closeDrawer() {
+      rail.classList.remove('open');
+      scrim.classList.remove('open');
+      menuBtn.setAttribute('aria-expanded', 'false');
+    }
+    menuBtn.addEventListener('click', () => {
+      rail.classList.contains('open') ? closeDrawer() : openDrawer();
+    });
+    scrim.addEventListener('click', closeDrawer);
+    railLinks.forEach(link => link.addEventListener('click', closeDrawer));
+
+    /* ===== Back to Top ===== */
+    document.getElementById('back-to-top').addEventListener('click', function(e) {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    /* ===== Scroll Event (throttled) ===== */
+    let scrollTicking = false;
+    window.addEventListener('scroll', () => {
+      if (!scrollTicking) {
+        requestAnimationFrame(() => {
+          updateProgress();
+          scrollTicking = false;
+        });
+        scrollTicking = true;
+      }
+    });
+    updateProgress();
+
+    /* ===== HEATMAP CANVAS ===== */
+    const heatmapCanvas = document.getElementById('heatmap');
+    const heatCtx = heatmapCanvas.getContext('2d');
+    let currentView = 'crime';
+    let heatmapAnimFrame = null;
+
+    // Predefined intensity grid — two hotspots in lower-left and upper-right
+    const heatData = [
+      [0.08,0.10,0.15,0.20,0.25,0.18,0.10,0.08,0.12,0.25,0.35,0.22],
+      [0.12,0.18,0.30,0.38,0.42,0.30,0.15,0.10,0.15,0.35,0.55,0.40],
+      [0.18,0.30,0.52,0.65,0.72,0.50,0.25,0.15,0.12,0.30,0.62,0.50],
+      [0.25,0.42,0.70,0.88,0.92,0.65,0.35,0.18,0.10,0.20,0.48,0.38],
+      [0.20,0.38,0.62,0.82,0.95,0.70,0.38,0.20,0.08,0.12,0.32,0.25],
+      [0.18,0.30,0.48,0.60,0.72,0.55,0.30,0.15,0.06,0.08,0.20,0.18],
+      [0.12,0.20,0.32,0.40,0.45,0.35,0.20,0.10,0.05,0.06,0.12,0.10],
+      [0.08,0.12,0.20,0.28,0.30,0.22,0.12,0.08,0.04,0.05,0.08,0.06],
+      [0.06,0.10,0.15,0.18,0.20,0.15,0.08,0.06,0.03,0.04,0.06,0.04],
+      [0.10,0.18,0.28,0.30,0.25,0.18,0.10,0.08,0.05,0.10,0.15,0.08],
+      [0.15,0.28,0.48,0.42,0.32,0.22,0.12,0.10,0.08,0.18,0.30,0.18],
+      [0.10,0.20,0.35,0.30,0.22,0.15,0.08,0.06,0.05,0.12,0.22,0.12],
+    ];
+
+    function heatColor(intensity, time) {
+      // Add subtle pulse to high-intensity cells
+      const pulse = Math.sin(time * 0.002 + intensity * 10) * 0.04;
+      const v = Math.max(0, Math.min(1, intensity + (intensity > 0.5 ? pulse : 0)));
+      // Dark -> amber -> bright gold
+      const r = Math.round(26 + v * 186);
+      const g = Math.round(24 + v * 144);
+      const b = Math.round(21 + v * 62);
+      return 'rgb(' + r + ',' + g + ',' + b + ')';
+    }
+
+    function drawHeatmap() {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = heatmapCanvas.getBoundingClientRect();
+      const w = rect.width;
+      const h = Math.round(w * 0.61);
+      heatmapCanvas.style.height = h + 'px';
+      heatmapCanvas.width = w * dpr;
+      heatmapCanvas.height = h * dpr;
+      heatCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const rows = heatData.length;
+      const cols = heatData[0].length;
+      const pad = 8;
+      const cellW = Math.max(1, (w - pad * 2) / cols);
+      const cellH = Math.max(1, (h - pad * 2) / rows);
+      const gap = 2;
+      const time = performance.now();
+
+      // Background
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      heatCtx.fillStyle = isDark ? '#141210' : '#E8E0D4';
+      heatCtx.fillRect(0, 0, w, h);
+
+      // Draw cells
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const x = pad + c * cellW + gap / 2;
+          const y = pad + r * cellH + gap / 2;
+          const cw = Math.max(1, cellW - gap);
+          const ch = Math.max(1, cellH - gap);
+          heatCtx.fillStyle = heatColor(heatData[r][c], time);
+          heatCtx.beginPath();
+          const radius = Math.max(0.5, Math.min(3, cw / 4));
+          heatCtx.roundRect(x, y, cw, ch, radius);
+          heatCtx.fill();
+        }
+      }
+
+      // Overlay label based on current view
+      heatCtx.font = '600 13px "Source Sans 3", sans-serif';
+      heatCtx.fillStyle = isDark ? 'rgba(232,224,212,0.7)' : 'rgba(26,22,18,0.6)';
+      const label = currentView === 'crime' ? 'Crime Prediction Map' : 'Police Patrol Density Map';
+      heatCtx.fillText(label, pad + 4, h - pad - 4);
+
+      heatmapAnimFrame = requestAnimationFrame(drawHeatmap);
+    }
+
+    // Spectrum toggle
+    document.querySelectorAll('.spectrum-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.spectrum-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        currentView = this.dataset.view;
+        const caption = document.getElementById('spectrum-caption');
+        if (currentView === 'crime') {
+          caption.textContent = 'The algorithm identifies these areas as high-risk crime zones based on historical data.';
+        } else {
+          caption.textContent = 'These are the same areas where police are deployed most heavily. The data is identical. The frame is not.';
+        }
+      });
+    });
+
+    // Start heatmap animation
+    drawHeatmap();
+
+    /* ===== FEEDBACK LOOP CANVAS ===== */
+    const loopCanvas = document.getElementById('loop-canvas');
+    const loopCtx = loopCanvas.getContext('2d');
+    let loopBroken = false;
+    let loopDashOffset = 0;
+    let loopAnimFrame = null;
+    let hoveredNode = -1;
+
+    const loopNodes = [
+      { label: 'Arrest Data', x: 0.5, y: 0.12 },
+      { label: 'Algorithm', x: 0.88, y: 0.5 },
+      { label: 'More Patrols', x: 0.5, y: 0.88 },
+      { label: 'More Encounters', x: 0.12, y: 0.5 },
+    ];
+
+    // Each arrow: from node i to node (i+1) % 4
+    const loopArrows = [
+      { from: 0, to: 1 },
+      { from: 1, to: 2 },
+      { from: 2, to: 3 },
+      { from: 3, to: 0 },
+    ];
+
+    function drawLoop() {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = loopCanvas.getBoundingClientRect();
+      const w = rect.width;
+      const h = Math.round(w * 0.61);
+      loopCanvas.style.height = h + 'px';
+      loopCanvas.width = w * dpr;
+      loopCanvas.height = h * dpr;
+      loopCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      const bgColor = isDark ? '#141210' : '#E8E0D4';
+      const fgColor = isDark ? '#E8E0D4' : '#1A1612';
+      const mutedColor = isDark ? '#4A4540' : '#B8B0A4';
+      const accentColor = loopBroken ? (isDark ? '#5A9E6F' : '#3D7A50') : (isDark ? '#D4A853' : '#B8860B');
+
+      loopCtx.fillStyle = bgColor;
+      loopCtx.fillRect(0, 0, w, h);
+
+      const nodeR = Math.max(8, Math.min(36, w * 0.05));
+      const nodePositions = loopNodes.map(n => ({
+        x: n.x * w,
+        y: n.y * h,
+        label: n.label,
+      }));
+
+      // Draw arrows
+      loopArrows.forEach((arrow, idx) => {
+        const from = nodePositions[arrow.from];
+        const to = nodePositions[arrow.to];
+        const dx = to.x - from.x;
+        const dy = to.y - from.y;
+        const dist = Math.max(1, Math.sqrt(dx * dx + dy * dy));
+        const ux = dx / dist;
+        const uy = dy / dist;
+
+        const startX = from.x + ux * (nodeR + 8);
+        const startY = from.y + uy * (nodeR + 8);
+        const endX = to.x - ux * (nodeR + 16);
+        const endY = to.y - uy * (nodeR + 16);
+
+        const isHighlighted = hoveredNode === arrow.from || hoveredNode === arrow.to;
+        const lineColor = loopBroken ? mutedColor : (isHighlighted ? accentColor : (isDark ? '#3A3530' : '#C8C0B4'));
+
+        loopCtx.strokeStyle = lineColor;
+        loopCtx.lineWidth = isHighlighted ? 3 : 2;
+        loopCtx.setLineDash([8, 6]);
+        loopCtx.lineDashOffset = -loopDashOffset;
+        loopCtx.beginPath();
+        loopCtx.moveTo(startX, startY);
+        loopCtx.lineTo(endX, endY);
+        loopCtx.stroke();
+        loopCtx.setLineDash([]);
+
+        // Arrowhead
+        const headLen = 10;
+        const angle = Math.atan2(endY - startY, endX - startX);
+        loopCtx.fillStyle = lineColor;
+        loopCtx.beginPath();
+        loopCtx.moveTo(endX, endY);
+        loopCtx.lineTo(endX - headLen * Math.cos(angle - 0.4), endY - headLen * Math.sin(angle - 0.4));
+        loopCtx.lineTo(endX - headLen * Math.cos(angle + 0.4), endY - headLen * Math.sin(angle + 0.4));
+        loopCtx.closePath();
+        loopCtx.fill();
+      });
+
+      // Draw nodes
+      nodePositions.forEach((node, idx) => {
+        const isHovered = hoveredNode === idx;
+        const nodeColor = isHovered ? accentColor : (isDark ? '#2A2720' : '#D8D0C4');
+        const textColor = isHovered ? (isDark ? '#0F0E0C' : '#FFFDF8') : fgColor;
+
+        // Node circle
+        loopCtx.fillStyle = nodeColor;
+        loopCtx.beginPath();
+        loopCtx.arc(node.x, node.y, nodeR + (isHovered ? 4 : 0), 0, Math.PI * 2);
+        loopCtx.fill();
+
+        // Node border
+        loopCtx.strokeStyle = isHovered ? accentColor : (isDark ? '#3A3530' : '#C8C0B4');
+        loopCtx.lineWidth = isHovered ? 2 : 1;
+        loopCtx.stroke();
+
+        // Node label
+        loopCtx.fillStyle = textColor;
+        loopCtx.font = '600 ' + Math.max(10, Math.min(13, w * 0.018)) + 'px "Source Sans 3", sans-serif';
+        loopCtx.textAlign = 'center';
+        loopCtx.textBaseline = 'middle';
+        loopCtx.fillText(node.label, node.x, node.y);
+      });
+
+      // Center label
+      const centerLabel = loopBroken ? 'LOOP BROKEN' : 'BIAS';
+      loopCtx.font = '700 ' + Math.max(14, Math.min(22, w * 0.03)) + 'px "Cormorant Garamond", serif';
+      loopCtx.textAlign = 'center';
+      loopCtx.textBaseline = 'middle';
+      loopCtx.fillStyle = loopBroken ? accentColor : (isDark ? 'rgba(212,168,83,0.15)' : 'rgba(184,134,11,0.12)');
+      loopCtx.fillText(centerLabel, w / 2, h / 2);
+
+      // Animate dash offset
+      if (!loopBroken) {
+        loopDashOffset += 0.5;
+      }
+
+      loopAnimFrame = requestAnimationFrame(drawLoop);
+    }
+
+    // Hover detection on loop canvas
+    loopCanvas.addEventListener('mousemove', function(e) {
+      const rect = loopCanvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+      const w = rect.width;
+      const h = rect.height;
+      const nodeR = Math.max(8, Math.min(36, w * 0.05));
+
+      hoveredNode = -1;
+      loopNodes.forEach((n, idx) => {
+        const nx = n.x * w;
+        const ny = n.y * h;
+        const dx = mx - nx;
+        const dy = my - ny;
+        if (Math.sqrt(dx * dx + dy * dy) < nodeR + 10) {
+          hoveredNode = idx;
+        }
+      });
+      loopCanvas.style.cursor = hoveredNode >= 0 ? 'pointer' : 'default';
+    });
+
+    loopCanvas.addEventListener('mouseleave', function() {
+      hoveredNode = -1;
+    });
+
+    // Break the Loop button
+    document.getElementById('break-loop-btn').addEventListener('click', function() {
+      loopBroken = !loopBroken;
+      this.textContent = loopBroken ? 'Reset Loop' : 'Break the Loop';
+      this.classList.toggle('broken', loopBroken);
+    });
+
+    drawLoop();
+
+    /* ===== CHART.JS VISUALIZATION ===== */
+    const chartCtx = document.getElementById('chart-canvas').getContext('2d');
+    let arrestChart = null;
+
+    function getChartColors() {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      return {
+        accent: isDark ? '#D4A853' : '#B8860B',
+        accentBg: isDark ? 'rgba(212,168,83,0.7)' : 'rgba(184,134,11,0.7)',
+        muted: isDark ? '#6B6560' : '#8A8279',
+        mutedBg: isDark ? 'rgba(107,101,96,0.6)' : 'rgba(138,130,121,0.6)',
+        grid: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
+        text: isDark ? '#8A8279' : '#6B6560',
+      };
+    }
+
+    function createChart() {
+      const colors = getChartColors();
+      if (arrestChart) arrestChart.destroy();
+
+      arrestChart = new Chart(chartCtx, {
+        type: 'bar',
+        data: {
+          labels: ['District A', 'District B', 'District C', 'District D'],
+          datasets: [
+            {
+              label: 'Arrest Rate (per 1,000)',
+              data: [42, 38, 8, 5],
+              backgroundColor: colors.accentBg,
+              borderColor: colors.accent,
+              borderWidth: 1,
+              borderRadius: 4,
+            },
+            {
+              label: 'Reported Crime Rate (per 1,000)',
+              data: [18, 15, 20, 16],
+              backgroundColor: colors.mutedBg,
+              borderColor: colors.muted,
+              borderWidth: 1,
+              borderRadius: 4,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: {
+              display: true,
+              position: 'bottom',
+              labels: {
+                color: colors.text,
+                font: { family: "'Source Sans 3', sans-serif", size: 12 },
+                padding: 16,
+                usePointStyle: true,
+                pointStyleWidth: 12,
+              },
+            },
+            tooltip: {
+              backgroundColor: 'rgba(26,24,21,0.95)',
+              titleFont: { family: "'Source Sans 3', sans-serif", weight: '600' },
+              bodyFont: { family: "'Source Sans 3', sans-serif" },
+              padding: 12,
+              cornerRadius: 6,
+              callbacks: {
+                afterBody: function(ctx) {
+                  const idx = ctx[0].dataIndex;
+                  const arrest = [42, 38, 8, 5][idx];
+                  const crime = [18, 15, 20, 16][idx];
+                  const ratio = (arrest / Math.max(1, crime)).toFixed(1);
+                  return 'Arrest-to-Crime Ratio: ' + ratio + 'x';
+                }
+              }
+            },
+          },
+          scales: {
+            x: {
+              grid: { color: colors.grid },
+              ticks: { color: colors.text, font: { family: "'Source Sans 3', sans-serif", size: 12 } },
+            },
+            y: {
+              beginAtZero: true,
+              grid: { color: colors.grid },
+              ticks: {
+                color: colors.text,
+                font: { family: "'Source Sans 3', sans-serif", size: 12 },
+                callback: function(val) { return val + '/1k'; }
+              },
+              title: {
+                display: true,
+                text: 'Rate per 1,000 residents',
+                color: colors.text,
+                font: { family: "'Source Sans 3', sans-serif", size: 12 },
+              },
+            },
+          },
+        },
+      });
+    }
+
+    function updateChartColors() {
+      createChart();
+      // Re-apply toggle visibility
+      const toggles = document.querySelectorAll('.chart-toggle');
+      toggles.forEach(t => {
+        const ds = t.dataset.dataset;
+        const idx = ds === 'arrests' ? 0 : 1;
+        if (arrestChart && arrestChart.data.datasets[idx]) {
+          arrestChart.data.datasets[idx].hidden = !t.classList.contains('active');
+        }
+      });
+      if (arrestChart) arrestChart.update();
+    }
+
+    createChart();
+
+    // Chart toggle buttons
+    document.querySelectorAll('.chart-toggle').forEach(btn => {
+      btn.addEventListener('click', function() {
+        this.classList.toggle('active');
+        const ds = this.dataset.dataset;
+        const idx = ds === 'arrests' ? 0 : 1;
+        if (arrestChart && arrestChart.data.datasets[idx]) {
+          arrestChart.data.datasets[idx].hidden = !this.classList.contains('active');
+          arrestChart.update();
+        }
+      });
+    });
+
+    /* ===== PERSPECTIVE SNAP CARD: Copy & Share ===== */
+    const snapQuote = document.getElementById('snap-quote');
+    const copyBtn = document.getElementById('copy-btn');
+    const shareXBtn = document.getElementById('share-x');
+    const shareLnBtn = document.getElementById('share-linkedin');
+
+    copyBtn.addEventListener('click', function() {
+      const text = snapQuote.textContent.trim();
+      navigator.clipboard.writeText(text).then(() => {
+        this.classList.add('copied');
+        this.innerHTML = '<i class="fas fa-check"></i> Copied';
+        setTimeout(() => {
+          this.classList.remove('copied');
+          this.innerHTML = '<i class="fas fa-copy"></i> Copy';
+        }, 2000);
+      }).catch(() => {
+        // Fallback
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        this.innerHTML = '<i class="fas fa-check"></i> Copied';
+        setTimeout(() => { this.innerHTML = '<i class="fas fa-copy"></i> Copy'; }, 2000);
+      });
+    });
+
+    shareXBtn.addEventListener('click', function() {
+      const text = snapQuote.textContent.trim();
+      const url = window.location.href;
+      const twitterUrl = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(text) + '&url=' + encodeURIComponent(url);
+      window.open(twitterUrl, '_blank', 'width=550,height=420');
+    });
+
+    shareLnBtn.addEventListener('click', function() {
+      const url = window.location.href;
+      const linkedinUrl = 'https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(url);
+      window.open(linkedinUrl, '_blank', 'width=550,height=420');
+    });
+
+    /* ===== CHECKLIST PROGRESS GAUGE ===== */
+    const gaugeFill = document.getElementById('gauge-fill');
+    const gaugeLabel = document.getElementById('gauge-label');
+    const checkboxes = document.querySelectorAll('.checklist input[type="checkbox"]');
+
+    // Restore from localStorage
+    const savedChecks = JSON.parse(localStorage.getItem('action-checks') || '[]');
+    checkboxes.forEach((cb, idx) => {
+      if (savedChecks[idx]) cb.checked = true;
+    });
+    updateGauge();
+
+    checkboxes.forEach((cb, idx) => {
+      cb.addEventListener('change', function() {
+        const states = Array.from(checkboxes).map(c => c.checked);
+        localStorage.setItem('action-checks', JSON.stringify(states));
+        updateGauge();
+      });
+    });
+
+    function updateGauge() {
+      const total = checkboxes.length;
+      const checked = Array.from(checkboxes).filter(c => c.checked).length;
+      const pct = Math.round((checked / total) * 100);
+      gaugeFill.style.width = pct + '%';
+      gaugeLabel.textContent = checked + ' of ' + total + ' complete';
+    }
+
+    /* ===== Snap Card Gradient Shift on Scroll ===== */
+    const snapCard = document.getElementById('snap-card');
+    const snapGradient = snapCard.querySelector('.snap-gradient');
+
+    function updateSnapGradient() {
+      const rect = snapCard.getBoundingClientRect();
+      const viewH = window.innerHeight;
+      const visible = Math.max(0, Math.min(1, (viewH - rect.top) / (viewH + rect.height)));
+      const shift = Math.round(visible * 100);
+      snapGradient.style.backgroundPosition = shift + '% 50%';
+    }
+
+    window.addEventListener('scroll', () => {
+      requestAnimationFrame(updateSnapGradient);
+    });
+
+    /* ===== Resize Handling ===== */
+    let resizeTimeout = null;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        // Canvases redraw automatically via animation frames
+      }, 150);
+    });
+
+    /* ===== Cleanup on visibility change (pause animations) ===== */
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        if (heatmapAnimFrame) cancelAnimationFrame(heatmapAnimFrame);
+        if (loopAnimFrame) cancelAnimationFrame(loopAnimFrame);
+      } else {
+        drawHeatmap();
+        drawLoop();
+      }
+    });
+  </script>
+</body>
+</html>
