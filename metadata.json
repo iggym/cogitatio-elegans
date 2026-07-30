@@ -1,5 +1,19 @@
 [
   {
+  "title": "Cold Comfort",
+  "description": "Industrial refrigeration didn't preserve food freedom — it froze it. The cold chain centralized corporate control over human sustenance.",
+  "category": "food-systems",
+  "date": "2025-07-11",
+  "slug": "cold-comfort.html"
+},
+  {
+  "title": "Gaming the Grade",
+  "description": "When a measure becomes a target, it ceases to be a good measure — and education proves it every day.",
+  "category": "education",
+  "date": "2025-07-11",
+  "slug": "gaming-the-grade.html"
+},
+  {
   "title": "Paper Cuts",
   "description": "The filing cabinet didn't organize the modern office. It invented it — and then choked it with its own records.",
   "category": "institutions",
